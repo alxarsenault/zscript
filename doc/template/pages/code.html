@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+
+%head
+
+<body>
+  <!-- Main Content -->
+  <main class="d-flex flex-nowrap">
+
+    <div class="container">
+      <div class="row">
+        <div class="col content-padding"></div>
+        <div id="content" class="col-8">
+
+          <section class="zscript-top-section">
+            <h2>Code</h2>
+            <p>A file is actually a closure.</p>
+
+            <div class="alert alert-danger d-flex" role="alert">
+              Error: Banana
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                Filename
+              </div>
+              <div class="card-body">
+                <pre class="zcompiled-code"><code id="compile_example_01" class="zscript">for(var i = 0; i &lt; 10; i++) {
+  do(1) {
+    print(i);
+  }
+}</code></pre>
+              </div>
+            </div>
+
+
+          </section>
+        </div>
+
+        <div class="col content-padding"></div>
+      </div>
+    </div>
+
+
+  </main>
+
+  %load-scripts
+
+  <script>
+    // Load sections when the page is loaded.
+    window.onload = function () {
+      var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
+      hljs.highlightAll();
+      hljs.initLineNumbersOnLoad();
+    };
+  </script>
+</body>
+
+</html>

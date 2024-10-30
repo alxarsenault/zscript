@@ -1,0 +1,20 @@
+{
+  "sections": [
+    {
+      "title": "Introduction",
+      "subtitle": "Types",
+      "content": contents.introduction.introduction,
+      "subsections": [
+        {
+          "title": "Key Features",
+          "content": contents.introduction.key_features,
+        },
+      ]
+    },
+
+    {
+      "title": "Installation",
+      "content": "To install ZScript, follow these steps: ..."
+    }
+  ]
+}

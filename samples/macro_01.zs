@@ -1,0 +1,3 @@
+#macro ABC(x) {
+  x
+}

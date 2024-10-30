@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+
+%head
+
+<body>
+  %nav
+
+  <!-- Main Content -->
+  <main class="d-flex flex-nowrap">
+
+    %sidebar
+
+    <div class="container">
+      <div class="row">
+        <div class="col content-padding"></div>
+        <div id="content" class="col-8">
+
+          <section class="zscript-top-section">
+            <h2>2.2. Restriction</h2>
+            <p>A file is actually a closure.</p>
+
+
+            <h5>Example 8</h5>
+
+            <pre><code id="compile_example_09" class="zscript-code">@scope my_scope(2);
+
+int a = 0;
+
+if(++a) {
+  do&lt;my_scope&gt;(1) {
+    print("A");
+  }
+}
+
+if(++a) do&lt;my_scope&gt;(1) {
+  print("B");
+}
+
+if(++a) do&lt;my_scope&gt;(1) print("C");
+
+do&lt;my_scope&gt;(1) {
+  a = 1000;
+}
+
+print(a);
+
+do(1) {
+  a = 2000;
+  print(a);
+}
+
+do {
+  a = 3000;
+  print(a);
+}
+</code></pre>
+
+            <div class="alert alert-secondary d-flex" role="alert">
+              <div>Output: <code><br/>A<br/>B<br/>3<br/>2000<br/>3000</code></div>
+            </div>
+
+
+            <p>
+              Compiling a file will give us a closure that will execute the content of the file when called.
+            </p>
+
+            <h5>Example 1</h5>
+
+            <pre><code id="compile_example_01" class="zscript-code">for(var i = 0; i &lt; 10; i++) {
+  do(1) {
+    print(i);
+  }
+}</code></pre>
+
+            <div class="alert alert-secondary d-flex" role="alert">
+              <div>Output: <code><br />0</code></div>
+            </div>
+
+
+            <h5>Example 2</h5>
+            <pre><code id="compile_example_03" class="zscript-code">for(var i = 0; i &lt; 10; i++) {
+  do(2) {
+    print(i);
+  }
+}</code></pre>
+
+            <div class="alert alert-secondary d-flex" role="alert">
+              <div>Output: <code><br />0<br />1</code></div>
+            </div>
+
+
+            <h5>Example 3</h5>
+            <pre><code id="compile_example_04" class="zscript-code">for(var k = 0; k &lt; 3; k++) {
+  for(var i = 0; i &lt; 10; i++) {
+    do(1) {
+      print(k);
+    }
+  }
+}</code></pre>
+
+            <div class="alert alert-secondary d-flex" role="alert">
+              <div>Output: <code><br/>0<br/>1<br/>2</code></div>
+            </div>
+
+            <h5>Example 4</h5>
+            <pre><code id="compile_example_05" class="zscript-code">@scope my_scope;
+
+for(var k = 0; k &lt; 10; k++) {
+  for(var i = 0; i &lt; 10; i++) {
+    do&lt;my_scope&gt;(1) {
+      print(i);
+    }
+  }
+}</code></pre>
+
+            <div class="alert alert-secondary d-flex" role="alert">
+              <div>Output: <code><br/>0</code></div>
+            </div>
+
+
+            <h5>Example 5</h5>
+            <pre><code id="compile_example_06" class="zscript-code">for(var i = 0; i &lt; 10; i++) {
+  after(1) {
+    write(", ");
+  }
+  write(i);
+}</code></pre>
+
+            <div class="alert alert-secondary d-flex" role="alert">
+              <div>Output: <code>0, 1, 2, 3, 4, 5, 6, 7, 8, 9</code></div>
+            </div>
+
+
+
+            <h5>Example 6</h5>
+            <pre><code id="compile_example_07" class="zscript-code">for(var i = 0; i &lt; 10; i++) {
+  do(1) write("list: ");
+  after(1) write(", ");
+  write(i);
+}</code></pre>
+
+            <div class="alert alert-secondary d-flex" role="alert">
+              <div>Output: <code>list: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9</code></div>
+            </div>
+
+
+
+            <h5>Example 7</h5>
+            <code>  after(1) { do(2) { print(i); } } </code>
+            <pre><code id="compile_example_08" class="zscript-code">for(var i = 0; i &lt; 10; i++) {
+  after(1) do(2) print(i);
+}</code></pre>
+
+            <div class="alert alert-secondary d-flex" role="alert">
+              <div>Output: <code><br/>1<br/>2</code></div>
+            </div>
+
+          </section>
+        </div>
+
+        <div class="col content-padding"></div>
+      </div>
+    </div>
+
+
+  </main>
+
+  %load-scripts
+
+  <script>
+    // Load sections when the page is loaded.
+    window.onload = function () {
+      var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
+      hljs.highlightAll();
+      // loadSections(pageName);
+    };
+  </script>
+</body>
+
+</html>

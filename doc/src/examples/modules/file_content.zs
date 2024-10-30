@@ -1,0 +1,1 @@
+return { bingo = [1, 2, 3] };

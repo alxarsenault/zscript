@@ -1,0 +1,25 @@
+{
+  "name": "zscript",
+  "displayName": "zscript",
+  "description": "zscript language support",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.92.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "zscript",
+      "aliases": ["zscript", "zscript"],
+      "extensions": [".zs"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "zscript",
+      "scopeName": "",
+      "path": "./syntaxes/zscript.tmLanguage.json"
+    }]
+  }
+}

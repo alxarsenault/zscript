@@ -1,0 +1,1 @@
+const content = zs.compile_file("dummy")();

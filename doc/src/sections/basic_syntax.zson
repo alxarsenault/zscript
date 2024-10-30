@@ -1,0 +1,44 @@
+{
+  "title": "Basic Syntax",
+  "subtitle": "Here are some examples of the basic syntax in ZScript.",
+  "content": "Here are some examples of the basic syntax in ZScript.",
+  "code": "myVar = 10;\nif (myVar > 5) {\n    print('Variable is greater than 5');\n}",
+  "subsections": [
+    {
+      "title": "Variables",
+      "content": """A variable declared with <code>var</code> is <strong>weakly</strong> typed and can be assigned or reassigned any type.""",
+      "code": examples.basic.var_decl_01
+    },
+    {
+      "title": "Strongly typed variables",
+      "content": """A variable declared with a type, is <strong>strongly</strong> typed and can only be assigned the same type.""",
+      "code": examples.basic.var_decl_02
+    },
+    {
+      "title": "Multi typed variables",
+      "content": """A variable declared with a type, is <strong>strongly</strong> typed and can only be assigned the same type.""",
+      "code": examples.basic.var_decl_03
+    },
+    {
+      "title": "Conditional Statements",
+      "content": "Conditional statements in ZScript:",
+      "code": "if (myVar > 5) {\n    print('Variable is greater than 5');\n}",
+      "subsections": [
+        {
+          "title": "Variables",
+          "content": "You can declare variables like this:",
+          "code": "myVar = 10;"
+        },
+        {
+          "title": "Conditional Statements",
+          "content": """Conditional statements in ZScript:
+          <ul>
+            <li>john</li>
+          </ul>
+          """,
+          "code": "if (myVar > 5) {\n    print('Variable is greater than 5');\n}"
+        }
+      ]
+    }
+  ]
+}

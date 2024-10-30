@@ -1,0 +1,32 @@
+{
+  "sections": [
+    {
+      "title": "Introduction",
+      "subtitle": "Types",
+      "content": contents.introduction.introduction,
+      "subsections": [
+        {
+          "title": "Key Features",
+          "content": contents.introduction.key_features,
+        },
+        {
+          "title": "Use Cases",
+          "content": contents.introduction.use_cases,
+        },
+        {
+          "title": "Why ZSCRIPT?",
+          "content": contents.introduction.motivation,
+        },
+      ]
+    },
+
+    {
+      "title": "Installation",
+      "content": "To install ZScript, follow these steps: ..."
+    },
+    basic_syntax,
+    functions,
+    structs,
+    samples
+  ]
+}

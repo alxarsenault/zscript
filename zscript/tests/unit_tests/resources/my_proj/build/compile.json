@@ -1,0 +1,22 @@
+{
+  "include_directories": [
+    "/Users/aarsenault/develop/wp/modules/script/tests/resources/my_proj/include"
+  ],
+  "link_directories": [
+    "/Users/aarsenault/develop/wp/modules/script/tests/resources/my_proj/build"
+  ],
+  "link_libraries": [
+    "wp-core",
+    "wp-json"
+  ],
+  "private_include_directories": [
+    "/Users/aarsenault/develop/wp/modules/script/tests/resources/my_proj/src"
+  ],
+  "private_link_directories": [],
+  "private_link_libraries": [],
+  "sources": [
+    "/Users/aarsenault/develop/wp/modules/script/tests/resources/my_proj/include/test.h",
+    "/Users/aarsenault/develop/wp/modules/script/tests/resources/my_proj/src/main.cpp"
+  ],
+  "type": "executable"
+}

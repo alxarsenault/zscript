@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+
+%head
+
+<body>
+  %nav
+
+  <!-- Main Content -->
+  <main class="d-flex flex-nowrap">
+
+    %sidebar
+
+
+    <div class="row">
+      <div class="col content-padding"></div>
+      <div id="content" class="col-8">
+
+        <section class="zscript-top-section">
+
+          <h2>1.2. Overview</h2>
+          <p>A file is actually a closure.</p>
+
+          <p>
+            Given these two files (<code>dummy1.zs</code> and <code>dummy2.zs</code>):
+          </p>
+
+          <div class="card">
+            <div class="card-header">dummy1.zs</div>
+            <div class="card-body">
+              <pre class="file-example"><code id="compile_example_02" class="zscript language-zscript zscript-code">// This is a local table variable.
+var dummy1 = {};
+
+// This is a local const variable.
+const my_local_var = 34;
+
+// This is a local closure.
+function my_local_do_something(a, b) {
+  return (a + b) * my_local_var;
+}
+
+// This adds the `do_something` closure to the `dummy1` table.
+function dummy1.do_something(a, b) {
+  return 54 + my_local_do_something(a, b);
+}
+
+// Returns the dummy1 table.
+return dummy1;</code></pre>
+            </div>
+          </div>
+          <p></p>
+          <div class="card">
+            <div class="card-header">dummy2.zs</div>
+            <div class="card-body">
+              <pre
+                class="file-example"><code id="compile_example_03" class="zscript-code">zs.print("dummy2")</code></pre>
+            </div>
+          </div>
+          <p></p>
+
+
+          <h3>Key Features</h3>
+
+          <ul class="zscript-list">
+            <li>
+              <span class="zscript-list-label">Hybrid Typing System:</span>
+              ZSCRIPT allows variables to be declared either <strong>weakly</strong> typed or <strong>strongly</strong>
+              typed,
+              offering the flexibility of dynamic
+              typing while enabling stricter type enforcement where necessary.
+              Developers can choose to rely on weak typing for rapid development and experimentation or enforce strong
+              typing to
+              prevent errors and ensure predictable behavior.
+
+              <ul>
+                <li>
+                  <strong>Weak Typing:</strong>
+                  Variables declared with the var keyword can hold values of any type and can be reassigned to different
+                  types
+                  throughout their lifetime.
+                </li>
+                <li><strong>Strong Typing:</strong>
+                  Variables can be declared with explicit types like <code>int, float, or string</code>. Once
+                  declared, they are restricted to those types, preventing accidental type errors.
+                </li>
+              </ul>
+            </li>
+            <li>
+              <span class="zscript-list-label">Type Inference and Auto Typing:</span>
+              ZSCRIPT introduces an auto keyword that automatically infers the type of a variable based on its initial
+              value. This
+              combines the flexibility of dynamic
+              typing with the safety of strong typing, without requiring the developer to explicitly specify the type.
+            </li>
+
+            <li>
+              <span class="zscript-list-label">Type Restrictions:</span>
+              Developers can restrict variables to specific sets of types. For example, a variable can be declared to
+              only accept
+              <code>int</code>
+              or <code>float</code>, providing both flexibility and control. ZSCRIPT also includes convenient shortcuts,
+              like the
+              <code>number</code> keyword,
+              which is equivalent to <code>var&lt;int, float&gt;</code>, simplifying code while maintaining type
+              restrictions.
+            </li>
+
+            <li>
+              <span class="zscript-list-label">Constant Variables:</span>
+              Immutability is supported through the <code>const</code> keyword, allowing developers to define constant
+              values that
+              cannot be
+              changed after initialization. This is useful for defining configuration values, constants, or any data
+              that should
+              remain fixed throughout the execution of a script. ZSCRIPT enforces that constant variables be initialized
+              with
+              literal values, enhancing performance and predictability.
+            </li>
+
+            <li>
+              <span class="zscript-list-label">Global Variables:</span>
+              ZSCRIPT supports global variables, which can be declared and accessed from anywhere within a script. By
+              using the
+              <code>global</code> keyword, developers can clearly indicate that a variable is intended to be globally
+              accessible,
+              ensuring
+              clarity and avoiding accidental overwrites of local variables.
+            </li>
+
+            <li>
+              <span class="zscript-list-label">Simple and Powerful Syntax:</span>
+              ZSCRIPT has a clean and intuitive syntax that lowers the barrier to entry while still providing powerful
+              features
+              for experienced developers. The language offers constructs like arrays, tables (dictionaries), functions,
+              classes,
+              and instances, making it versatile and capable of handling complex scenarios.
+            </li>
+
+            <li>
+              <span class="zscript-list-label">Extendability and Interoperability:</span>
+              With types like <code>user_data</code> and <code>raw_pointer</code>, ZSCRIPT is designed to interact with
+              external
+              systems and libraries,
+              making it suitable for embedding in larger applications, game engines, or systems that need customizable
+              scripting
+              capabilities. This enables integration with C/C++ libraries and other environments.
+            </li>
+          </ul>
+
+
+
+          <h3>Why ZSCRIPT?</h3>
+          <p>
+            The primary motivation behind ZSCRIPT is to provide developers with a language that strikes a balance
+            between dynamic
+            flexibility and static reliability. Many modern scripting languages, while powerful, either impose too much
+            structure or
+            too little, leaving developers to choose between type safety and ease of use. ZSCRIPT’s hybrid approach
+            allows
+            developers to move fluidly between the two extremes as needed.
+          </p>
+          <ul class="zscript-list">
+            <li>
+              <span class="zscript-list-label">Flexibility for Beginners:</span> Beginners can start with weak typing
+              and basic constructs
+              without worrying
+              about strict rules, while gradually adopting more advanced features as they become comfortable.
+            </li>
+            <li>
+              <span class="zscript-list-label">Power for Experts:</span> Advanced users can take full advantage of the
+              strong typing system, type
+              inference,
+              and type restrictions to write efficient, safe, and maintainable code, especially in larger projects or
+              performance-critical applications.
+            </li>
+          </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+          <h3>Use Cases</h3>
+          <p>
+
+            ZSCRIPT is designed to be highly adaptable to a wide range of use cases, including but not limited to:</p>
+
+          <ul class="zscript-list">
+            <li>
+              <span class="zscript-list-label">Game Scripting:</span> The language’s hybrid typing system allows for the
+              fast-paced, iterative development
+              cycles required in game scripting. ZSCRIPT’s support for arrays, tables, and user-defined classes make it
+              an
+              excellent choice for game logic, AI behaviors, and event handling.
+            </li>
+            <li>
+              <span class="zscript-list-label">Embedded Systems:</span> With its lightweight footprint and dynamic
+              nature, ZSCRIPT can be embedded into
+              larger applications, providing a scripting interface for customization or automation without needing to
+              rewrite
+              or recompile the entire system.
+            </li>
+            <li>
+              <span class="zscript-list-label">Prototyping:</span> ZSCRIPT’s weak typing and flexible syntax make it
+              ideal for rapid prototyping, allowing
+              developers to experiment with ideas and features quickly before committing to more structured code.
+            </li>
+            <li>
+              <span class="zscript-list-label">Tooling and Automation:</span> ZSCRIPT can be used for scripting tools,
+              automating workflows, or creating
+              small applications that require a combination of flexibility and power. Its mix of dynamic and strong
+              typing
+              enables quick iteration while maintaining reliability where needed.
+            </li>
+          </ul>
+
+
+        </section>
+
+
+
+      </div>
+
+      <div class="col content-padding"></div>
+    </div>
+
+
+
+  </main>
+
+  %load-scripts
+
+  <script>
+    // Load sections when the page is loaded.
+    window.onload = function () {
+      var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
+      hljs.highlightAll();
+      // loadSections(pageName);
+    };
+  </script>
+</body>
+
+</html>

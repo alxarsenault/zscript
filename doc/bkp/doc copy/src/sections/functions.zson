@@ -1,0 +1,27 @@
+{
+  "title": "Functions",
+  "content": "To install ZScript, follow these steps: ...",
+  "subsections": [
+    {
+      "title": "Local functions",
+      "code": examples.functions.local_functions,
+        "subsections": [
+          {
+            "title": "Lamdas",
+            "content": """Les fonctions lamda""",
+            "code": examples.functions.lamda_functions,
+          }
+        ]
+    },
+    {
+      "title": "Table functions",
+      "content": """Les options 1, 2, 3 je suis pas mal certain.""",
+      "code": examples.functions.table_functions
+    },
+    {
+      "title": "Global functions",
+      "content": """Pour les fonctions globales je ne suis vraiment pas certain.""",
+      "code": examples.functions.global_functions
+    }
+  ]
+}
