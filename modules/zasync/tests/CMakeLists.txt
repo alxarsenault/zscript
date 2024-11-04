@@ -1,0 +1,33 @@
+
+set(TEST_NAME zasync-tests)
+set(ZASYNC_TESTS_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+file(GLOB_RECURSE ZASYNC_TESTS_SOURCE_FILES
+  "${ZASYNC_TESTS_SOURCE_DIRECTORY}/*.h"
+  "${ZASYNC_TESTS_SOURCE_DIRECTORY}/*.cpp"
+)
+
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
+  FILES
+  ${ZASYNC_TESTS_SOURCE_FILES})
+
+add_executable(${TEST_NAME} ${ZASYNC_TESTS_SOURCE_FILES})
+
+target_link_libraries(${TEST_NAME} PUBLIC catch2)
+
+set_target_properties(${TEST_NAME} PROPERTIES
+  FOLDER tests
+  XCODE_GENERATE_SCHEME YES)
+
+target_include_directories(${TEST_NAME}
+  PUBLIC
+  ${ZASYNC_TESTS_SOURCE_DIRECTORY}
+  ${ZSCRIPT_SOURCE_DIRECTORY})
+
+target_link_libraries(${TEST_NAME}
+  PUBLIC
+  zasync)
+
+target_compile_definitions(${TEST_NAME}
+  PUBLIC
+  -DZASYNC_TESTS_RESOURCES_DIRECTORY="${CMAKE_CURRENT_SOURCE_DIR}/resources")

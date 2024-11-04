@@ -43,3 +43,6 @@ docs/xml
 *.cache
 build-xcode/*
 output/*
+
+doc/site/node_modules/*
+doc/web/node_modules/*

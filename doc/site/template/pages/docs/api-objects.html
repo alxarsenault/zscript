@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+
+{{> head }}
+
+<body>
+  {{> nav }}
+
+  <!-- Main Content -->
+  <main id="main" class="d-flex flex-nowrap">
+    {{> sidebar }}
+
+    {{#content-container}}
+      {{> breadcrumb }}
+      {{#page-section}}
+        <p>
+
+          {{#cpp-code-block label="<code>zs::object_type</code>"}}enum class object_type : uint8_t {
+  k_small_string,
+  k_null,
+  k_bool,
+  k_integer,
+  k_float,
+  k_raw_pointer,
+  k_string_view,
+  k_native_function,
+  k_extension,
+  k_error,
+  k_none,
+  k_native_function2,
+  k_long_string,
+  k_mutable_string,
+  k_closure,
+  k_native_closure,
+  k_class,
+  k_weak_ref,
+  k_struct,
+  k_struct_instance,
+  k_function_prototype,
+  k_table,
+  k_array,
+  k_native_array,
+  k_node,
+  k_user_data,
+  k_instance
+};{{/cpp-code-block}}
+
+
+{{#cpp-code-block label="<code>zs::exposed_object_type</code>"}}enum class exposed_object_type : uint8_t {
+  ke_null,
+  ke_bool,
+  ke_integer,
+  ke_float,
+  ke_error,
+  ke_raw_pointer,
+  ke_string,
+  ke_closure,
+  ke_class,
+  ke_weak_ref,
+  ke_function_prototype,
+  ke_capture,
+  ke_table,
+  ke_array,
+  ke_native_array,
+  ke_node,
+  ke_struct,
+  ke_user_data,
+  ke_instance,
+  ke_extension
+};{{/cpp-code-block}}
+
+
+{{#cpp-code-block label="<code>zs::native_type</code>"}}enum class native_type : uint8_t {
+  invalid,
+  u8,
+  i8,
+  u16,
+  i16,
+  u32,
+  i32,
+  u64,
+  i64,
+  f32,
+  f64
+};{{/cpp-code-block}}
+        </p>
+
+      {{/page-section}}
+      {{> bottom-nav }}
+    {{/content-container}}
+  </main>
+
+  {{{footer}}}
+  {{> load-scripts }}
+</body>
+
+</html>

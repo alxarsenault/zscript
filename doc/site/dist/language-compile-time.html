@@ -1,0 +1,1166 @@
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+
+<head>
+  
+  <!-- meta -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <meta name="author" content="Zscript">
+  <title>ZScript Doc - Compile-Time</title>
+
+  
+<!-- common-style -->
+
+<link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&display=swap" rel="stylesheet" type="text/css">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=Nunito+Sans:300,400,600,700,800,900" rel="stylesheet" type="text/css">
+<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css">
+<link href="css/code-style.css" rel="stylesheet" type="text/css">
+<link href="css/common-style.css" rel="stylesheet" type="text/css">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+
+  <link href="css/doc-style.css" rel="stylesheet">
+</head>
+
+<body>
+  <!-- Doc menu -->
+  <div class="offcanvas offcanvas-start" id="offcanvas" data-bs-keyboard="false" data-bs-backdrop="false"
+    style="width:280px; background-color: #f4f4f4;">
+    <div class="offcanvas-header">
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body px-0">
+      <!-- Side Bar -->
+      <div class="zscript-sidebar flex-shrink-0 p-3">
+        <!-- <a href="" -->
+          <!-- class="d-flex align-items-center pb-3 mb-3 zscript-sidebar-item link-body-emphasis text-decoration-none border-bottom"> -->
+          <!-- <span class="fs-5 fw-semibold">Documentation</span> -->
+        <!-- </a> -->
+      
+        <ul class="list-unstyled ps-0">
+      
+          <!-- Introduction -->
+          <li class="mb-1">
+            <button id="intro-collapse-button"
+              class="btn zscript-sidebar-section-button  d-inline-flex align-items-center rounded border-0 collapsed"
+              data-bs-toggle="collapse" data-bs-target="#intro-collapse" aria-expanded="true">
+              1. Introduction
+            </button>
+      
+            <div class="collapse" id="intro-collapse">
+              <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+                <li>
+            <a id="side-menu-intro-overview" href="intro-overview.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">1.1.&nbsp;</span>
+                <span>Overview</span>
+            </a>
+            
+          </li>
+                <li>
+            <a id="side-menu-intro-getting-started" href="intro-getting-started.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">1.2.&nbsp;</span>
+                <span>Getting Started</span>
+            </a>
+            
+          </li>
+                <li>
+            <a id="side-menu-intro-hello-world" href="intro-hello-world.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">1.3.&nbsp;</span>
+                <span>Hello World</span>
+            </a>
+            
+          </li>
+              </ul>
+            </div>
+          </li>
+      
+          <!-- Language -->
+          <li class="mb-1">
+            <button id="language-collapse-button"
+              class="btn zscript-sidebar-section-button zscript-sidebar-section-selected d-inline-flex align-items-center rounded border-0 collapsed"
+              data-bs-toggle="collapse" data-bs-target="#language-collapse" aria-expanded="true">
+              2. Language
+            </button>
+            <div class="collapse" id="language-collapse">
+              <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-language-basics" href="language-basics.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.&nbsp;</span>
+                <span>Basics</span>
+            </a>
+                          <ul class="zscript-sidebar-subsection-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-language-basics-comments" href="language-basics-comments.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.1.&nbsp;</span>
+                <span>Comments</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-basics-identifiers" href="language-basics-identifiers.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.2.&nbsp;</span>
+                <span>Identifiers</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-basics-types" href="language-basics-types.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.3.&nbsp;</span>
+                <span>Types</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-basics-loop" href="language-basics-loop.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.4.&nbsp;</span>
+                <span>Loop</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-arithmetics" href="language-arithmetics.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.5.&nbsp;</span>
+                <span>Arithmetics</span>
+            </a>
+            
+          </li>              </ul>
+      
+          </li><li>
+            <a id="side-menu-language-types" href="language-types.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.&nbsp;</span>
+                <span>Types</span>
+            </a>
+                          <ul class="zscript-sidebar-subsection-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-language-types-integers" href="language-types-integers.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.1.&nbsp;</span>
+                <span>Integers</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-floats" href="language-types-floats.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.2.&nbsp;</span>
+                <span>Floats</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-strings" href="language-types-strings.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.3.&nbsp;</span>
+                <span>Strings</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-arrays" href="language-types-arrays.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.4.&nbsp;</span>
+                <span>Arrays</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-tables" href="language-types-tables.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.5.&nbsp;</span>
+                <span>Tables</span>
+            </a>
+            
+          </li>              </ul>
+      
+          </li><li>
+            <a id="side-menu-language-statements" href="language-statements.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.3.&nbsp;</span>
+                <span>Statements</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-expressions" href="language-expressions.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.4.&nbsp;</span>
+                <span>Expressions</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-delegates" href="language-delegates.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.5.&nbsp;</span>
+                <span>Delegates</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-scopes" href="language-scopes.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.6.&nbsp;</span>
+                <span>Scopes</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-modules" href="language-modules.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.7.&nbsp;</span>
+                <span>Modules</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-compile-time" href="language-compile-time.html"
+              class="zscript-sidebar-item zscript-sidebar-selected-item d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.8.&nbsp;</span>
+                <span>Compile-Time</span>
+            </a>
+            
+          </li>        </ul>
+            </div>
+          </li>
+      
+          <!-- API -->
+          <li class="border-top my-2"></li>
+          <li class="mb-1">
+            <button id="api-collapse-button"
+              class="btn zscript-sidebar-section-button  d-inline-flex align-items-center rounded border-0 collapsed"
+              data-bs-toggle="collapse" data-bs-target="#api-collapse" aria-expanded="true">
+              3. API
+            </button>
+            <div class="collapse" id="api-collapse">
+              <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-api-objects" href="api-objects.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">3.1.&nbsp;</span>
+                <span>Objects</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-api-virtual-machine" href="api-virtual-machine.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">3.2.&nbsp;</span>
+                <span>Virual Machine</span>
+            </a>
+            
+          </li>        </ul>
+            </div>
+          </li>
+        </ul>
+      </div>  </div>
+  </div>
+  
+  <!-- Top Navigation Bar -->
+  <nav class="navbar navbar-expand-md fixed-top zscript-navbar">
+    <div class="container-fluid">
+  
+      <button class="btn float-end d-block d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#offcanvas" role="button">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <a href="index.html" class="navbar-brand">
+        <img src="logo.png" alt="" width="28" height="28">
+        <span class="logo-text">ZScript</span>
+      </a>
+  
+      <div class="collapse navbar-collapse">
+        <div class="navbar-nav">
+          <a class="nav-link " href="install.html">Install</a>
+          <a class="nav-link active" href="intro-overview.html">Documentation</a>
+          <a class="nav-link " href="examples.html">Examples</a>
+          <a class="nav-link " href="development.html">Development</a>
+          <a class="nav-link " href="contact.html">Contact</a>
+        </div>
+      </div>
+      <!-- <i class="bi bi-three-dots"></i> -->
+  
+      <button class="btn d-block d-md-none" role="button">
+        <i class="bi bi-three-dots"></i>
+      </button>
+  
+      <!-- <a class="nav-link d-block d-md-none" href="#"><i class="bi bi-three-dots"></i></a> -->
+      <!-- <a class="nav-link d-block d-md-none" href="#"><i class="fa fa-ellipsis-h"></i></a> -->
+      <!-- <a class="nav-link d-none d-md-none d-lg-block" href="#"><i class="fa fa-github"></i> Github </a> -->
+  
+  
+  
+    </div>
+  </nav>
+  <!-- Main Content -->
+  <main class="d-flex flex-nowrap">
+
+    <div id="content-sidebar" class="d-none d-lg-block">
+      <!-- Side Bar -->
+      <div class="zscript-sidebar flex-shrink-0 p-3">
+        <!-- <a href="" -->
+          <!-- class="d-flex align-items-center pb-3 mb-3 zscript-sidebar-item link-body-emphasis text-decoration-none border-bottom"> -->
+          <!-- <span class="fs-5 fw-semibold">Documentation</span> -->
+        <!-- </a> -->
+      
+        <ul class="list-unstyled ps-0">
+      
+          <!-- Introduction -->
+          <li class="mb-1">
+            <button id="intro-collapse-button"
+              class="btn zscript-sidebar-section-button  d-inline-flex align-items-center rounded border-0 collapsed"
+              data-bs-toggle="collapse" data-bs-target="#intro-collapse" aria-expanded="true">
+              1. Introduction
+            </button>
+      
+            <div class="collapse" id="intro-collapse">
+              <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+                <li>
+            <a id="side-menu-intro-overview" href="intro-overview.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">1.1.&nbsp;</span>
+                <span>Overview</span>
+            </a>
+            
+          </li>
+                <li>
+            <a id="side-menu-intro-getting-started" href="intro-getting-started.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">1.2.&nbsp;</span>
+                <span>Getting Started</span>
+            </a>
+            
+          </li>
+                <li>
+            <a id="side-menu-intro-hello-world" href="intro-hello-world.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">1.3.&nbsp;</span>
+                <span>Hello World</span>
+            </a>
+            
+          </li>
+              </ul>
+            </div>
+          </li>
+      
+          <!-- Language -->
+          <li class="mb-1">
+            <button id="language-collapse-button"
+              class="btn zscript-sidebar-section-button zscript-sidebar-section-selected d-inline-flex align-items-center rounded border-0 collapsed"
+              data-bs-toggle="collapse" data-bs-target="#language-collapse" aria-expanded="true">
+              2. Language
+            </button>
+            <div class="collapse" id="language-collapse">
+              <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-language-basics" href="language-basics.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.&nbsp;</span>
+                <span>Basics</span>
+            </a>
+                          <ul class="zscript-sidebar-subsection-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-language-basics-comments" href="language-basics-comments.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.1.&nbsp;</span>
+                <span>Comments</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-basics-identifiers" href="language-basics-identifiers.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.2.&nbsp;</span>
+                <span>Identifiers</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-basics-types" href="language-basics-types.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.3.&nbsp;</span>
+                <span>Types</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-basics-loop" href="language-basics-loop.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.4.&nbsp;</span>
+                <span>Loop</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-arithmetics" href="language-arithmetics.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.5.&nbsp;</span>
+                <span>Arithmetics</span>
+            </a>
+            
+          </li>              </ul>
+      
+          </li><li>
+            <a id="side-menu-language-types" href="language-types.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.&nbsp;</span>
+                <span>Types</span>
+            </a>
+                          <ul class="zscript-sidebar-subsection-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-language-types-integers" href="language-types-integers.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.1.&nbsp;</span>
+                <span>Integers</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-floats" href="language-types-floats.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.2.&nbsp;</span>
+                <span>Floats</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-strings" href="language-types-strings.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.3.&nbsp;</span>
+                <span>Strings</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-arrays" href="language-types-arrays.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.4.&nbsp;</span>
+                <span>Arrays</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-tables" href="language-types-tables.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.5.&nbsp;</span>
+                <span>Tables</span>
+            </a>
+            
+          </li>              </ul>
+      
+          </li><li>
+            <a id="side-menu-language-statements" href="language-statements.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.3.&nbsp;</span>
+                <span>Statements</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-expressions" href="language-expressions.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.4.&nbsp;</span>
+                <span>Expressions</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-delegates" href="language-delegates.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.5.&nbsp;</span>
+                <span>Delegates</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-scopes" href="language-scopes.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.6.&nbsp;</span>
+                <span>Scopes</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-modules" href="language-modules.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.7.&nbsp;</span>
+                <span>Modules</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-compile-time" href="language-compile-time.html"
+              class="zscript-sidebar-item zscript-sidebar-selected-item d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.8.&nbsp;</span>
+                <span>Compile-Time</span>
+            </a>
+            
+          </li>        </ul>
+            </div>
+          </li>
+      
+          <!-- API -->
+          <li class="border-top my-2"></li>
+          <li class="mb-1">
+            <button id="api-collapse-button"
+              class="btn zscript-sidebar-section-button  d-inline-flex align-items-center rounded border-0 collapsed"
+              data-bs-toggle="collapse" data-bs-target="#api-collapse" aria-expanded="true">
+              3. API
+            </button>
+            <div class="collapse" id="api-collapse">
+              <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-api-objects" href="api-objects.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">3.1.&nbsp;</span>
+                <span>Objects</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-api-virtual-machine" href="api-virtual-machine.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">3.2.&nbsp;</span>
+                <span>Virual Machine</span>
+            </a>
+            
+          </li>        </ul>
+            </div>
+          </li>
+        </ul>
+      </div></div>
+<div id="content-container" class="container">
+      <div class="row">
+        <div id="content" class="mx-auto col-10">
+              <nav class="zscript-breadcrumb" style="--bs-breadcrumb-divider: url(&#34;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M2.5 0L1 1.5 3.5 4 1 6.5 2.5 8l4-4-4-4z' fill='currentColor'/%3E%3C/svg%3E&#34;);" aria-label="breadcrumb">
+    
+      <ol class="breadcrumb">
+        <li>
+          <a href="language-modules.html" type="button" class="btn btn-outline-primary btn-sm zscript-breadcrumb-button ">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8">
+            </path>
+          </svg>
+        </a>
+        </li>
+          <li class="breadcrumb-item active" > Language </li>
+    
+        <li class="breadcrumb-item active" aria-current="page">Compile-Time</li>
+      </ol>
+    </nav>
+          <section class="zscript-top-section">
+            <h2>Compile-Time Operations</h2>
+
+
+            <h5>Samples</h5>
+            <div class="container">
+              <div class="row align-items-start">
+                <div class="col">
+
+                  <div class="card example-file-block">
+                    <div class="card-header example-filepath-header">
+                      file1.txt
+                    </div>
+                    <div class="card-body">
+                      <pre class="zcompiled-code"><code class="zscript-code">John</code></pre>
+                    </div>
+                  </div>
+                </div>
+                <div class="col">
+
+                  <div class="card example-file-block">
+                    <div class="card-header example-filepath-header">
+                      file2.txt
+                    </div>
+                    <div class="card-body">
+                      <pre class="zcompiled-code"><code class="zscript-code">[1, 2, 3, "Peter"]</code></pre>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <p></p>
+            <div class="container">
+              <div class="row align-items-start">
+                <div class="col">
+
+                  <div class="card example-file-block">
+                    <div class="card-header example-filepath-header">
+                      file3.txt
+                    </div>
+                    <div class="card-body">
+                      <pre class="zcompiled-code"><code class="zscript-code">2 + 3</code></pre>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col">
+
+                  <div class="card example-file-block">
+                    <div class="card-header example-filepath-header">
+                      file4.zs
+                    </div>
+                    <div class="card-body">
+                      <pre class="zcompiled-code"><code class="zscript-code">var g = 32;</code></pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p></p>
+
+            <div class="container">
+              <div class="row align-items-start">
+
+                <div class="col">
+
+                  <div class="card example-file-block">
+                    <div class="card-header example-filepath-header">
+                      file5.zson
+                    </div>
+                    <div class="card-body">
+                      <pre class="zcompiled-code"><code class="zscript-code">{
+  "a": 21,
+  "b": my_value
+}</code></pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="p-3"></p>
+
+
+
+            <h3>Compile-Time Expressions</h3>
+            <p>Using <code>@expr</code>, you can evaluate expressions at compile time and inject their results directly
+              into the code. This feature lets you perform computations, string manipulations, and other transformations
+              that get “baked” into the final code.</p>
+
+            <figure>
+        <pre><code class="zscript-code hljs language-cpp"><span class="hljs-comment">// Same as writing &#x27;var a = 0.0;&#x27;.</span>
+<span class="hljs-type">var</span> a = <span class="hljs-literal">@expr</span>{ <span class="hljs-keyword">return</span> math.sin(math.pi); };
+
+<span class="hljs-comment">// b now contains a string with the content of &quot;file1.txt&quot;.</span>
+<span class="hljs-comment">// Same as writing &#x27;var b = &quot;John&quot;;&#x27;.</span>
+<span class="hljs-type">var</span> b = <span class="hljs-literal">@expr</span>{ <span class="hljs-keyword">return</span> fs.string_file(<span class="hljs-string">&quot;file1.txt&quot;</span>); };
+
+<span class="hljs-comment">// c now contains an array with the content of &quot;file2.txt&quot;.</span>
+<span class="hljs-comment">// Same as writing &#x27;var c = [1, 2, 3, &quot;Peter&quot;];&#x27;.</span>
+<span class="hljs-type">var</span> c = <span class="hljs-literal">@expr</span>{ <span class="hljs-keyword">return</span> fs.value_file(<span class="hljs-string">&quot;file2.txt&quot;</span>); };
+
+<span class="hljs-type">var</span> d = <span class="hljs-literal">@expr</span>{ <span class="hljs-keyword">return</span> fs.json_file(<span class="hljs-string">&quot;file5.zson&quot;</span>, { my_value = <span class="hljs-string">&quot;Bacon&quot;</span> }); };
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;a:&quot;</span>, a);
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;b:&quot;</span>, b);
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;c:&quot;</span>, c);
+<span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;d:&quot;</span>, d);</code></pre>
+        <figcaption class="blockquote-footer text-center"><strong>Figure 1&nbsp;</strong>Compile-time <code>@expr</code> example.</figcaption>
+      </figure>
+
+<!--  -->
+<figure>
+        <pre><code class="zscript-code hljs language-cpp"><span class="hljs-type">var</span> a = <span class="hljs-number">0.0</span>;
+<span class="hljs-type">var</span> b = <span class="hljs-string">&quot;John&quot;</span>;
+<span class="hljs-type">var</span> c = [<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>, <span class="hljs-string">&quot;Peter&quot;</span>];
+<span class="hljs-type">var</span> d = { a = <span class="hljs-number">21</span>, b = <span class="hljs-string">&quot;Bacon&quot;</span> };</code></pre>
+        <figcaption class="blockquote-footer text-center"><strong>Figure 2&nbsp;</strong>Compile-time <code>@expr</code> example (result).</figcaption>
+      </figure>
+
+<div class="terminal " role="alert">
+      <div class=fakeMenu>
+        <div class="fakeButtons fakeClose"></div>
+        <div class="fakeButtons fakeMinimize"></div>
+        <div class="fakeButtons fakeZoom"></div>
+        <div class="fakeTitle">Output</div>
+      </div>
+      <div class="fakeScreen">
+        <pre><code class="terminal-code hljs language-shell">a: 0.0
+b: &quot;John&quot;
+c: [1, 2, 3, &quot;Peter&quot;]
+d: {
+  &quot;a&quot;: 21,
+  &quot;b&quot;: &quot;Bacon&quot;
+}</code></pre>
+      </div>
+    </div>
+
+            <p></p>
+
+
+            <h3>Compile-Time Injections</h3>
+
+            <p>
+              Using <code>@inject</code> to inject raw strings.
+              When you use <code>@inject</code>, the string it returns will be inserted directly into the code where it
+              appears.
+            </p>
+            <figure>
+              <pre><code class="zscript-code">// Same as writing 'var e = fs.path("/Desktop");'.
+var e = @inject { return '''fs.path("/Desktop")'''; };
+
+// Same as writing 'var f = 1 + 2 + 3;'.
+var f = 1 + @inject { return fs.file("file3.txt").read(); };
+
+// Same as writing 'var g = 32;'.
+@inject { return fs.string_file("file4.zs"); };
+
+// Same as writing 'var h = [1, 2, 3, "John", f];'.
+@inject {
+  // arr is a normal array: [1, 2, 3, "Peter"].
+  var arr = fs.value_file("file2.txt");
+
+  // arr becomes: [1, 2, 3, "John"].
+  arr[3] = fs.file("file1.txt").read();
+
+  // arr_str is a string: '[1, 2, 3, "John"]'.
+  var arr_str = tostring(arr);
+
+  // arr_str is a string: '[1, 2, 3, "John", f]'.
+  arr_str = arr_str.replace("]", ", e]");
+
+  // Output: 'var h = [1, 2, 3, "John", f];'
+  return "var h = " + arr_str + ";";
+};
+
+print("e:", e);
+print("f:", f);
+print("g:", g);
+print("h:", h);</code></pre>
+
+              <figcaption class="blockquote-footer text-center">Compile-time
+                <code>@inject</code> example
+              </figcaption>
+            </figure>
+
+
+
+ 
+            <figure>
+              <pre><code class="zscript-code">var e = fs.path("/Desktop");
+var f = 1 + 2 + 3;
+var g = 32;
+var h = [1, 2, 3, "John", e];</code></pre>
+
+              <figcaption class="blockquote-footer text-center">Compile-time
+                <code>@inject</code> example (result)
+              </figcaption>
+            </figure>
+
+
+
+            <p></p>
+
+            <div class="terminal " role="alert">
+              <div class=fakeMenu>
+                <div class="fakeButtons fakeClose"></div>
+                <div class="fakeButtons fakeMinimize"></div>
+                <div class="fakeButtons fakeZoom"></div>
+                <div class="fakeTitle">Output</div>
+              </div>
+              <div class="fakeScreen">
+                <pre><code class="terminal-code language-shell">e: "/Desktop"
+f: 6
+g: 32
+h: [1, 2, 3, "John", 6]</code></pre>
+</div>
+</div>
+
+
+
+
+
+
+
+
+            <p>The content of a file can be included inplace (like in C++) with the <code>@inject</code> command or by
+              using <code>#include</code>.</p>
+            <figure>
+              <pre><code class="zscript-code">#include "file4.zs"
+@inject { return fs.file("file4.zs").read(); };</code></pre>
+
+              <figcaption class="blockquote-footer text-center">Compile-time
+                <code>@inject</code> example
+              </figcaption>
+            </figure>
+
+
+
+
+            <p></p>
+
+
+            <h3>Scopes</h3>
+
+            <p></p>
+            <figure>
+              <pre><code class="zscript-code">var t = get_unknown_table();
+
+var val;
+if(check_some_stuff(t)) {
+  val = get_some_stuff(t);
+}
+
+print(val);</code></pre>
+
+              <figcaption class="blockquote-footer text-center">Compile-time
+                <code>@inject</code> example
+              </figcaption>
+            </figure>
+
+
+
+            <figure>
+              <pre><code class="zscript-code">var t = get_unknown_table();
+
+if(check_some_stuff(t)) {
+  var v1 = get_some_stuff(t);
+  outer var v2 = get_some_stuff(t);
+
+  // All good.
+  print(v1, v2);
+}
+
+// Error: v1 is out of scope, only v2 is accessible.
+print(v1, v2);</code></pre>
+
+              <figcaption class="blockquote-footer text-center">Compile-time
+                <code>@inject</code> example
+              </figcaption>
+            </figure>
+
+
+            <figure>
+              <pre><code class="zscript-code">var t = get_unknown_table();
+
+{
+  {
+    if(check_some_stuff(t)) {
+      outer var v1 = get_some_stuff(t);
+      outer&lt;2&gt; var v2 = get_some_stuff(t);
+    }
+
+    // All good.
+    print(v1, v2);
+  }
+
+  // Error: v1 is out of scope, only v2 is accessible.
+  print(v1, v2);
+}
+
+// Error: v1 and v2 are out of scope.
+print(v1, v2);</code></pre>
+
+              <figcaption class="blockquote-footer text-center">Compile-time
+                <code>@inject</code> example
+              </figcaption>
+            </figure>
+
+
+
+
+
+            <figure>
+              <pre><code class="zscript-code">@scope my_scope;
+
+var t = get_unknown_table();
+
+{
+  {
+    if(check_some_stuff(t)) {
+      outer&lt;my_scope&gt; var val = get_some_stuff(t);
+    }
+  }
+}
+
+// All good.
+print(val);</code></pre>
+
+              <figcaption class="blockquote-footer text-center">Compile-time
+                <code>@inject</code> example
+              </figcaption>
+            </figure>
+
+
+
+
+            <!--  -->
+
+
+
+            <figure>
+              <pre><code class="zscript-code">@scope my_scope {
+  function init() { print("Init"); }
+  function first_enter() { print("First Enter"); }
+  function enter(int count) { print("Enter"); }
+  function first_exit() { print("First Exit"); }
+  function exit(int count) { print("Exit"); }
+};
+
+print("A");
+@my_scope {
+  print("B");
+}
+print("C");
+@my_scope {
+  print("D");
+}
+print("E");</code></pre>
+
+              <figcaption class="blockquote-footer text-center">Compile-time
+                <code>@inject</code> example
+              </figcaption>
+            </figure>
+
+
+
+
+            <p></p>
+            <div class="terminal " role="alert">
+              <div class=fakeMenu>
+                <div class="fakeButtons fakeClose"></div>
+                <div class="fakeButtons fakeMinimize"></div>
+                <div class="fakeButtons fakeZoom"></div>
+                <div class="fakeTitle">Output</div>
+              </div>
+              <div class="fakeScreen">
+                <pre><code class="terminal-code language-shell">A
+Init
+First Enter
+B
+First Exit
+C
+Enter
+D
+Exit
+E</code></pre>
+              </div>
+            </div>
+
+
+
+
+            <!--  -->
+
+
+
+            <figure>
+              <pre><code class="zscript-code">@scope my_scope {
+  init = $() { print("Init"); }
+  can_enter = $(int count) { return count == 1; }
+  enter = $(int count) { print("Enter"); }
+  exit = $(int count) { print("Exit"); }
+};
+
+print("A");
+@my_scope {
+  print("B");
+}
+print("C");
+@my_scope {
+  print("D");
+}
+print("E");</code></pre>
+
+              <figcaption class="blockquote-footer text-center">Compile-time
+                <code>@inject</code> example
+              </figcaption>
+            </figure>
+
+
+
+            <p></p>
+            <div class="alert alert-secondary d-flex" role="alert">
+              <div>Output:
+                <code></br>A</br>Init</br>Enter</br>B</br>Exit</br>C</br>E</code>
+              </div>
+            </div>
+
+            <!--  -->
+
+
+
+            <figure>
+              <pre><code class="zscript-code">@scope my_scope;
+
+const arr = [10, 11, 12, 13, 14];
+for(int i = 0; i &lt; arr.size(); i++) @my_scope {
+  @my_scope::first_enter {
+    outer&lt;my_scope&gt; var sum = arr[0], min = arr[0], max = arr[0];
+  }
+
+  @my_scope::enter {
+    sum += arr[i];
+    min = math.min(arr[i], min);
+    max = math.max(arr[i], max);
+  }
+}
+
+print(sum, min, max);</code></pre>
+
+              <figcaption class="blockquote-footer text-center">Compile-time
+                <code>@inject</code> example
+              </figcaption>
+            </figure>
+
+
+
+            <p></p>
+            <div class="alert alert-secondary d-flex" role="alert">
+              <div>Output:
+                <code></br>60 10 14</code>
+              </div>
+            </div>
+
+
+
+            <figure>
+              <pre><code class="zscript-code">var arr = [1, 2, 3];
+loop().init($(ctx){
+  print("init");
+  ctx.i = 0;
+  ctx.sz = arr.size();
+}).can_enter($(ctx) {
+  print("can_enter", ctx.count);
+  return ctx.i &lt; ctx.sz;
+}).first($(ctx) {
+  print("first", ctx.count);
+}).enter($(ctx) {
+  print("enter", ctx.count);
+}).process($(ctx) {
+  print("process", ctx.count);
+}).first_leave($(ctx) {
+  print("first_leave", ctx.count);
+}).leave($(ctx) {
+  print("leave", ctx.count);
+}).next($(ctx) {
+  print("next", ctx.count);
+  ctx.i++;
+}).exit($(ctx) {
+  print("exit", ctx.count);
+});
+              </code></pre>
+
+              <figcaption class="blockquote-footer text-center">Compile-time
+                <code>@inject</code> example
+              </figcaption>
+            </figure>
+
+
+
+            <p></p>
+            <div class="alert alert-secondary d-flex" role="alert">
+              <div>Output:
+                <code></br>init
+                </br>can_enter 0
+              </br>first 0
+           </br>process 0
+        </br>first_leave 0
+     </br>next 0
+  
+    </br>can_enter 1
+  </br>enter 1
+  </br>process 1
+  </br>leave 1
+  </br>next 1
+
+</br>can_enter 2
+</br>enter 2
+</br>process 2
+</br>leave 2
+</br>next 2
+  
+</br>can_enter 3
+</br>exit 3
+  
+  </code>
+              </div>
+            </div>
+          </section>
+          
+          <div class="d-flex bd-highlight mb-3">
+            <div class="p-2 bd-highlight">
+              <a href="language-modules.html" type="button" class="btn btn-outline-secondary ">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+                  <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8">
+                  </path>
+                </svg>
+              </a>
+            </div>
+            <div class="ms-auto p-2 bd-highlight">
+              <a href="api-objects.html" type="button" class="btn btn-outline-secondary ">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
+                  <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8">
+                  </path>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  
+<!-- footer -->
+<footer id="footer" class="d-flex flex-row align-items-center">
+  <p class="p-2 mb-0">&copy; 2024 Company, Inc</p>
+</footer>
+
+  
+  <!-- load-scripts -->
+  
+  
+  <!-- load-scripts-common -->
+  
+  <!-- jquery -->
+  <script
+    src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+    crossorigin="anonymous"></script>
+  
+  <!-- bootstrap -->
+  <script src="js/bootstrap.bundle.min.js"></script>
+  
+  <!-- highlight -->
+  <script src="js/highlight.min.js"></script>
+  
+  <!-- zscript-highlight -->
+  <script src="js/zscript-highlight.js"></script>
+  <script src="js/highlightjs-line-numbers.min.js"></script>
+  
+  
+  <!-- app -->
+  <script async defer src="js/app.js"></script>
+
+  <script>
+
+    // $(document).ready(function () {
+
+    //   // var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
+    //   // hljs.highlightAll();
+    //   // loadSections(pageName);
+    //   // document.addEventListener('DOMContentLoaded', (event) => {
+    //   // document.querySelectorAll('.zcompiled-code .zscript').forEach((el) => {
+    //   //   hljs.highlightElement(el);
+    //   // });
+
+
+    //   // hljs.highlightAll();
+    //   $(".zscript-code").each(function () { hljs.highlightElement($(this)[0]); });
+
+    //   $(".terminal-code").each(function () {
+    //     hljs.highlightElement($(this)[0]);
+    //     // 
+    //     // console.log($(this).text())
+
+
+    //     //   let fff =hljs.highlight($(this).text(), {language:"shell"});
+    //     //   console.log(fff)
+    //     // $(this).html(fff.value);
+
+    //   });
+
+
+    //   console.log(hljs.listLanguages());
+    //   $(".blockquote-footer").each(function (idx) {
+    //     $(this).prepend($("<strong></strong>").html("Figure " + (idx + 1) + " &nbsp;"));
+    //   });
+    //   // $('.card example-file-block').addClass('card');
+
+    //   // document.querySelectorAll('.zscript-code').forEach((el) => {
+    //   // hljs.highlightElement(el);
+    //   // });
+    // });
+
+  </script>
+</body>
+
+</html>

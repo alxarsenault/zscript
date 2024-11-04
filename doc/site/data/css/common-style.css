@@ -1,0 +1,127 @@
+:root {
+  /* --zscript-font-sans-serif: "Poppins", sans-serif; */
+  --zscript-font-sans-serif: 'Nunito Sans', sans-serif;
+  --zscript-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --zscript-background-color: #f4f4f4;
+  --zscript-logo-color: rgb(0, 0, 0);
+  --zscript-default-color: rgb(92.5, 102.5, 120);
+  --zscript-footer-color: rgb(10, 10, 10);
+
+  --zscript-nav-height: 50px;
+  --zscript-footer-height: 100px;
+}
+
+body {
+  min-height: 100vh;
+  /* min-height: -webkit-fill-available; */
+  /* padding-top: 4.5rem; */
+  /* background-color: #F8F9FA; */
+
+
+  padding-top: var(--zscript-nav-height);
+
+  font-family: 'Nunito Sans', sans-serif;
+
+  /* font-family: var(--zscript-font-sans-serif); */
+  line-height: 1.6;
+  font-size: 1rem;
+  /* margin: 0; */
+  /* padding: 0; */
+  background-color: var(--zscript-background-color);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--zscript-default-color);
+}
+
+main {
+  /* height: 100vh;
+  height: -webkit-fill-available;
+  max-height: 100vh; */
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+
+.zscript-nowrap {
+  white-space: nowrap;
+}
+
+#content-container {
+  min-height: calc(100vh - var(--zscript-nav-height) - var(--zscript-footer-height)) !important;
+}
+
+footer {
+  text-align: center;
+  background-color: var(--zscript-footer-color);
+  padding: 2rem;
+  height: var(--zscript-footer-height);
+  color: #f4f4f4;
+}
+
+.zscript-navbar {
+  background-color: #F8F8FA;
+  border-bottom: 1px solid #cecece;
+  height: var(--zscript-nav-height);
+  /* font-family: 'Nunito Sans', sans-serif; */
+  /* font-family: var(--zscript-font-sans-serif) !important; */
+}
+
+.zscript-navbar .navbar-brand {
+  padding: 0;
+  padding-left: 1rem;
+}
+
+.zscript-navbar.navbar-expand-md {
+  padding:0;
+  height: var(--zscript-nav-height);
+}
+
+.navbar-brand img {
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.zscript-navbar .navbar-brand .logo-text {
+  color: var(--zscript-logo-color);
+  font-weight: 800;
+}
+
+.zscript-navbar .nav-link.active {
+  font-weight: bolder;
+}
+
+/* .zscript-navbar .nav-link {
+  color: red;
+  font-family: var(--zscript-font-sans-serif);
+}
+
+.zscript-navbar .nav-link.active {
+  color: yellow;
+}
+ 
+.zscript-navbar .nav-link:focus,
+.zscript-navbar .nav-link:hover {
+  color: green; 
+} */
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

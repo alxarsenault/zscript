@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+
+{{> head }}
+
+<body>
+  {{> nav }}
+
+  <!-- Main Content -->
+  <main id="main" class="d-flex flex-nowrap">
+    {{> sidebar }}
+
+    {{#content-container}}
+      {{> breadcrumb }}
+      {{#page-section}}
+
+        <p>
+          You use variables as symbolic names for values in your application.
+          The names of variables, called identifiers, conform to certain rules.
+        </p>
+
+        <p>
+          Identifiers start with an alphabetic character or the symbol {{zscript-intext-code "_"}} followed by any number of alphabetic characters, {{zscript-intext-code "_"}} or digits <span class="zscript-nowrap">[0-9]</span>.
+          {{zname}} is a case sensitive language meaning that the lowercase and uppercase representation of the same alphabetic character are considered different characters.
+          For instance, {{zscript-intext-code "foo"}}, {{zscript-intext-code "Foo"}} and {{zscript-intext-code "FOo"}} are treated as 3 distinct identifiers.
+        </p>
+
+        <p>
+          You can use most Unicode letters such as å and ü in identifiers. (For more details, see the lexical grammar reference.)
+        </p>
+        <p>
+          Some examples of legal names are {{zscript-intext-code "Number_hits"}}, {{zscript-intext-code "temp99"}} and {{zscript-intext-code "_name"}}.
+        </p>
+
+        <h4>Reserved words</h4>
+        <p>
+          These keywords cannot be used as identifiers for variables, functions, classes, etc. anywhere in {{zname}} source.
+
+          <ul>
+            <li><a href="#"><code>array</code></a></li>
+            <li><a href="#"><code>auto</code></a></li>
+            <li><a href="#"><code>bool</code></a></li>
+            <li><a href="#"><code>char</code></a></li>
+            <li><a href="#"><code>float</code></a></li>
+            <li><a href="#"><code>int</code></a></li>
+            <li><a href="#"><code>string</code></a></li>
+            <li><a href="#"><code>table</code></a></li>
+            <li><a href="#"><code>typed_array</code></a></li>
+            <li><a href="#"><code>var</code></a></li>
+          </ul>
+
+
+          <ul style="columns: 2;">
+            <li><a href="#"><code>and</code></a></li>
+            <li><a href="#"><code>base</code></a></li>
+            <li><a href="#"><code>break</code></a></li>
+            <li><a href="#"><code>case</code></a></li>
+            <li><a href="#"><code>catch</code></a></li>
+            <li><a href="#"><code>class</code></a></li>
+            <li><a href="#"><code>const</code></a></li>
+            <li><a href="#"><code>constructor</code></a></li>
+            <li><a href="#"><code>continue</code></a></li>
+            <li><a href="#"><code>default</code></a></li>
+            <li><a href="#"><code>delete</code></a></li>
+            <li><a href="#"><code>destructor</code></a></li>
+            <li><a href="#"><code>do</code></a></li>
+            <li><a href="#"><code>else</code></a></li>
+            <li><a href="#"><code>enum</code></a></li>
+            <li><a href="#"><code>export</code></a></li>
+            <li><a href="#"><code>extends</code></a></li>
+            <li><a href="#"><code>false</code></a></li>
+            <li><a href="#"><code>final</code></a></li>
+            <li><a href="#"><code>for</code></a></li>
+            <li><a href="#"><code>foreach</code></a></li>
+            <li><a href="#"><code>function</code></a></li>
+            <li><a href="#"><code>global</code></a></li>
+            <li><a href="#"><code>if</code></a></li>
+            <li><a href="#"><code>import</code></a></li>
+            <li><a href="#"><code>in</code></a></li>
+            <li><a href="#"><code>include</code></a></li>
+            <li><a href="#"><code>inout</code></a></li>
+            <li><a href="#"><code>none</code></a></li>
+            <li><a href="#"><code>not</code></a></li>
+            <li><a href="#"><code>null</code></a></li>
+            <li><a href="#"><code>or</code></a></li>
+            <li><a href="#"><code>return</code></a></li>
+            <li><a href="#"><code>static</code></a></li>
+            <li><a href="#"><code>super</code></a></li>
+            <li><a href="#"><code>switch</code></a></li>
+            <li><a href="#"><code>this</code></a></li>
+            <li><a href="#"><code>throw</code></a></li>
+            <li><a href="#"><code>true</code></a></li>
+            <li><a href="#"><code>try</code></a></li>
+            <li><a href="#"><code>typeid</code></a></li>
+            <li><a href="#"><code>typeof</code></a></li>
+            <li><a href="#"><code>void</code></a></li>
+            <li><a href="#"><code>while</code></a></li>
+            <li><a href="#"><code>with</code></a></li>
+            <li><a href="#"><code>xor</code></a></li>
+          </ul>
+
+          Identifiers with special meanings
+          A few identifiers have a special meaning in some contexts without being reserved words of any kind. They include:
+          <ul>
+            <li><a href="#"><code>rawset</code></a></li>
+            <li><a href="#"><code>rawget</code></a></li>
+            <li><a href="#"><code>rawcall</code></a></li>
+          </ul>
+
+          <ul>
+            <li><a href="#"><code>@expr</code></a></li>
+            <li><a href="#"><code>@inject</code></a></li>
+            <li><a href="#"><code>@scope</code></a></li>
+          </ul>
+        </p>
+
+      {{/page-section}}
+      {{> bottom-nav }}
+    {{/content-container}}
+  </main>
+
+  {{{footer}}}
+  {{> load-scripts }}
+</body>
+
+</html>

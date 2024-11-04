@@ -1,3 +1,0 @@
-#macro ABC(x) {
-  x
-}

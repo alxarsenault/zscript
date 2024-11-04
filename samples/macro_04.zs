@@ -1,3 +1,0 @@
-#macro ABC(t, a, b, c) {
-  t[a] = b + c
-}

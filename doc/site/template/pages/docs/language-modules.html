@@ -1,0 +1,215 @@
+<!doctype html>
+
+<!--  -->
+{{#*inline "file-code-01"}}
+// This is a local table variable.
+var dummy1 = {};
+
+// This is a local const variable.
+const my_local_var = 34;
+
+// This is a local closure.
+function my_local_do_something(a, b) {
+  return (a + b) * my_local_var;
+}
+
+// This adds the `do_something` closure to the `dummy1` table.
+function dummy1.do_something(a, b) {
+  return 54 + my_local_do_something(a, b);
+}
+
+// Returns the dummy1 table.
+return dummy1;
+{{/inline}}
+
+<html lang="en" data-bs-theme="auto">
+
+{{> head }}
+
+<body>
+  {{> nav }}
+
+  <!-- Main Content -->
+  <main class="d-flex flex-nowrap">
+
+    {{> sidebar }}
+
+
+    {{#content-container}}
+    {{> breadcrumb }}
+
+    {{#page-section}}
+
+      <p>
+        A file is actually a closure. Let's take the simple <code class="example-filepath-header">mysimplefile.zs</code> file below 
+        as an example.
+
+        {{#code-file filename="mysimplefile.zs"}}const int a = 1, b = 2, c = 3;
+return [a, b, c];{{/code-file}}
+      </p>
+
+      {{pad 0.2}}
+
+      <!-- <h2 class="zscript-page-sub-title">{{inline-code "compile_file"}}</h2> -->
+      <h2 class="zscript-page-sub-title"><span class="zscript-page-sub-title-num">2.7.1.&nbsp;</span>{{inline-code "compile_file"}}</h2>
+
+      <p>
+        A file can be compiled by using {{zscript-intext-code "compile_file(...)"}}, a closure will be returned on success.
+        It can then be executed like a normal function call.
+
+        {{#code-block label="Compile file example"}}const fclosure = compile_file("mysimplefile.zs"); // Compile the file to a closure.
+const arr = fclosure(); // Call the closure.
+print(arr); // Print the result.{{/code-block}}
+
+        {{#terminal-block add_figure_count=true}}[1,2,3]{{/terminal-block}}
+
+        This is basically the same thing as doing this:
+
+        {{pad 0.2}}
+
+        {{#code-block label="File vs Closure"}}function fclosure() {
+  const int a = 1, b = 2, c = 3;
+  return [a, b, c];
+}
+
+const arr = fclosure();
+print(arr);{{/code-block}}
+
+        There is no caching or anything else involve when calling {{zscript-intext-code "compile_file(...)"}}, the file will be recompiled at every call.
+
+        {{pad 0.1}}
+
+        {{#code-block label="Compile file example"}}const fclosure1 = compile_file("mysimplefile.zs");
+const fclosure2 = compile_file("mysimplefile.zs");
+const arr1 = fclosure1();
+const arr2 = fclosure2();
+print(fclosure1, arr1);
+print(fclosure2, arr2);{{/code-block}}
+
+{{#terminal-block add_figure_count=true}}0x00006000026ec1e0 [1,2,3]
+0x0000600000f480a0 [1,2,3]{{/terminal-block}}
+
+      </p>
+      <h2 class="zscript-page-sub-title"><span class="zscript-page-sub-title-num">2.7.2.&nbsp;</span>{{inline-code "load_file"}}</h2>
+
+      <!-- <h2 class="zscript-page-sub-title">{{inline-code "load_file"}}</h2> -->
+      <p>
+        A file can also be compiled and executed in one command.
+
+
+        {{#code-block label="load_file"}}const arr = load_file("mysimplefile.zs");
+print(arr);{{/code-block}}
+
+{{#terminal-block add_figure_count=true}}[1,2,3]{{/terminal-block}}
+
+      </p>
+
+      <!-- <h2 class="zscript-page-sub-title">{{inline-code "this"}}</h2> -->
+      <h2 class="zscript-page-sub-title"><span class="zscript-page-sub-title-num">2.7.3.&nbsp;</span>{{inline-code "this"}}</h2>
+
+
+      <p>
+
+        The value of {{zscript-intext-code "this"}} in <span class="zscript-name-in-text">ZScript</span> depends on how a function is invoked.
+        When a regular function is invoked as a method of an object {{zscript-intext-code "obj.method()"}}, {{zscript-intext-code "this"}} points to that object.
+        When invoked as a standalone function, {{zscript-intext-code "this"}} typically refers to the root object.
+
+        {{#code-file filename="myobjectfile.zs"}}this.a = 10;{{/code-file}}
+
+        {{pad 0.2}}
+
+        {{#code-block label="This context example"}}const fclosure = compile_file("myobjectfile.zs");
+
+// Current 'this' context.
+this.a = 0;
+print("before - this.a:", this.a);
+fclosure(); // Call 'fclosure' with the current 'this' context.
+print("after  - this.a:", this.a, "\n");
+
+// Call context.
+var obj1 = { a = 1 };
+print("before - obj1.a:", obj1.a);
+call(fclosure, obj1); // Call 'fclosure' with 'obj1' as 'this' context.
+print("after  - obj1.a:", obj1.a, "\n");
+
+// Object context.
+var obj2 = { a = 2, member_func = fclosure };
+print("before - obj2.a:", obj2.a);
+obj2.member_func(); // Call 'fclosure' with 'obj2' as 'this' context.
+print("after  - obj2.a:", obj2.a);{{/code-block}}
+
+{{#terminal-block add_figure_count=true}}before - this.a: 0
+after  - this.a: 10
+
+before - obj1.a: 1
+after  - obj1.a: 10
+
+before - obj2.a: 2
+after  - obj2.a: 10{{/terminal-block}}
+
+         <div class="alert alert-success text-center" role="alert">
+          All other components for managing modules are built upon this foundation.
+        </div>
+      </p>
+
+       <!-- <h2 class="zscript-page-sub-title">Context</h2> -->
+       <h2 class="zscript-page-sub-title"><span class="zscript-page-sub-title-num">2.7.4.&nbsp;</span>{{inline-code "import"}}</h2>
+
+              <p>
+              Given these two files ({{filepath "dummy1.zs"}} and {{filepath "dummy2.zs"}}):
+            </p>
+
+            {{#code-file filename="dummy1.zs"}}{{> file-code-01}}{{/code-file}}
+
+            <p></p>
+            <div class="card">
+              <div class="card-header">dummy2.zs</div>
+              <div class="card-body">
+                <pre
+                  class="file-example"><code id="compile_example_03" class="zscript-code">zs.print("dummy2")</code></pre>
+              </div>
+            </div>
+            <p></p>
+
+
+            {{/page-section}}
+
+            {{> bottom-nav }}
+<!-- 
+            <div class="d-flex bd-highlight mb-3">
+              <div class="p-2 bd-highlight">
+                <a href="{{previous_page_name}}.html" type="button" class="btn btn-outline-primary">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8">
+                    </path>
+                  </svg>
+                </a>
+              </div>
+              <div class="ms-auto p-2 bd-highlight">
+                <a href="{{next_page_name}}.html" type="button" class="btn btn-outline-primary" onclick="console.log('fff');">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8">
+                    </path>
+                  </svg>
+                </a>
+              </div>
+            </div> -->
+
+          {{/content-container}}
+
+
+  </main>
+
+  {{{footer}}}
+  {{> load-scripts }}
+  <script>
+    // Load sections when the page is loaded.
+    // window.onload = function () {
+    //   var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
+    //   hljs.highlightAll();
+    //   // loadSections(pageName);
+    // };
+  </script>
+</body>
+
+</html>
