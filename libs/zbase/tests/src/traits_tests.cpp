@@ -1,6 +1,6 @@
 #include <ztests/ztests.h>
-#include  <zbase/utility/traits.h>
-  
+#include <zbase/utility/traits.h>
+
 template <class _CharT, class Str>
 inline constexpr bool is_basic_sv_conv1(Str str) {
   return zb::is_basic_string_view_convertible<_CharT, Str>::value;
@@ -70,4 +70,3 @@ TEST_CASE("zb::traits") {
   REQUIRE(is_basic_sv_conv3<wchar_t>(L"john"));
   REQUIRE(is_basic_sv_conv4<wchar_t>(L"john"));
 }
- 

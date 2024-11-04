@@ -66,7 +66,9 @@ inline constexpr bool is_letter_or_underscore(char c) { return is_letter(c) || c
 
 inline constexpr bool is_alphanumeric_or_underscore(char c) { return is_alphanumeric(c) || c == '_'; }
 
-inline constexpr bool is_alphanumeric_or_minus_or_underscore(char c) { return is_alphanumeric(c) || c == '_' || c == '-'; }
+inline constexpr bool is_alphanumeric_or_minus_or_underscore(char c) {
+  return is_alphanumeric(c) || c == '_' || c == '-';
+}
 
 inline constexpr bool is_operator(char c) noexcept { return c == '<' || c == '>' || c == '='; }
 
@@ -249,7 +251,7 @@ inline constexpr std::string_view strip_leading_and_trailing_spaces(std::string_
   return strip_trailing_spaces(strip_leading_spaces(s));
 }
 inline constexpr std::string_view strip_all(std::string_view s) {
-  s= strip_leading_and_trailing_spaces(strip_leading_and_trailing_endlines(s));
+  s = strip_leading_and_trailing_spaces(strip_leading_and_trailing_endlines(s));
   return strip_leading_and_trailing_spaces(strip_leading_and_trailing_endlines(s));
 }
 

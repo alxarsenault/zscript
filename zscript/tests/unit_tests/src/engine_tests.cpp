@@ -21,7 +21,7 @@ template <class T>
 using has_x = zb::has_members<T, has_x_value>;
 
 template <class T>
-using has_value_type_def = T::value_type;
+using has_value_type_def = typename T::value_type;
 
 template <class T>
 using has_value_type = zb::has_members<T, has_value_type_def>;

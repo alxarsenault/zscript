@@ -31,7 +31,7 @@ ZS_JIT_COMPILER_PARSE_OP(p_struct_statement) {
     switch (_estate.type) {
     case expr_type::e_expr:
       return helper::handle_error(
-          this, zs::error_code::invalid_operation, "Invalid class name", std::source_location::current());
+          this, zs::error_code::invalid_operation, "Invalid class name", ZB_CURRENT_SOURCE_LOCATION());
 
     case expr_type::e_base:
       ZBASE_NO_BREAK;
@@ -52,7 +52,7 @@ ZS_JIT_COMPILER_PARSE_OP(p_struct_statement) {
     case expr_type::e_capture:
 
       return helper::handle_error(this, zs::error_code::invalid_operation,
-          "Cannot create a class in a local with the syntax(class <local>)", std::source_location::current());
+          "Cannot create a class in a local with the syntax(class <local>)", ZB_CURRENT_SOURCE_LOCATION());
     }
   }
 

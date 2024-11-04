@@ -417,9 +417,6 @@
 #define ZB_NEVER_INLINE
 #endif
 
- 
- 
-
 //
 //
 //
@@ -829,7 +826,6 @@
 
 #define zb_loop() while (true)
 
-
 #define zb_bit_offsetof(t, f) \
   ({                          \
     union {                   \
@@ -841,15 +837,14 @@
     std::countr_zero(raw);    \
   })
 
- 
-#define zb_bit_sizeof(t, f)                                         \
-  ({                                                                \
-    union {                                                         \
-      unsigned long long raw;                                       \
-      t typ;                                                        \
-    };                                                              \
-    raw = 0;                                                        \
-    --typ.f;                                                        \
+#define zb_bit_sizeof(t, f)                                          \
+  ({                                                                 \
+    union {                                                          \
+      unsigned long long raw;                                        \
+      t typ;                                                         \
+    };                                                               \
+    raw = 0;                                                         \
+    --typ.f;                                                         \
     8 * sizeof(raw) - std::countl_zero(raw) - std::countr_zero(raw); \
   })
 
@@ -896,13 +891,6 @@ struct nocopy_nomove {
   nocopy_nomove(nocopy_nomove&&) = delete;
   nocopy_nomove& operator=(nocopy_nomove&&) = delete;
 };
-
-#ifdef ZBASE_STD_STRING_STACK_CAPACITY
-inline constexpr size_t k_std_string_stack_capacity = ZBASE_STD_STRING_STACK_CAPACITY;
-#else
-inline constexpr size_t k_std_string_stack_capacity
-    = std::string().capacity() ? std::string().capacity() - 1 : 0;
-#endif // ZBASE_STD_STRING_STACK_CAPACITY
 
 ZBASE_END_NAMESPACE
 

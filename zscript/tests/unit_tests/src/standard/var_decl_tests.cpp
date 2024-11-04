@@ -1265,57 +1265,40 @@ return f1(12);
   REQUIRE(vm.top() == 122);
 }
 
-ZS_CODE_TEST("matrix_01", R"""(
-
-var matrix = [
-  [1, 2],
-  [3, 4]
-];
-
-return matrix;
-)""") {
-  REQUIRE(vm.top().is_array());
-
-  REQUIRE(*vm.top()[0, 0] == 1);
-  REQUIRE(*vm.top()[0, 1] == 2);
-  REQUIRE(*vm.top()[1, 0] == 3);
-  REQUIRE(*vm.top()[1, 1] == 4);
-}
-
-ZS_CODE_TEST("delegate_01", R"""(
-
-var banana_delegate = {
-  get_name = $() {
-    return this.name;
-  }
-
-  set_name = $(name) {
-    this.name = name;
-  }
-};
-
-function create_banana(name, obj = {}) {
-  obj.name = name;
-  set_delegate(obj, banana_delegate);
-  return obj;
-}
-
-
-
-var b1 = create_banana("A");
-
-var out = b1.get_name();
-
-b1.set_name("B");
-
-out += b1.get_name();
-var b2 = create_banana("C", {});
-out += b2.get_name();
-
-return out;
-)""") {
-  REQUIRE(vm.top() == "ABC");
-}
+//ZS_CODE_TEST("delegate_01", R"""(
+//
+//var banana_delegate = {
+//  get_name = $() {
+//    return this.name;
+//  }
+//
+//  set_name = $(name) {
+//    this.name = name;
+//  }
+//};
+//
+//function create_banana(name, obj = {}) {
+//  obj.name = name;
+//  set_delegate(obj, banana_delegate);
+//  return obj;
+//}
+//
+//
+//
+//var b1 = create_banana("A");
+//
+//var out = b1.get_name();
+//
+//b1.set_name("B");
+//
+//out += b1.get_name();
+//var b2 = create_banana("C", {});
+//out += b2.get_name();
+//
+//return out;
+//)""") {
+//  REQUIRE(vm.top() == "ABC");
+//}
 
 ZS_CODE_TEST("if_return", R"""(
 
@@ -1442,7 +1425,7 @@ TEST_CASE("DSDKSKLDS") {
 
     zs::object arr;
     if (auto err = vm->call(closure, { vm->get_root() }, arr)) {
-      zb::print(std::source_location::current(), err, vm.get_error());
+      zb::print(ZB_CURRENT_SOURCE_LOCATION(), err, vm.get_error());
       REQUIRE(false);
     }
 

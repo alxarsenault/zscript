@@ -7,10 +7,10 @@ ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wswitch")
 ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
 
 #define ZS_PARSER_HANDLE_ERROR_STREAM(err, ...) \
-  helper::handle_error(this, err, zs::strprint(_engine, __VA_ARGS__), std::source_location::current())
+  helper::handle_error(this, err, zs::strprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
 
 #define ZS_PARSER_HANDLE_ERROR_STRING(err, msg) \
-  helper::handle_error(this, err, msg, std::source_location::current())
+  helper::handle_error(this, err, msg, ZB_CURRENT_SOURCE_LOCATION())
 
 #define ZS_PARSER_RETURN_IF_ERROR_STRING(X, err, msg) \
   if (zs::error_result err = X) {                     \
@@ -90,7 +90,7 @@ using enum parser::parse_op;
 struct parser::helper {
 
   static inline zs::error_result handle_error(
-      parser* comp, zs::error_code ec, std::string_view msg, const std::source_location& loc) {
+      parser* comp, zs::error_code ec, std::string_view msg, const zb::source_location& loc) {
     zs::line_info linfo = comp->_lexer->get_last_line_info();
 
     const auto& stream = comp->_lexer->_stream;
@@ -803,14 +803,14 @@ zs::error_result parser::parse<p_expression>() {
   //  if (es_type == expr_type::e_expr) {
   //    _error_message += zs::strprint(
   //        _engine, "Can't assign an expression", _lexer->get_line_info(),
-  //        std::source_location::current());
+  //        ZB_CURRENT_SOURCE_LOCATION());
   //
   //    return zs::error_code::invalid_value_type_assignment;
   //  }
   //  else if (es_type == expr_type::e_base) {
   //    _error_message += zs::strprint(
   //        _engine, "'base' cannot be modified", _lexer->get_line_info(),
-  //        std::source_location::current());
+  //        ZB_CURRENT_SOURCE_LOCATION());
   //    return zs::error_code::invalid_value_type_assignment;
   //  }
 
@@ -912,7 +912,7 @@ zs::error_result parser::parse<p_semi_colon>() {
 
   if (!is_end_of_statement()) {
     return helper::handle_error(
-        this, zs::error_code::invalid_token, "invalid token", std::source_location::current());
+        this, zs::error_code::invalid_token, "invalid token", ZB_CURRENT_SOURCE_LOCATION());
   }
 
   return {};
@@ -1020,7 +1020,7 @@ zs::error_result parser::parse<p_decl_var>() {
     if (is(tok_lt)) {
       if (auto err = parse<p_variable_type_restriction>(std::ref(mask), std::ref(custom_mask))) {
         return helper::handle_error(
-            this, err, "parsing variable type restriction `var<....>`", std::source_location::current());
+            this, err, "parsing variable type restriction `var<....>`", ZB_CURRENT_SOURCE_LOCATION());
       }
     }
     break;
@@ -1032,7 +1032,7 @@ zs::error_result parser::parse<p_decl_var>() {
   zb_loop() {
     if (is_not(tok_identifier)) {
       return helper::handle_error(
-          this, zs::error_code::identifier_expected, "expected identifier", std::source_location::current());
+          this, zs::error_code::identifier_expected, "expected identifier", ZB_CURRENT_SOURCE_LOCATION());
     }
 
     ast_node vdecl(_engine, ast_variable_declaration);
@@ -1102,7 +1102,7 @@ zs::error_result parser::parse<p_create_function>(
         return helper::handle_error(this, zs::error_code::invalid_argument,
             "function with default parameters cannot have variable number of "
             "parameters",
-            std::source_location::current());
+            ZB_CURRENT_SOURCE_LOCATION());
       }
 
       //      ZS_RETURN_IF_ERROR(fct_state->add_parameter(zs::_ss("vargv")));
@@ -1111,7 +1111,7 @@ zs::error_result parser::parse<p_create_function>(
 
       if (is_not(tok_rbracket)) {
         return helper::handle_error(this, zs::error_code::invalid_token,
-            "expected ')' after a variadic (...) parameter", std::source_location::current());
+            "expected ')' after a variadic (...) parameter", ZB_CURRENT_SOURCE_LOCATION());
       }
 
       break;
@@ -1184,8 +1184,8 @@ zs::error_result parser::parse<p_create_function>(
           // Parsing a typed var (var<type1, type2, ...>).
           if (is(tok_lt)) {
             if (auto err = parse<p_variable_type_restriction>(std::ref(mask), std::ref(custom_mask))) {
-              return helper::handle_error(this, err, "parsing variable type restriction `var<....>`",
-                  std::source_location::current());
+              return helper::handle_error(
+                  this, err, "parsing variable type restriction `var<....>`", ZB_CURRENT_SOURCE_LOCATION());
             }
           }
           break;
@@ -1211,7 +1211,7 @@ zs::error_result parser::parse<p_create_function>(
       // to have one too.
       else if (def_params > 0) {
         return helper::handle_error(this, zs::error_code::invalid_token,
-            "expected '=' after a default paramter definition", std::source_location::current());
+            "expected '=' after a default paramter definition", ZB_CURRENT_SOURCE_LOCATION());
       }
 
       if (is(tok_comma)) {
@@ -1219,7 +1219,7 @@ zs::error_result parser::parse<p_create_function>(
       }
       else if (is_not(tok_rbracket)) {
         return helper::handle_error(this, zs::error_code::invalid_token,
-            "expected ')' or ',' at the end of function declaration", std::source_location::current());
+            "expected ')' or ',' at the end of function declaration", ZB_CURRENT_SOURCE_LOCATION());
       }
 
       function_expr.as_node().add_child(param_decl);
@@ -1530,7 +1530,7 @@ zs::error_result parser::parse<p_variable_type_restriction>(
 
   if (is_not(tok_gt)) {
     return helper::handle_error(
-        this, zs::error_code::invalid_token, "expected var<...>", std::source_location::current());
+        this, zs::error_code::invalid_token, "expected var<...>", ZB_CURRENT_SOURCE_LOCATION());
   }
 
   lex();
@@ -1668,7 +1668,7 @@ zs::error_result parser::parse<p_prefixed>() {
         return helper::handle_error(this, zs::error_code::invalid_token,
             "cannot break deref/or comma needed after [exp]=exp slot "
             "declaration",
-            std::source_location::current());
+            ZB_CURRENT_SOURCE_LOCATION());
       }
 
       lex();
@@ -1765,7 +1765,7 @@ zs::error_result parser::parse<p_factor>() {
 
     if (zs::error_result err = expect(tok_lbracket)) {
       return helper::handle_error(
-          this, zs::error_code::invalid_token, "expected '(' after typeid", std::source_location::current());
+          this, zs::error_code::invalid_token, "expected '(' after typeid", ZB_CURRENT_SOURCE_LOCATION());
     }
 
     while (is_not(tok_rbracket)) {
@@ -1784,7 +1784,7 @@ zs::error_result parser::parse<p_factor>() {
 
     if (zs::error_result err = expect(tok_lbracket)) {
       return helper::handle_error(
-          this, zs::error_code::invalid_token, "expected '(' after typeof", std::source_location::current());
+          this, zs::error_code::invalid_token, "expected '(' after typeof", ZB_CURRENT_SOURCE_LOCATION());
     }
 
     while (is_not(tok_rbracket)) {
@@ -1872,7 +1872,7 @@ zs::error_result parser::parse<p_factor>() {
     default:
       // UnaryOP(_OP_NEG);
       return helper::handle_error(
-          this, zs::error_code::unimplemented, "unimplemented unary minus", std::source_location::current());
+          this, zs::error_code::unimplemented, "unimplemented unary minus", ZB_CURRENT_SOURCE_LOCATION());
 
       break;
     }
@@ -1943,7 +1943,7 @@ zs::error_result parser::parse<p_factor>() {
 
     if (zs::error_result err = expect(tok_rbracket)) {
       return helper::handle_error(
-          this, zs::error_code::unimplemented, "expression expected", std::source_location::current());
+          this, zs::error_code::unimplemented, "expression expected", ZB_CURRENT_SOURCE_LOCATION());
     }
     break;
   }
@@ -1978,14 +1978,14 @@ zs::error_result parser::parse<p_factor>() {
     }
     else {
       return helper::handle_error(this, zs::error_code::invalid_include_syntax,
-          "expected `as_string`, `as_table` or ??", std::source_location::current());
+          "expected `as_string`, `as_table` or ??", ZB_CURRENT_SOURCE_LOCATION());
     }
     break;
   }
 
   default: {
     return helper::handle_error(
-        this, zs::error_code::unimplemented, "expression expected", std::source_location::current());
+        this, zs::error_code::unimplemented, "expression expected", ZB_CURRENT_SOURCE_LOCATION());
     break;
   }
   }

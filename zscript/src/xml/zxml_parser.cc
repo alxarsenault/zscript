@@ -3,17 +3,17 @@ ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wswitch")
 ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
 
 #define ZS_XML_PARSER_HANDLE_ERROR_STREAM(err, ...) \
-  helper::handle_error(this, err, zs::strprint(_engine, __VA_ARGS__), std::source_location::current())
+  helper::handle_error(this, err, zs::strprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
 
 #define ZS_XML_PARSER_HANDLE_ERROR_STRING(err, msg) \
-  helper::handle_error(this, err, msg, std::source_location::current())
+  helper::handle_error(this, err, msg, ZB_CURRENT_SOURCE_LOCATION())
 
 namespace zs {
 
 struct xml_parser::helper {
 
   static inline zs::error_result handle_error(
-      xml_parser* p, zs::error_code ec, std::string_view msg, const std::source_location& loc) {
+      xml_parser* p, zs::error_code ec, std::string_view msg, const zb::source_location& loc) {
     zs::line_info linfo = p->_lexer->get_last_line_info();
 
     const auto& stream = p->_lexer->_stream;
@@ -170,11 +170,11 @@ zs::error_result xml_parser::parse(zs::virtual_machine* vm, std::string_view con
   if (is(tok_lt)) {
     lex();
     if (auto err = parse_node(ret_value)) {
-      return helper::handle_error(this, err, "invalid token", std::source_location::current());
+      return helper::handle_error(this, err, "invalid token", ZB_CURRENT_SOURCE_LOCATION());
     }
   }
   else {
-    return helper::handle_error(this, invalid_token, "expected <", std::source_location::current());
+    return helper::handle_error(this, invalid_token, "expected <", ZB_CURRENT_SOURCE_LOCATION());
   }
 
   if (_token == tok_lex_error) {
@@ -237,8 +237,7 @@ zs::error_result xml_parser::parse_element(zs::object& node) {
     ZS_RETURN_IF_ERROR(parse_tag_or_attribute_name(end_tag_name));
 
     if (tag_name != end_tag_name) {
-      return helper::handle_error(
-          this, invalid_argument, "wrong closing name", std::source_location::current());
+      return helper::handle_error(this, invalid_argument, "wrong closing name", ZB_CURRENT_SOURCE_LOCATION());
     }
 
     return expect(tok_gt);
@@ -249,7 +248,7 @@ zs::error_result xml_parser::parse_element(zs::object& node) {
   }
 
   default:
-    return helper::handle_error(this, invalid_token, "expected >", std::source_location::current());
+    return helper::handle_error(this, invalid_token, "expected >", ZB_CURRENT_SOURCE_LOCATION());
   }
 
   return {};
@@ -316,7 +315,7 @@ zs::error_result xml_parser::parse_node_contents(zs::object& node, const char* d
   }
 
   if (_token == tok_lex_error) {
-    return helper::handle_error(this, invalid_token, "</", std::source_location::current());
+    return helper::handle_error(this, invalid_token, "</", ZB_CURRENT_SOURCE_LOCATION());
   }
 
   if (int_t sz = std::distance(data_begin, data_end); sz and tcount and data_end) {
@@ -466,7 +465,7 @@ zs::error_result xml_parser::parse_tag_or_attribute_name(zs::object& name) {
   ZS_RETURN_IF_ERROR(expect(tok_template_end));
 
   if (!value.is_string()) {
-    return helper::handle_error(this, invalid_name, "Invalid tag name", std::source_location::current());
+    return helper::handle_error(this, invalid_name, "Invalid tag name", ZB_CURRENT_SOURCE_LOCATION());
   }
 
   name = value;
@@ -494,10 +493,9 @@ zs::error_code xml_parser::expect_get(xml_token_type tok, object& ret) {
   using enum zs::error_code;
 
   if (is_not(tok)) {
-    _error_message
-        += zs::strprint<"">(_engine, "invalid token ", zb::quoted<"'">(zs::xml_token_to_string(_token)),
-            ", expected ", zb::quoted<"'">(zs::xml_token_to_string(tok)), _lexer->get_line_info(),
-            std::source_location::current());
+    _error_message += zs::strprint<"">(_engine, "invalid token ",
+        zb::quoted<"'">(zs::xml_token_to_string(_token)), ", expected ",
+        zb::quoted<"'">(zs::xml_token_to_string(tok)), _lexer->get_line_info(), ZB_CURRENT_SOURCE_LOCATION());
 
     return invalid_token;
   }

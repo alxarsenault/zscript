@@ -1,7 +1,6 @@
 #include <ztests/ztests.h>
 #include <zbase/sys/error_code.h>
 
- 
 TEST_CASE("error_code") {
 
   zb::status_result st;
@@ -63,4 +62,3 @@ TEST_CASE("generic_error_code") {
   REQUIRE(res);
   REQUIRE(std::string_view(res.message()) == "bad");
 }
- 

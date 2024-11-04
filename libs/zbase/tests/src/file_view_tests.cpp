@@ -1,8 +1,6 @@
 #include <ztests/ztests.h>
 #include <zbase/sys/file_view.h>
 
-
-
 namespace {
 TEST_CASE("zb::file_view") {
 

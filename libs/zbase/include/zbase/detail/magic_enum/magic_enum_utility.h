@@ -89,8 +89,8 @@ constexpr auto enum_for_each(F&& f) {
 }
 
 template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
-[[nodiscard]] constexpr auto enum_next_value(
-    E value, std::ptrdiff_t n = 1) noexcept -> detail::enable_if_t<E, optional<std::decay_t<E>>> {
+[[nodiscard]] constexpr auto enum_next_value(E value, std::ptrdiff_t n = 1) noexcept
+    -> detail::enable_if_t<E, optional<std::decay_t<E>>> {
   using D = std::decay_t<E>;
   constexpr std::ptrdiff_t count = detail::count_v<D, S>;
 
@@ -104,8 +104,8 @@ template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
 }
 
 template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
-[[nodiscard]] constexpr auto enum_next_value_circular(
-    E value, std::ptrdiff_t n = 1) noexcept -> detail::enable_if_t<E, std::decay_t<E>> {
+[[nodiscard]] constexpr auto enum_next_value_circular(E value, std::ptrdiff_t n = 1) noexcept
+    -> detail::enable_if_t<E, std::decay_t<E>> {
   using D = std::decay_t<E>;
   constexpr std::ptrdiff_t count = detail::count_v<D, S>;
 
@@ -119,8 +119,8 @@ template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
 }
 
 template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
-[[nodiscard]] constexpr auto enum_prev_value(
-    E value, std::ptrdiff_t n = 1) noexcept -> detail::enable_if_t<E, optional<std::decay_t<E>>> {
+[[nodiscard]] constexpr auto enum_prev_value(E value, std::ptrdiff_t n = 1) noexcept
+    -> detail::enable_if_t<E, optional<std::decay_t<E>>> {
   using D = std::decay_t<E>;
   constexpr std::ptrdiff_t count = detail::count_v<D, S>;
 
@@ -134,8 +134,8 @@ template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
 }
 
 template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
-[[nodiscard]] constexpr auto enum_prev_value_circular(
-    E value, std::ptrdiff_t n = 1) noexcept -> detail::enable_if_t<E, std::decay_t<E>> {
+[[nodiscard]] constexpr auto enum_prev_value_circular(E value, std::ptrdiff_t n = 1) noexcept
+    -> detail::enable_if_t<E, std::decay_t<E>> {
   using D = std::decay_t<E>;
   constexpr std::ptrdiff_t count = detail::count_v<D, S>;
 

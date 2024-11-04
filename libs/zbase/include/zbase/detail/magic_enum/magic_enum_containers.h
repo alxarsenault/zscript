@@ -235,14 +235,13 @@ namespace detail {
     template <typename E1, typename E2>
     [[nodiscard]] constexpr std::enable_if_t<
         // at least one of need to be an enum type
-        (std::is_enum_v<std::decay_t<E1>> || std::is_enum_v<std::decay_t<E2>>) &&
-            // if both is enum, only accept if the same enum
-            (!std::is_enum_v<std::decay_t<E1>> || !std::is_enum_v<std::decay_t<E2>> || std::is_same_v<E1, E2>)
-            &&
-            // is invocable with comparator
-            (std::is_invocable_r_v<bool, FullCmp<>,
-                std::conditional_t<std::is_enum_v<std::decay_t<E1>>, string_view, E1>,
-                std::conditional_t<std::is_enum_v<std::decay_t<E2>>, string_view, E2>>),
+        (std::is_enum_v<std::decay_t<E1>> || std::is_enum_v<std::decay_t<E2>>)&&
+        // if both is enum, only accept if the same enum
+        (!std::is_enum_v<std::decay_t<E1>> || !std::is_enum_v<std::decay_t<E2>> || std::is_same_v<E1, E2>)&&
+        // is invocable with comparator
+        (std::is_invocable_r_v<bool, FullCmp<>,
+            std::conditional_t<std::is_enum_v<std::decay_t<E1>>, string_view, E1>,
+            std::conditional_t<std::is_enum_v<std::decay_t<E2>>, string_view, E2>>),
         bool>
     operator()(E1 e1, E2 e2) const noexcept {
       using D1 = std::decay_t<E1>;

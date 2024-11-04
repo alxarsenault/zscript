@@ -1,20 +1,20 @@
 #include <ztests/ztests.h>
-#include  <zbase/utility/traits.h>
-  
+#include <zbase/utility/traits.h>
+
 TEST_CASE("zb::dsadasdasd") {
 
   enum class some_values { a, b, c, d, e = 672 };
 
 #define TTT(type, value) zb::type_value_pair<type, value>
   using tmape = zb::type_map<TTT(double, some_values::c), TTT(int, some_values::e)>;
- 
+
   {
 
     constexpr auto MyValue = some_values::e;
     using values = tmape::value_part;
     constexpr size_t Index = values::value_index<MyValue>();
     using types = tmape::types_part;
-   using  Type = types::type_at_index<Index>;
+    using Type = types::type_at_index<Index>;
 
     ZBASE_MAYBE_UNUSED Type v = 32;
     //    zb::print("TYPE", typeid(Type).name());

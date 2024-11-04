@@ -385,19 +385,19 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_string, exposed_ob
   }
 
   case arithmetic_op::div: {
-    auto split = a | std::ranges::views::split(b) | std::ranges::views::transform([](auto&& str) {
-      return std::string_view(&*str.begin(), std::ranges::distance(str));
-    });
-
-    zs::object arr_obj = zs::object::create_array(_engine, 0);
-    zs::array_object& arr = arr_obj.as_array();
-    for (auto&& k : split) {
-      if (!k.empty()) {
-        arr.push_back(zs::_s(_engine, k));
-      }
-    }
-
-    target = arr_obj;
+    //    auto split = a | std::ranges::views::split(b) | std::ranges::views::transform([](auto&& str) {
+    //      return std::string_view(&*str.begin(), std::ranges::distance(str));
+    //    });
+    //
+    //    zs::object arr_obj = zs::object::create_array(_engine, 0);
+    //    zs::array_object& arr = arr_obj.as_array();
+    //    for (auto&& k : split) {
+    //      if (!k.empty()) {
+    //        arr.push_back(zs::_s(_engine, k));
+    //      }
+    //    }
+    //
+    //    target = arr_obj;
     return {};
   }
 

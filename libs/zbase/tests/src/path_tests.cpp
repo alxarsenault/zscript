@@ -4,7 +4,7 @@
 namespace {
 
 TEST_CASE("zb::path") {
-  
+
   zb::path<> p = ZBASE_TESTS_RESOURCES_DIRECTORY "/abc.txt";
   REQUIRE(p.is_file());
   REQUIRE(!p.is_directory());

@@ -1,7 +1,6 @@
 #include <ztests/ztests.h>
 #include <zbase/utility/compressed_pair.h>
 
- 
 TEST_CASE("compressed_pair") {
   zb::compressed_pair<int, float> a(2, 4.5);
   REQUIRE(a.first() == 2);

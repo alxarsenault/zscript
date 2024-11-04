@@ -249,7 +249,7 @@ struct z_code_test_fixture {
 
     if (auto err = vm->call(closure, n_params, vm.stack_size() - n_params, value)) {
       error = err;
-      zb::print(std::source_location::current(), error, vm.get_error());
+      zb::print(ZB_CURRENT_SOURCE_LOCATION(), error, vm.get_error());
       REQUIRE(false);
     }
 

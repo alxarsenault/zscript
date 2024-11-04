@@ -1,60 +1,39 @@
 <!doctype html>
 <html lang="en" data-bs-theme="auto">
 
-%head
+{{{head}}}
 
 <body>
-  %nav
+  {{{nav}}}
 
   <!-- Main Content -->
   <main class="d-flex flex-nowrap">
 
-    %sidebar
+    {{{sidebar}}}
 
-
+    <div class="container">
     <div class="row">
-      <div class="col content-padding"></div>
-      <div id="content" class="col-8">
+      <!-- <div class="col content-padding"></div> -->
+      <div id="content" class="mx-auto col-10">
 
         <section class="zscript-top-section">
 
-          <h2>1.2. Overview</h2>
-          <p>A file is actually a closure.</p>
-
+          <h2>1.1. Overview</h2>
           <p>
-            Given these two files (<code>dummy1.zs</code> and <code>dummy2.zs</code>):
+            ZSCRIPT is a modern, dynamically typed scripting language designed for flexibility, ease of use, and
+            powerful runtime
+            features.
+            It offers a hybrid type system, combining the best of both weak and strong typing, giving developers the
+            freedom to
+            choose between dynamic flexibility
+            and static type safety when needed.
           </p>
-
-          <div class="card">
-            <div class="card-header">dummy1.zs</div>
-            <div class="card-body">
-              <pre class="file-example"><code id="compile_example_02" class="zscript language-zscript zscript-code">// This is a local table variable.
-var dummy1 = {};
-
-// This is a local const variable.
-const my_local_var = 34;
-
-// This is a local closure.
-function my_local_do_something(a, b) {
-  return (a + b) * my_local_var;
-}
-
-// This adds the `do_something` closure to the `dummy1` table.
-function dummy1.do_something(a, b) {
-  return 54 + my_local_do_something(a, b);
-}
-
-// Returns the dummy1 table.
-return dummy1;</code></pre>
-            </div>
-          </div>
-          <p></p>
-          <div class="card">
-            <div class="card-header">dummy2.zs</div>
-            <div class="card-body">
-              <pre
-                class="file-example"><code id="compile_example_03" class="zscript-code">zs.print("dummy2")</code></pre>
-            </div>
+          <div class="zscript-para">
+            ZSCRIPT is inspired by several well-known scripting languages but introduces unique elements that make it
+            adaptable
+            to various use cases, from rapid prototyping to more structured application development.
+            Its simple syntax and diverse set of features make it suitable for tasks ranging
+            from simple scripts to complex systems with performance requirements.
           </div>
           <p></p>
 
@@ -174,7 +153,7 @@ return dummy1;</code></pre>
               performance-critical applications.
             </li>
           </ul>
-
+       
 
 
 
@@ -227,22 +206,21 @@ return dummy1;</code></pre>
 
       </div>
 
-      <div class="col content-padding"></div>
+      <!-- <div class="col content-padding"></div> -->
     </div>
 
-
+    </div>
 
   </main>
 
-  %load-scripts
+  {{{load-scripts}}}
 
   <script>
     // Load sections when the page is loaded.
-    window.onload = function () {
-      var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
-      hljs.highlightAll();
-      // loadSections(pageName);
-    };
+    // window.onload = function () {
+    //   var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
+    //   loadSections(pageName);
+    // };
   </script>
 </body>
 

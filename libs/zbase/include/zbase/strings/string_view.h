@@ -88,7 +88,6 @@ public:
 
   inline constexpr string_view operator>>(size_t l_offset) const noexcept { return this->substr(l_offset); }
 
-  
   template <auto, class... Ts>
   auto ext(Ts...);
 

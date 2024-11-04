@@ -11,14 +11,14 @@
 
     %sidebar
 
-
+    <div class="container">
     <div class="row">
-      <div class="col content-padding"></div>
-      <div id="content" class="col-8">
+      <!-- <div class="col content-padding"></div> -->
+      <div id="content" class="mx-auto col-10">
 
         <section class="zscript-top-section">
 
-          <h2>1.2. Overview</h2>
+          <h2>1.1. Overview</h2>
           <p>
             ZSCRIPT is a modern, dynamically typed scripting language designed for flexibility, ease of use, and
             powerful runtime
@@ -206,10 +206,10 @@
 
       </div>
 
-      <div class="col content-padding"></div>
+      <!-- <div class="col content-padding"></div> -->
     </div>
 
-
+    </div>
 
   </main>
 
@@ -217,10 +217,10 @@
 
   <script>
     // Load sections when the page is loaded.
-    window.onload = function () {
-      var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
-      loadSections(pageName);
-    };
+    // window.onload = function () {
+    //   var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
+    //   loadSections(pageName);
+    // };
   </script>
 </body>
 

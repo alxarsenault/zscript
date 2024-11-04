@@ -1,14 +1,14 @@
 #include <ztests/ztests.h>
 #include <zbase/strings/unicode.h>
- 
+
 namespace common {
 inline constexpr const char* c_string();
 inline constexpr const char16_t* u16_string();
 inline constexpr const char32_t* u32_string();
 inline constexpr const wchar_t* w_string();
- 
+
 inline constexpr const char8_t* u8_string();
- 
+
 } // namespace common.
 
 TEST_CASE("dksldksldks") {

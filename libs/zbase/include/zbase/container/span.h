@@ -47,10 +47,14 @@ public:
   using base_span_type::size;
   using base_span_type::operator[];
 
-  ZB_INLINE span(const base_span_type& s): base_span_type(s){}
-  
-  template<class U = T> requires (std::is_same_v<std::remove_const_t<T>, std::remove_const_t<U>> and std::is_const_v<T>and !std::is_const_v<U> )
-  ZB_INLINE span(const std::span<const U>& s): base_span_type(s){}
+  ZB_INLINE span(const base_span_type& s)
+      : base_span_type(s) {}
+
+  template <class U = T>
+    requires(std::is_same_v<std::remove_const_t<T>, std::remove_const_t<U>> and std::is_const_v<T>
+        and !std::is_const_v<U>)
+  ZB_INLINE span(const std::span<const U>& s)
+      : base_span_type(s) {}
 
   ZB_INLINE span(const span&) = default;
   ZB_INLINE span(span&&) = default;

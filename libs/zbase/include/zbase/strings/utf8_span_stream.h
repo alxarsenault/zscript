@@ -106,20 +106,17 @@ public:
     return __zb::unicode::next_u8_to_u32(it);
   }
 
-  
   inline utf8_span_stream& goto_next_line_end() noexcept {
-  
-    
+
     while ((_it + __zb::unicode::sequence_length(static_cast<uint8_t>(*_it))) < _data.end()) {
-      if( __zb::unicode::next_u8_to_u32(_it) =='\n') {
+      if (__zb::unicode::next_u8_to_u32(_it) == '\n') {
         return *this;
       }
     }
 
     return *this;
   }
-  
-  
+
   inline utf8_span_stream& operator++() noexcept {
     incr();
     return *this;

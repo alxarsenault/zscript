@@ -16,8 +16,8 @@ public:
       engine_initializer_t initializer = ZS_DEFAULT_ENGINE_INITIALIZER);
 
   ZS_INLINE engine(const config_t& conf)
-      : engine(conf.alloc_callback, conf.user_pointer, conf.user_release, conf.stream_getter,
-            conf.initializer) {}
+      : engine(
+          conf.alloc_callback, conf.user_pointer, conf.user_release, conf.stream_getter, conf.initializer) {}
 
   engine(const engine&) = delete;
   engine(engine&&) = delete;

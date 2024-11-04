@@ -40,6 +40,7 @@ ZS_DECL_TOKEN(namespace) // namespace
 ZS_DECL_TOKEN(global) // global
 ZS_DECL_TOKEN(const) // const
 ZS_DECL_TOKEN(static) // static
+ZS_DECL_TOKEN(export) // export
 ZS_DECL_TOKEN(function) // function
 ZS_DECL_TOKEN(typeof) // typeof
 ZS_DECL_TOKEN(typeid) // typeid

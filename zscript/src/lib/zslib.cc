@@ -81,7 +81,7 @@ namespace {
   int_t zslib_write_impl(zs::vm_ref vm) { return zslib_print_internal(vm, vm.get_engine()->get_stream()); }
 
   int_t zslib_print_to_string_impl(zs::vm_ref vm) {
-    zs::ostringstream stream(std::ios_base::out, zs::string_allocator(vm.get_engine()));
+    zs::ostringstream stream(zs::create_string_stream(vm.get_engine()));
 
     if (zslib_print_internal(vm, stream, " ", "") == 0) {
       return vm.push_string(stream.str());
@@ -90,7 +90,7 @@ namespace {
   }
 
   int_t zslib_write_to_string_impl(zs::vm_ref vm) {
-    zs::ostringstream stream(std::ios_base::out, zs::string_allocator(vm.get_engine()));
+    zs::ostringstream stream(zs::create_string_stream(vm.get_engine()));
 
     if (zslib_print_internal(vm, stream) == 0) {
       return vm.push_string(stream.str());

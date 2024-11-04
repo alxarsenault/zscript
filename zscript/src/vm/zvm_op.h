@@ -126,6 +126,24 @@ zs::error_code virtual_machine::exec_op<opcode::op_set>(
   return this->set(tbl, key, value);
 }
 
+
+// op_rawset.
+template <>
+zs::error_code virtual_machine::exec_op<opcode::op_rawset>(
+    zs::instruction_iterator& it, exec_op_data_t& op_data) {
+  const zs::instruction_t<op_rawset>& inst = it.get_ref<op_rawset>();
+
+  object& tbl = _stack[inst.table_idx];
+  
+  if(!tbl.is_table()) {
+    return zs::error_code::invalid_type;
+  }
+  
+  const object& key = _stack[inst.key_idx];
+  const object& value = _stack[inst.value_idx];
+  return tbl.as_table().set(key, value);
+}
+
 // op_get_capture.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_get_capture>(

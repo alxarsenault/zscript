@@ -1,5 +1,5 @@
 #include <ztests/ztests.h>
-#include  <zbase/container/vector.h>
+#include <zbase/container/vector.h>
 #include <zbase/crypto/hash.h>
 
 TEST_CASE("zb::vector") {

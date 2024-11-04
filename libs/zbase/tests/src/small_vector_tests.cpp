@@ -1,8 +1,7 @@
 #include <ztests/ztests.h>
 #include <zbase/container/small_vector.h>
- 
 #include <string>
- 
+
 TEST_CASE("zb::small_vector") {
 
   zb::small_vector<int, 32> vec;
@@ -39,8 +38,8 @@ public:
   inline constexpr my_empty_allocator& operator=(const my_empty_allocator&) noexcept = default;
   inline constexpr my_empty_allocator& operator=(my_empty_allocator&&) noexcept = default;
 
-    inline constexpr T* allocate(size_t n) {
-    if ( n > std::allocator_traits<my_empty_allocator>::max_size(*this )) {
+  inline constexpr T* allocate(size_t n) {
+    if (n > std::allocator_traits<my_empty_allocator>::max_size(*this)) {
       throw std::runtime_error("out of mem");
       //      zs::throw_exception(zs::error_code::out_of_memory);
     }
@@ -84,7 +83,7 @@ public:
   inline constexpr my_allocator& operator=(const my_allocator&) noexcept = default;
   inline constexpr my_allocator& operator=(my_allocator&&) noexcept = default;
 
-    inline constexpr T* allocate(size_t n) {
+  inline constexpr T* allocate(size_t n) {
     if (ZBASE_UNLIKELY(n > std::allocator_traits<my_allocator>::max_size(*this))) {
       throw std::runtime_error("out of mem");
       //      zs::throw_exception(zs::error_code::out_of_memory);

@@ -1,6 +1,6 @@
 #include <ztests/ztests.h>
 #include <zbase/memory/reference_counted_ptr.h>
- 
+
 TEST_CASE("reference_counted") {
 
   static int retain_count = 0;
@@ -49,4 +49,3 @@ TEST_CASE("reference_counted") {
   REQUIRE(*p1 == 32);
   REQUIRE(!p3);
 }
- 

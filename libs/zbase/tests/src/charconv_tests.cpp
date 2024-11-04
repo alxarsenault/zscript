@@ -1,7 +1,7 @@
 #include <ztests/ztests.h>
 #include <zbase/strings/charconv.h>
 #include <zbase/memory/memory.h>
- 
+
 TEST_CASE("charconv", "[core]") {
   char buffer[512] = {};
   {

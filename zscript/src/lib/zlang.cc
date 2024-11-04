@@ -21,6 +21,57 @@ namespace {
     return vm.push(object::create_none());
   }
 
+int_t zlang_apply_impl(zs::vm_ref vm) {
+  const int_t nargs = vm.stack_size();
+ 
+  if(nargs < 2) {
+    vm.set_error("Invalid number of parameters in zs::apply.\n");
+    return -1;
+  }
+
+  const object& fct = vm[1];
+  if(!fct.is_function()) {
+    vm.set_error("Invalid function parameter in zs::apply.\n");
+    return -1;
+  }
+  
+  if(nargs == 2) {
+    zs::object ret_value;
+    if(auto err = vm->call(fct,  {vm[0]}, ret_value)) {
+      return -1;
+    }
+    
+    return vm.push(ret_value);
+  }
+  
+  
+  
+  zs::vector<zs::object> args((zs::allocator<zs::object>(vm.get_engine())));
+  
+  for(int_t i = 2; i < nargs; i++) {
+    const object& p = vm[i];
+    if(p.is_array()) {
+      const array_object& parr = p.as_array();
+      for(const object& obj : parr) {
+        args.push_back(obj);
+      }
+    }
+    else {
+      args.push_back(p);
+    }
+  }
+ 
+  zs::object ret_value;
+  if(auto err = vm->call(fct, std::span<const object>(args), ret_value)) {
+    return -1;
+  }
+  
+  return vm.push(ret_value);
+  
+}
+
+ 
+
   int_t zlang_setdelegate_impl(zs::vm_ref vm) {
     if (vm.stack_size() != 3) {
       return -1;
@@ -342,6 +393,7 @@ zs::error_result include_lang_lib(zs::virtual_machine* vm) {
 #undef _X
 
   root[_ss("import")] = _nf(zlang_import_impl);
+  root[_ss("apply")] = _nf(zlang_apply_impl);
 
   root[_ss("set_delegate")] = _nf(zlang_setdelegate_impl);
 

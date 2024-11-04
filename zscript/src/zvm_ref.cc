@@ -95,6 +95,9 @@ const zs::string& vm_ref::get_error() const noexcept { return _vm->get_error(); 
 object& vm_ref::top() noexcept { return _vm->top(); }
 const object& vm_ref::top() const noexcept { return _vm->top(); }
 
+object& vm_ref::root() noexcept { return _vm->get_root(); }
+const object& vm_ref::root() const noexcept { return _vm->get_root(); }
+
 object& vm_ref::operator[](int_t idx) noexcept { return _vm->stack_get(idx); }
 const object& vm_ref::operator[](int_t idx) const noexcept { return _vm->stack_get(idx); }
 

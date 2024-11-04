@@ -157,22 +157,35 @@ public:
   //
   //
 
+  ZS_CK_INLINE zs::object create_this_table_from_root() {
+    return zs::object::create_table_with_delegate(_engine, _root_table);
+  }
+
   /// Compile a code buffer.
   /// On success, the `closure_result` is a closure object.
-  ZS_CHECK zs::error_result compile_buffer(
-      std::string_view content, std::string_view source_name, zs::object& closure_result, bool with_vargs = false);
+  ZS_CHECK zs::error_result compile_buffer(std::string_view content, std::string_view source_name,
+      zs::object& closure_result, bool with_vargs = false);
 
   /// Compile a code buffer.
   /// On success, the `closure_result` is a closure object.
   /// @{
-  ZS_CHECK zs::error_result compile_file(
-      const char* filepath, std::string_view source_name, zs::object& closure_result, bool with_vargs = false);
+  ZS_CHECK zs::error_result compile_file(const char* filepath, std::string_view source_name,
+      zs::object& closure_result, bool with_vargs = false);
 
-  ZS_CK_INLINE zs::error_result compile_file(
-      const std::filesystem::path& filepath, std::string_view source_name, zs::object& closure_result, bool with_vargs = false) {
+  ZS_CK_INLINE zs::error_result compile_file(const std::filesystem::path& filepath,
+      std::string_view source_name, zs::object& closure_result, bool with_vargs = false) {
     return compile_file(filepath.c_str(), source_name, closure_result, with_vargs);
   }
   /// @}
+  ///
+  ///
+  
+  ZS_CHECK zs::error_result call_file(const std::filesystem::path& filepath, std::string_view source_name, zs::object& ret_value, bool with_vargs = false);
+  
+  
+  ZS_CHECK zs::error_result call_buffer(std::string_view content, std::string_view source_name, zs::object& ret_value, bool with_vargs = false);
+
+  ZS_CHECK zs::error_result call_buffer(std::string_view content, std::string_view source_name, zs::object& this_table, zs::object& ret_value, std::span<const object> args, bool with_vargs = false);
 
   ///
   ZS_CHECK zs::error_result load_buffer_as_value(

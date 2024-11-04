@@ -16,10 +16,10 @@ ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wswitch")
 ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
 
 #define ZS_COMPILER_HANDLE_ERROR_STREAM(err, ...) \
-  helper::handle_error(this, err, zs::strprint(_engine, __VA_ARGS__), std::source_location::current())
+  helper::handle_error(this, err, zs::strprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
 
 #define ZS_COMPILER_HANDLE_ERROR_STRING(err, msg) \
-  helper::handle_error(this, err, msg, std::source_location::current())
+  helper::handle_error(this, err, msg, ZB_CURRENT_SOURCE_LOCATION())
 
 #define ZS_COMPILER_RETURN_IF_ERROR_STRING(X, err, msg) \
   if (zs::error_result err = X) {                       \
@@ -41,6 +41,7 @@ enum class jit_compiler::parse_op : uint8_t {
   p_expression,
   p_function_statement,
   p_global_function_statement,
+  p_export_function_statement,
   p_function,
   p_function_call_args,
   p_function_call_args_template,
@@ -48,6 +49,9 @@ enum class jit_compiler::parse_op : uint8_t {
   p_comma,
   p_semi_colon,
   p_decl_var,
+  p_decl_var_internal,
+  p_decl_var_internal_2,
+  p_export,
   p_decl_enum,
   p_enum_table,
   p_variable_type_restriction,
@@ -128,6 +132,8 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_table_or_class>(
 
 template <>
 zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_prefixed>();
+
+ZS_JIT_COMPILER_PARSE_OP(p_decl_var_internal_2, bool is_export, bool is_const);
 
 ZS_JIT_COMPILER_PARSE_OP(p_struct);
 ZS_JIT_COMPILER_PARSE_OP(p_struct_member_type, uint32_t* obj_type_mask, bool* is_static, bool* is_const);
@@ -213,7 +219,7 @@ struct jit_compiler::helper {
   static zs::error_result add_string_instruction(jit_compiler* c, std::string_view s) {
     return add_string_instruction(c, s, c->_ccs->new_target());
   }
-  
+
   static zs::error_result add_string_instruction(jit_compiler* c, const object& sobj) {
     return add_string_instruction(c, sobj, c->_ccs->new_target());
   }
@@ -226,10 +232,9 @@ struct jit_compiler::helper {
     c->add_instruction<opcode::op_load_string>(target_idx, (uint32_t)c->_ccs->get_literal(sobj));
     return {};
   }
- 
 
   static inline zs::error_result handle_error(
-      jit_compiler* comp, zs::error_code ec, std::string_view msg, const std::source_location& loc) {
+      jit_compiler* comp, zs::error_code ec, std::string_view msg, const zb::source_location& loc) {
     zs::line_info linfo = comp->_lexer->get_last_line_info();
 
     const auto& stream = comp->_lexer->_stream;
@@ -474,6 +479,9 @@ template <>
 zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_global_function_statement>();
 
 template <>
+zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_export_function_statement>();
+
+template <>
 zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_variable_type_restriction>(
     std::reference_wrapper<uint32_t> mask, std::reference_wrapper<uint64_t> custom_mask);
 
@@ -532,11 +540,11 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_prefixed_incr>(bo
   switch (_estate.type) {
   case expr_type::e_expr:
     return helper::handle_error(this, zs::error_code::invalid_operation, "Can't '++' or '--' an expression",
-        std::source_location::current());
+        ZB_CURRENT_SOURCE_LOCATION());
 
   case expr_type::e_base:
-    return helper::handle_error(this, zs::error_code::invalid_operation, "Can't '++' or '--' a base",
-        std::source_location::current());
+    return helper::handle_error(
+        this, zs::error_code::invalid_operation, "Can't '++' or '--' a base", ZB_CURRENT_SOURCE_LOCATION());
 
   case expr_type::e_object: {
     int_t key_idx = _ccs->pop_target();
@@ -624,13 +632,14 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_prefixed_lbracket
     //            _ccs->new_target(), 0);
 
     if (_estate.pos == -1) {
-
+      zb::print("DSLJDSKJDLKS capture");
       // Nothing to do here other than pushing it on the stack.
       //            add_instruction<opcode::op_move>(_ccs->new_target(),
       //            (uint8_t)0);
     }
     else {
       // TODO: Fix this.
+      zb::print("DSLJDSKJDLKS CAPTURE");
 
       // Push the captured closure.
       add_instruction<op_get_capture>(_ccs->new_target(), (uint32_t)_estate.pos);
@@ -1214,17 +1223,21 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_expression>() {
   //
   if (es_type == expr_type::e_expr) {
     _error_message += zs::strprint(
-        _engine, "Can't assign an expression", _lexer->get_line_info(), std::source_location::current());
+        _engine, "Can't assign an expression", _lexer->get_line_info(), ZB_CURRENT_SOURCE_LOCATION());
 
     return zs::error_code::invalid_value_type_assignment;
   }
   else if (es_type == expr_type::e_base) {
     _error_message += zs::strprint(
-        _engine, "'base' cannot be modified", _lexer->get_line_info(), std::source_location::current());
+        _engine, "'base' cannot be modified", _lexer->get_line_info(), ZB_CURRENT_SOURCE_LOCATION());
     return zs::error_code::invalid_value_type_assignment;
   }
 
   lex();
+
+  // Is setting function?
+  //
+
   if (auto err = parse<parse_op::p_expression>()) {
     return err;
   }
@@ -1232,7 +1245,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_expression>() {
   switch (op) {
     // Assign.
   case tok_eq: {
-    //    zb::print(tok_eq, es_type, std::source_location::current());
+    //    zb::print(tok_eq, es_type, ZB_CURRENT_SOURCE_LOCATION());
 
     ////////////////////////////////////////////////////////////////////
     switch (es_type) {
@@ -1250,7 +1263,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_expression>() {
 
       if (type_info.is_const) {
         return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
-            zs::strprint(_engine, "trying to assign to a const value"), std::source_location::current());
+            zs::strprint(_engine, "trying to assign to a const value"), ZB_CURRENT_SOURCE_LOCATION());
       }
 
       bool skip_mask = false;
@@ -1266,7 +1279,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_expression>() {
             return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
                 zs::strprint(
                     _engine, "wrong type mask", k_integer, "expected", zs::object_type_mask_printer{ mask }),
-                std::source_location::current());
+                ZB_CURRENT_SOURCE_LOCATION());
           }
           break;
 
@@ -1275,7 +1288,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_expression>() {
             return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
                 zs::strprint(
                     _engine, "wrong type mask", k_float, "expected", zs::object_type_mask_printer{ mask }),
-                std::source_location::current());
+                ZB_CURRENT_SOURCE_LOCATION());
           }
           break;
 
@@ -1284,7 +1297,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_expression>() {
             return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
                 zs::strprint(
                     _engine, "wrong type mask", k_bool, "expected", zs::object_type_mask_printer{ mask }),
-                std::source_location::current());
+                ZB_CURRENT_SOURCE_LOCATION());
           }
           break;
 
@@ -1293,7 +1306,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_expression>() {
             return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
                 zs::strprint(_engine, "wrong type mask", k_small_string, "expected",
                     zs::object_type_mask_printer{ mask }),
-                std::source_location::current());
+                ZB_CURRENT_SOURCE_LOCATION());
           }
           break;
 
@@ -1302,7 +1315,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_expression>() {
             return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
                 zs::strprint(_engine, "wrong type mask", k_long_string, "expected",
                     zs::object_type_mask_printer{ mask }),
-                std::source_location::current());
+                ZB_CURRENT_SOURCE_LOCATION());
           }
           break;
         }
@@ -1338,22 +1351,33 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_expression>() {
       if (_ccs->_target_stack.size() < 3) {
         return helper::handle_error(this, zs::error_code::invalid_operation,
             zs::strprint(_engine, "wrong type mask", k_long_string, "expected"),
-            std::source_location::current());
+            ZB_CURRENT_SOURCE_LOCATION());
       }
 
       int_t value_idx = _ccs->pop_target();
       int_t key_idx = _ccs->pop_target();
       int_t table_idx = _ccs->top_target();
 
-      add_instruction<opcode::op_set>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
-
+      
+      if(table_idx == 0 and !_ccs->get_parent()) {
+        add_instruction<opcode::op_rawset>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+      }
+      else {
+        add_instruction<opcode::op_set>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+      }
+       
       _estate.type = expr_type::e_object;
       _estate.pos = table_idx;
       break;
     }
 
+      case expr_type::e_capture:
+        return ZS_COMPILER_HANDLE_ERROR_STREAM(zs::error_code::invalid_operation, "Can't assign a value to a capture.\n");
+        
     default:
-      return zs::error_code::unimplemented;
+        
+        return ZS_COMPILER_HANDLE_ERROR_STREAM(zs::error_code::invalid_operation, "invalid invalid_operation");
+//      return zs::error_code::unimplemented;
     }
   } break;
 
@@ -1374,6 +1398,8 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_expression>() {
     }
     break;
   }
+      
+
   case tok_mul_eq: {
     expr_type es_type = _estate.type;
 
@@ -1433,222 +1459,581 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_semi_colon>() {
 
   if (!is_end_of_statement()) {
     return helper::handle_error(
-        this, zs::error_code::invalid_token, "invalid token", std::source_location::current());
+        this, zs::error_code::invalid_token, "invalid token", ZB_CURRENT_SOURCE_LOCATION());
   }
 
   return {};
+}
+//
+//template <>
+//zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_decl_var_internal_2>(bool is_export, bool is_const) {
+//  using enum token_type;
+//  using enum opcode;
+//  using enum object_type;
+//
+//  uint32_t mask = 0;
+//  uint64_t custom_mask = 0;
+//  
+//  if(is_not(tok_identifier)) {
+//    token_type last_token = _token;
+//    lex();
+//  
+//    switch (last_token) {
+//    case tok_char:
+//    case tok_int:
+//      mask = zs::get_object_type_mask(k_integer);
+//      break;
+//    case tok_float:
+//      mask = zs::get_object_type_mask(k_float);
+//      break;
+//    case tok_string:
+//      mask = zs::object_base::k_string_mask;
+//      break;
+//    case tok_array:
+//      mask = zs::get_object_type_mask(k_array);
+//      break;
+//    case tok_table:
+//      mask = zs::get_object_type_mask(k_table);
+//      break;
+//    case tok_bool:
+//      mask = zs::get_object_type_mask(k_bool);
+//      break;
+//    case tok_exttype:
+//      mask = zs::get_object_type_mask(k_extension);
+//      break;
+//
+//    case tok_null:
+//      mask = zs::get_object_type_mask(k_null);
+//      break;
+//
+//    case tok_var:
+//      // Parsing a typed var (var<type1, type2, ...>).
+//      if (is(tok_lt)) {
+//        if (auto err = parse<parse_op::p_variable_type_restriction>(std::ref(mask), std::ref(custom_mask))) {
+//          return helper::handle_error(
+//              this, err, "parsing variable type restriction `var<....>`", ZB_CURRENT_SOURCE_LOCATION());
+//        }
+//      }
+//      break;
+//    }
+//  }
+// 
+//  zb_loop() {
+//    if (is_not(tok_identifier)) {
+//      return helper::handle_error(
+//          this, zs::error_code::identifier_expected, "expected identifier", ZB_CURRENT_SOURCE_LOCATION());
+//    }
+//
+//    object var_name(_engine, _lexer->get_identifier_value());
+//
+//    lex();
+//
+//    // @code `var name = ...;`
+//    if (is(tok_eq)) {
+//      lex();
+//      ZS_RETURN_IF_ERROR(parse<parse_op::p_expression>());
+//
+//      int_t src = _ccs->pop_target();
+//      int_t dest = _ccs->new_target(mask, custom_mask, is_const);
+//
+//      zs::opcode last_op
+//          = zs::instruction_iterator(&_ccs->_instructions._data[_ccs->get_instruction_index()]).get_opcode();
+//
+//      bool skip_mask = false;
+//      if (mask) {
+//        switch (last_op) {
+//        case op_load_int:
+//          if (!(skip_mask = (mask & zs::get_object_type_mask(k_integer)))) {
+//            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
+//                zs::strprint(
+//                    _engine, "wrong type mask", k_integer, "expected", zs::object_type_mask_printer{ mask }),
+//                ZB_CURRENT_SOURCE_LOCATION());
+//          }
+//          break;
+//
+//        case op_load_float:
+//          if (!(skip_mask = (mask & zs::get_object_type_mask(k_float)))) {
+//            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
+//                zs::strprint(
+//                    _engine, "wrong type mask", k_float, "expected", zs::object_type_mask_printer{ mask }),
+//                ZB_CURRENT_SOURCE_LOCATION());
+//          }
+//          break;
+//
+//        case op_load_bool:
+//          if (!(skip_mask = (mask & zs::get_object_type_mask(k_bool)))) {
+//            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
+//                zs::strprint(
+//                    _engine, "wrong type mask", k_bool, "expected", zs::object_type_mask_printer{ mask }),
+//                ZB_CURRENT_SOURCE_LOCATION());
+//          }
+//          break;
+//
+//        case op_load_small_string:
+//          if (!(skip_mask = (mask & zs::get_object_type_mask(k_small_string)))) {
+//            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
+//                zs::strprint(_engine, "wrong type mask", k_small_string, "expected",
+//                    zs::object_type_mask_printer{ mask }),
+//                ZB_CURRENT_SOURCE_LOCATION());
+//          }
+//          break;
+//
+//        case op_load_string:
+//          if (!(skip_mask = (mask & zs::object_base::k_string_mask))) {
+//            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
+//                zs::strprint(_engine, "wrong type mask", k_long_string, "expected",
+//                    zs::object_type_mask_printer{ mask }),
+//                ZB_CURRENT_SOURCE_LOCATION());
+//          }
+//          break;
+//        }
+//      }
+//
+//      if (dest != src) {
+//        //                          if (_fs->IsLocal(src)) {
+//        //                              _fs->SnoozeOpt();
+//        //                          }
+//        add_instruction<opcode::op_move>((uint8_t)dest, (uint8_t)src);
+//      }
+//
+//      if (!skip_mask) {
+//        if (custom_mask) {
+//          add_instruction<opcode::op_check_custom_type_mask>((uint8_t)_ccs->top_target(), mask, custom_mask);
+//        }
+//        else if (mask) {
+//          add_instruction<opcode::op_check_type_mask>((uint8_t)_ccs->top_target(), mask);
+//        }
+//      }
+//    }
+//
+//    // @code `var name;`
+//    else {
+//      add_instruction<opcode::op_load_null>(_ccs->new_target());
+//    }
+//
+//    if(is_export) {
+//      
+//          _ccs->push_target(0);
+//          ZS_RETURN_IF_ERROR(helper::add_string_instruction(this, var_name, _ccs->new_target()));
+//      
+//       
+//          int_t key_idx = _ccs->pop_target();
+//          int_t table_idx = _ccs->pop_target();
+//      int_t value_idx = _ccs->pop_target();
+// 
+//      //
+//      //
+//        if(_ccs->get_parent()) {
+//          
+//            return helper::handle_error(this, zs::error_code::invalid_operation,
+//                "static variable declaration is only allowed in the top level scope.\n", ZB_CURRENT_SOURCE_LOCATION());
+////          add_instruction<opcode::op_set>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+//        }
+//          add_instruction<opcode::op_rawset>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+//       
+//
+////      _ccs->pop_target();
+////      ZS_RETURN_IF_ERROR(_ccs->push_local_variable(var_name, nullptr, mask, custom_mask, is_const));
+//
+//      if (is_not(tok_comma)) {
+//        break;
+//      }
+//
+//      lex();
+//    }
+//    else {
+//      _ccs->pop_target();
+//      ZS_RETURN_IF_ERROR(_ccs->push_local_variable(var_name, nullptr, mask, custom_mask, is_const));
+//
+//      if (is_not(tok_comma)) {
+//        break;
+//      }
+//
+//      lex();
+//    }
+//    
+//    //    _ccs->push_target(0);
+//    //    ZS_RETURN_IF_ERROR(helper::add_string_instruction(this, var_name, _ccs->new_target()));
+//    ////
+//    //
+//    //    int_t value_idx = _ccs->pop_target();
+//    //    int_t key_idx = _ccs->pop_target();
+//    //    int_t table_idx = _ccs->pop_target();
+//    //
+//    //
+//    //  if(_ccs->get_parent()) {
+//    //    add_instruction<opcode::op_set>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+//    //  }
+//    //  else {
+//    //    add_instruction<opcode::op_rawset>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+//    //  }
+//    //
+//    //
+//    //
+//    //  _estate.type = expr_type::e_expr;
+//    //  _estate.pos = -1;
+//    //  _estate.no_get = false;
+//    //  _estate.no_assign = false;
+//    
+//    
+//    
+//    
+//    
+//    
+//    
+////    _ccs->pop_target();
+////    ZS_RETURN_IF_ERROR(_ccs->push_local_variable(var_name, nullptr, mask, custom_mask, is_const));
+////
+////    if (is_not(tok_comma)) {
+////      break;
+////    }
+////
+////    lex();
+//  }
+//
+//  return {};
+//}
+
+
+
+
+
+
+
+template <>
+zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_decl_var_internal>(bool is_export) {
+  using enum token_type;
+  using enum opcode;
+  using enum object_type;
+ 
+  const bool is_const = is(tok_const);
+  
+  if(is_const) {
+    lex();
+  }
+
+  return parse<parse_op::p_decl_var_internal_2>(is_export, is_const);
+}
+
+
+ template <>
+zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_export>() {
+  using enum token_type;
+  using enum opcode;
+  using enum object_type;
+ 
+  ZS_ASSERT(is(tok_export), "Invalid token");
+
+  lex();
+
+  if(is(tok_function)) {
+    lex();
+    return parse<parse_op::p_export_function_statement>();
+  }
+  
+  if (is_var_decl_tok()) {
+    return parse<parse_op::p_decl_var_internal>(true);
+  }
+  
+  return ZS_COMPILER_HANDLE_ERROR_STRING(
+      zs::error_code::invalid_token, "invalid token after export");
 }
 
 // TODO: Prevent from declaring empty const variable.
 template <>
 zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_decl_var>() {
-  using enum token_type;
-  using enum opcode;
-  using enum object_type;
-
-  token_type variable_type = _token;
-
-  lex();
-
-  // var function name().
-  // TODO: Let's forget about this one for now.
-  if (is(tok_function)) {
-    ZS_TODO("Implement function declaration.");
-    int_t bound_target = 0xFF;
-    lex();
-
-    zs::object var_name;
-    ZS_RETURN_IF_ERROR(expect_get(tok_identifier, var_name));
-
-    //    if (_token == tok_lcrlbracket) {
-    //            boundtarget = ParseBindEnv();
-    //    }
-
-    ZS_RETURN_IF_ERROR(expect(tok_lbracket));
-
-    ZS_RETURN_IF_ERROR(parse<parse_op::p_create_function>(std::cref(var_name), bound_target, false));
-
-    //      CreateFunction(varname, 0xFF, false);
-
-    add_instruction<op_new_closure>(
-        (uint8_t)_ccs->new_target(), (uint32_t)(_ccs->_functions.size() - 1), (uint8_t)bound_target);
-    _ccs->pop_target();
-    ZS_RETURN_IF_ERROR(_ccs->push_local_variable(var_name));
-    return {};
-  }
-
-  //
-  //
-  //
-
-  const bool is_const = variable_type == tok_const;
-  if (is_const) {
-    switch (_token) {
-    case tok_var:
-    case tok_array:
-    case tok_table:
-    case tok_string:
-    case tok_char:
-    case tok_int:
-    case tok_bool:
-    case tok_float:
-      variable_type = _token;
-      lex();
-      break;
-
-    case tok_identifier:
-      break;
-    default:
-      return zs::error_code::invalid_token;
-    }
-  }
-
-  uint32_t mask = 0;
-  uint64_t custom_mask = 0;
-
-  switch (variable_type) {
-  case tok_char:
-  case tok_int:
-    mask = zs::get_object_type_mask(k_integer);
-    break;
-  case tok_float:
-    mask = zs::get_object_type_mask(k_float);
-    break;
-  case tok_string:
-    mask = zs::object_base::k_string_mask;
-    break;
-  case tok_array:
-    mask = zs::get_object_type_mask(k_array);
-    break;
-  case tok_table:
-    mask = zs::get_object_type_mask(k_table);
-    break;
-  case tok_bool:
-    mask = zs::get_object_type_mask(k_bool);
-    break;
-  case tok_exttype:
-    mask = zs::get_object_type_mask(k_extension);
-    break;
-
-  case tok_null:
-    mask = zs::get_object_type_mask(k_null);
-    break;
-
-  case tok_var:
-    // Parsing a typed var (var<type1, type2, ...>).
-    if (is(tok_lt)) {
-      if (auto err = parse<parse_op::p_variable_type_restriction>(std::ref(mask), std::ref(custom_mask))) {
-        return helper::handle_error(
-            this, err, "parsing variable type restriction `var<....>`", std::source_location::current());
-      }
-    }
-    break;
-  }
-
-  zb_loop() {
-    if (is_not(tok_identifier)) {
-      return helper::handle_error(
-          this, zs::error_code::identifier_expected, "expected identifier", std::source_location::current());
-    }
-
-    object var_name(_engine, _lexer->get_identifier_value());
-
-    lex();
-
-    // @code `var name = ...;`
-    if (is(tok_eq)) {
-      lex();
-      ZS_RETURN_IF_ERROR(parse<parse_op::p_expression>());
-
-      int_t src = _ccs->pop_target();
-      int_t dest = _ccs->new_target(mask, custom_mask, is_const);
-
-      zs::opcode last_op
-          = zs::instruction_iterator(&_ccs->_instructions._data[_ccs->get_instruction_index()]).get_opcode();
-
-      bool skip_mask = false;
-      if (mask) {
-        switch (last_op) {
-        case op_load_int:
-          if (!(skip_mask = (mask & zs::get_object_type_mask(k_integer)))) {
-            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
-                zs::strprint(
-                    _engine, "wrong type mask", k_integer, "expected", zs::object_type_mask_printer{ mask }),
-                std::source_location::current());
-          }
-          break;
-
-        case op_load_float:
-          if (!(skip_mask = (mask & zs::get_object_type_mask(k_float)))) {
-            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
-                zs::strprint(
-                    _engine, "wrong type mask", k_float, "expected", zs::object_type_mask_printer{ mask }),
-                std::source_location::current());
-          }
-          break;
-
-        case op_load_bool:
-          if (!(skip_mask = (mask & zs::get_object_type_mask(k_bool)))) {
-            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
-                zs::strprint(
-                    _engine, "wrong type mask", k_bool, "expected", zs::object_type_mask_printer{ mask }),
-                std::source_location::current());
-          }
-          break;
-
-        case op_load_small_string:
-          if (!(skip_mask = (mask & zs::get_object_type_mask(k_small_string)))) {
-            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
-                zs::strprint(_engine, "wrong type mask", k_small_string, "expected",
-                    zs::object_type_mask_printer{ mask }),
-                std::source_location::current());
-          }
-          break;
-
-        case op_load_string:
-          if (!(skip_mask = (mask & zs::object_base::k_string_mask))) {
-            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
-                zs::strprint(_engine, "wrong type mask", k_long_string, "expected",
-                    zs::object_type_mask_printer{ mask }),
-                std::source_location::current());
-          }
-          break;
-        }
-      }
-
-      if (dest != src) {
-        //                          if (_fs->IsLocal(src)) {
-        //                              _fs->SnoozeOpt();
-        //                          }
-        add_instruction<opcode::op_move>((uint8_t)dest, (uint8_t)src);
-      }
-
-      if (!skip_mask) {
-        if (custom_mask) {
-          add_instruction<opcode::op_check_custom_type_mask>((uint8_t)_ccs->top_target(), mask, custom_mask);
-        }
-        else if (mask) {
-          add_instruction<opcode::op_check_type_mask>((uint8_t)_ccs->top_target(), mask);
-        }
-      }
-    }
-
-    // @code `var name;`
-    else {
-      add_instruction<opcode::op_load_null>(_ccs->new_target());
-    }
-
-    _ccs->pop_target();
-    ZS_RETURN_IF_ERROR(_ccs->push_local_variable(var_name, nullptr, mask, custom_mask, is_const));
-
-    if (is_not(tok_comma)) {
-      break;
-    }
-
-    lex();
-  }
-
-  return {};
+ return parse<parse_op::p_decl_var_internal>(false);
+  
+//  using enum token_type;
+//  using enum opcode;
+//  using enum object_type;
+//
+//  token_type variable_type = _token;
+//
+//  lex();
+//
+////  // var function name().
+////  // TODO: Let's forget about this one for now.
+////  if (is(tok_function)) {
+////    ZS_TODO("Implement function declaration.");
+////    int_t bound_target = 0xFF;
+////    lex();
+////
+////    zs::object var_name;
+////    ZS_RETURN_IF_ERROR(expect_get(tok_identifier, var_name));
+////
+////    //    if (_token == tok_lcrlbracket) {
+////    //            boundtarget = ParseBindEnv();
+////    //    }
+////
+////    ZS_RETURN_IF_ERROR(expect(tok_lbracket));
+////
+////    ZS_RETURN_IF_ERROR(parse<parse_op::p_create_function>(std::cref(var_name), bound_target, false));
+////
+////    //      CreateFunction(varname, 0xFF, false);
+////
+////    add_instruction<op_new_closure>(
+////        (uint8_t)_ccs->new_target(), (uint32_t)(_ccs->_functions.size() - 1), (uint8_t)bound_target);
+////    _ccs->pop_target();
+////    ZS_RETURN_IF_ERROR(_ccs->push_local_variable(var_name));
+////    return {};
+////  }
+//
+//  //
+//  //
+//  //
+//    const bool is_static = variable_type == tok_static;
+//  if(is_static) {
+//
+//    variable_type = _token;
+//    lex();
+//
+////
+//    zs::print(_token);
+//  }
+//
+//
+//  const bool is_const = variable_type == tok_const;
+//
+//
+//  if (is_const) {
+//    switch (_token) {
+//    case tok_var:
+//    case tok_array:
+//    case tok_table:
+//    case tok_string:
+//    case tok_char:
+//    case tok_int:
+//    case tok_bool:
+//    case tok_float:
+//      variable_type = _token;
+//      lex();
+//      break;
+//
+//    case tok_identifier:
+//      break;
+//    default:
+//      return zs::error_code::invalid_token;
+//    }
+//  }
+//
+//
+//  uint32_t mask = 0;
+//  uint64_t custom_mask = 0;
+//
+//  switch (variable_type) {
+//  case tok_char:
+//  case tok_int:
+//    mask = zs::get_object_type_mask(k_integer);
+//    break;
+//  case tok_float:
+//    mask = zs::get_object_type_mask(k_float);
+//    break;
+//  case tok_string:
+//    mask = zs::object_base::k_string_mask;
+//    break;
+//  case tok_array:
+//    mask = zs::get_object_type_mask(k_array);
+//    break;
+//  case tok_table:
+//    mask = zs::get_object_type_mask(k_table);
+//    break;
+//  case tok_bool:
+//    mask = zs::get_object_type_mask(k_bool);
+//    break;
+//  case tok_exttype:
+//    mask = zs::get_object_type_mask(k_extension);
+//    break;
+//
+//  case tok_null:
+//    mask = zs::get_object_type_mask(k_null);
+//    break;
+//
+//  case tok_var:
+//    // Parsing a typed var (var<type1, type2, ...>).
+//    if (is(tok_lt)) {
+//      if (auto err = parse<parse_op::p_variable_type_restriction>(std::ref(mask), std::ref(custom_mask))) {
+//        return helper::handle_error(
+//            this, err, "parsing variable type restriction `var<....>`", ZB_CURRENT_SOURCE_LOCATION());
+//      }
+//    }
+//    break;
+//  }
+//
+//  zb_loop() {
+//    if (is_not(tok_identifier)) {
+//      return helper::handle_error(
+//          this, zs::error_code::identifier_expected, "expected identifier", ZB_CURRENT_SOURCE_LOCATION());
+//    }
+//
+//    object var_name(_engine, _lexer->get_identifier_value());
+//
+//    lex();
+//
+//    // @code `var name = ...;`
+//    if (is(tok_eq)) {
+//      lex();
+//      ZS_RETURN_IF_ERROR(parse<parse_op::p_expression>());
+//
+//      int_t src = _ccs->pop_target();
+//      int_t dest = _ccs->new_target(mask, custom_mask, is_const);
+//
+//      zs::opcode last_op
+//          = zs::instruction_iterator(&_ccs->_instructions._data[_ccs->get_instruction_index()]).get_opcode();
+//
+//      bool skip_mask = false;
+//      if (mask) {
+//        switch (last_op) {
+//        case op_load_int:
+//          if (!(skip_mask = (mask & zs::get_object_type_mask(k_integer)))) {
+//            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
+//                zs::strprint(
+//                    _engine, "wrong type mask", k_integer, "expected", zs::object_type_mask_printer{ mask }),
+//                ZB_CURRENT_SOURCE_LOCATION());
+//          }
+//          break;
+//
+//        case op_load_float:
+//          if (!(skip_mask = (mask & zs::get_object_type_mask(k_float)))) {
+//            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
+//                zs::strprint(
+//                    _engine, "wrong type mask", k_float, "expected", zs::object_type_mask_printer{ mask }),
+//                ZB_CURRENT_SOURCE_LOCATION());
+//          }
+//          break;
+//
+//        case op_load_bool:
+//          if (!(skip_mask = (mask & zs::get_object_type_mask(k_bool)))) {
+//            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
+//                zs::strprint(
+//                    _engine, "wrong type mask", k_bool, "expected", zs::object_type_mask_printer{ mask }),
+//                ZB_CURRENT_SOURCE_LOCATION());
+//          }
+//          break;
+//
+//        case op_load_small_string:
+//          if (!(skip_mask = (mask & zs::get_object_type_mask(k_small_string)))) {
+//            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
+//                zs::strprint(_engine, "wrong type mask", k_small_string, "expected",
+//                    zs::object_type_mask_printer{ mask }),
+//                ZB_CURRENT_SOURCE_LOCATION());
+//          }
+//          break;
+//
+//        case op_load_string:
+//          if (!(skip_mask = (mask & zs::object_base::k_string_mask))) {
+//            return helper::handle_error(this, zs::error_code::invalid_value_type_assignment,
+//                zs::strprint(_engine, "wrong type mask", k_long_string, "expected",
+//                    zs::object_type_mask_printer{ mask }),
+//                ZB_CURRENT_SOURCE_LOCATION());
+//          }
+//          break;
+//        }
+//      }
+//
+//      if (dest != src) {
+//        //                          if (_fs->IsLocal(src)) {
+//        //                              _fs->SnoozeOpt();
+//        //                          }
+//        add_instruction<opcode::op_move>((uint8_t)dest, (uint8_t)src);
+//      }
+//
+//      if (!skip_mask) {
+//        if (custom_mask) {
+//          add_instruction<opcode::op_check_custom_type_mask>((uint8_t)_ccs->top_target(), mask, custom_mask);
+//        }
+//        else if (mask) {
+//          add_instruction<opcode::op_check_type_mask>((uint8_t)_ccs->top_target(), mask);
+//        }
+//      }
+//    }
+//
+//    // @code `var name;`
+//    else {
+//      add_instruction<opcode::op_load_null>(_ccs->new_target());
+//    }
+//
+//    if(is_static) {
+//
+//          _ccs->push_target(0);
+//          ZS_RETURN_IF_ERROR(helper::add_string_instruction(this, var_name, _ccs->new_target()));
+//
+//
+//          int_t key_idx = _ccs->pop_target();
+//          int_t table_idx = _ccs->pop_target();
+//      int_t value_idx = _ccs->pop_target();
+//
+//      //
+//      //
+//        if(_ccs->get_parent()) {
+//
+//            return helper::handle_error(this, zs::error_code::invalid_operation,
+//                "static variable declaration is only allowed in the top level scope.\n", ZB_CURRENT_SOURCE_LOCATION());
+////          add_instruction<opcode::op_set>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+//        }
+//          add_instruction<opcode::op_rawset>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+//
+//
+////      _ccs->pop_target();
+////      ZS_RETURN_IF_ERROR(_ccs->push_local_variable(var_name, nullptr, mask, custom_mask, is_const));
+//
+//      if (is_not(tok_comma)) {
+//        break;
+//      }
+//
+//      lex();
+//    }
+//    else {
+//      _ccs->pop_target();
+//      ZS_RETURN_IF_ERROR(_ccs->push_local_variable(var_name, nullptr, mask, custom_mask, is_const));
+//
+//      if (is_not(tok_comma)) {
+//        break;
+//      }
+//
+//      lex();
+//    }
+//
+//    //    _ccs->push_target(0);
+//    //    ZS_RETURN_IF_ERROR(helper::add_string_instruction(this, var_name, _ccs->new_target()));
+//    ////
+//    //
+//    //    int_t value_idx = _ccs->pop_target();
+//    //    int_t key_idx = _ccs->pop_target();
+//    //    int_t table_idx = _ccs->pop_target();
+//    //
+//    //
+//    //  if(_ccs->get_parent()) {
+//    //    add_instruction<opcode::op_set>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+//    //  }
+//    //  else {
+//    //    add_instruction<opcode::op_rawset>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+//    //  }
+//    //
+//    //
+//    //
+//    //  _estate.type = expr_type::e_expr;
+//    //  _estate.pos = -1;
+//    //  _estate.no_get = false;
+//    //  _estate.no_assign = false;
+//
+//
+//
+//
+//
+//
+//
+////    _ccs->pop_target();
+////    ZS_RETURN_IF_ERROR(_ccs->push_local_variable(var_name, nullptr, mask, custom_mask, is_const));
+////
+////    if (is_not(tok_comma)) {
+////      break;
+////    }
+////
+////    lex();
+//  }
+//
+//  return {};
 }
 
 template <>
@@ -1659,14 +2044,14 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_enum_table>() {
     switch (_token) {
     case tok_lsqrbracket:
       return helper::handle_error(this, zs::error_code::invalid_operation,
-          "Enum keys can only be regular identifier", std::source_location::current());
+          "Enum keys can only be regular identifier", ZB_CURRENT_SOURCE_LOCATION());
 
     case tok_string_value:
     case tok_escaped_string_value:
       return helper::handle_error(this, zs::error_code::invalid_operation,
           "Enum keys can only be regular identifier i.e. no json style "
           "identifier)",
-          std::source_location::current());
+          ZB_CURRENT_SOURCE_LOCATION());
 
     case tok_identifier: {
       zs::object identifier;
@@ -1686,7 +2071,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_enum_table>() {
 
     default:
       return helper::handle_error(this, zs::error_code::invalid_operation,
-          "Enum can only contain integers, floats, bools and strings.", std::source_location::current());
+          "Enum can only contain integers, floats, bools and strings.", ZB_CURRENT_SOURCE_LOCATION());
     }
 
     lex_if(tok_comma);
@@ -1718,7 +2103,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_decl_enum>() {
 
   if (is_not(tok_identifier)) {
     return helper::handle_error(
-        this, zs::error_code::identifier_expected, "expected identifier", std::source_location::current());
+        this, zs::error_code::identifier_expected, "expected identifier", ZB_CURRENT_SOURCE_LOCATION());
   }
 
   object var_name(_engine, _lexer->get_identifier_value());
@@ -2040,7 +2425,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_for_auto>(std::sp
   else if (sp[1] == tok_identifier) {
 
     return helper::handle_error(
-        this, zs::error_code::invalid_token, "expected var or type", std::source_location::current());
+        this, zs::error_code::invalid_token, "expected var or type", ZB_CURRENT_SOURCE_LOCATION());
   }
 
   bool has_key = false;
@@ -2062,7 +2447,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_for_auto>(std::sp
 
           //          return helper::handle_error(this, zs::error_code::invalid_token, "expected ':' in for
           //          loop",
-          //              std::source_location::current());
+          //              ZB_CURRENT_SOURCE_LOCATION());
         }
       }
       else if (is(tok_identifier) and i > type_restriction_end_token_index and key_name.is_null()
@@ -2070,15 +2455,15 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_for_auto>(std::sp
         key_name = _lexer->get_identifier();
 
         if (!zb::is_one_of(sp[i + 1], tok_colon, tok_in)) {
-          return helper::handle_error(this, zs::error_code::invalid_token, "expected ':' in for loop",
-              std::source_location::current());
+          return helper::handle_error(
+              this, zs::error_code::invalid_token, "expected ':' in for loop", ZB_CURRENT_SOURCE_LOCATION());
         }
       }
 
       else if (is(tok_colon, tok_in)) {
         if (colon_ptr) {
-          return helper::handle_error(this, zs::error_code::invalid_token, "multiple ':' in for loop",
-              std::source_location::current());
+          return helper::handle_error(
+              this, zs::error_code::invalid_token, "multiple ':' in for loop", ZB_CURRENT_SOURCE_LOCATION());
         }
         colon_ptr = _lexer->_stream.ptr();
       }
@@ -2096,7 +2481,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_for_auto>(std::sp
           has_key = true;
           //          return helper::handle_error(this, zs::error_code::invalid_token, "expected ':' in for
           //          loop",
-          //              std::source_location::current());
+          //              ZB_CURRENT_SOURCE_LOCATION());
         }
       }
       else if (is(tok_identifier) and key_name.is_null() and has_key) {
@@ -2104,16 +2489,16 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_for_auto>(std::sp
 
         if (!zb::is_one_of(sp[i + 1], tok_colon, tok_in)) {
           //            has_key = true;
-          return helper::handle_error(this, zs::error_code::invalid_token, "expected ':' in for loop",
-              std::source_location::current());
+          return helper::handle_error(
+              this, zs::error_code::invalid_token, "expected ':' in for loop", ZB_CURRENT_SOURCE_LOCATION());
         }
       }
 
       else if (is(tok_colon, tok_in)) {
 
         if (colon_ptr) {
-          return helper::handle_error(this, zs::error_code::invalid_token, "multiple ':' in for loop",
-              std::source_location::current());
+          return helper::handle_error(
+              this, zs::error_code::invalid_token, "multiple ':' in for loop", ZB_CURRENT_SOURCE_LOCATION());
         }
         colon_ptr = _lexer->_stream.ptr();
       }
@@ -2527,7 +2912,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_statement>(bool c
   case tok_semi_colon:
     lex();
     return {};
-
+  
   case tok_const:
   case tok_var:
   case tok_array:
@@ -2568,6 +2953,9 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_statement>(bool c
   case tok_struct:
     return parse<ps::p_struct_statement>();
 
+    case tok_export:
+        return parse<ps::p_export>();
+    
   case tok_global: {
     lex();
 
@@ -2576,7 +2964,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_statement>(bool c
     }
 
     return helper::handle_error(
-        this, zs::error_code::invalid_token, "expected function i guess", std::source_location::current());
+        this, zs::error_code::invalid_token, "expected function i guess", ZB_CURRENT_SOURCE_LOCATION());
   }
 
   case tok_function:
@@ -2756,11 +3144,52 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_variable_type_res
 
   if (is_not(tok_gt)) {
     return helper::handle_error(
-        this, zs::error_code::invalid_token, "expected var<...>", std::source_location::current());
+        this, zs::error_code::invalid_token, "expected var<...>", ZB_CURRENT_SOURCE_LOCATION());
   }
 
   lex();
 
+  return {};
+}
+
+
+template <>
+zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_export_function_statement>() {
+  using enum token_type;
+  using enum opcode;
+  using ps = parse_op;
+
+//  lex();
+
+  _ccs->push_target(0);
+//  add_instruction<opcode::op_load_global>(_ccs->new_target());
+
+  zs::object var_name;
+  ZS_RETURN_IF_ERROR(expect_get(tok_identifier, var_name));
+  ZS_RETURN_IF_ERROR(helper::add_string_instruction(this, var_name, _ccs->new_target()));
+
+  int_t bound_target = 0xFF;
+
+  if (is(tok_lsqrbracket)) {
+    ZS_RETURN_IF_ERROR(parse<ps::p_bind_env>(std::ref(bound_target)));
+  }
+
+  ZS_RETURN_IF_ERROR(expect(tok_lbracket));
+
+  ZS_RETURN_IF_ERROR(parse<ps::p_create_function>(std::cref(var_name), bound_target, false));
+
+  add_instruction<op_new_closure>(
+      (uint8_t)_ccs->new_target(), (uint32_t)(_ccs->_functions.size() - 1), (uint8_t)bound_target);
+
+  int_t value_idx = _ccs->pop_target();
+  int_t key_idx = _ccs->pop_target();
+  int_t table_idx = _ccs->top_target();
+
+  add_instruction<opcode::op_set>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+
+  _estate.type = expr_type::e_object;
+  _estate.pos = table_idx;
+ 
   return {};
 }
 
@@ -2903,6 +3332,11 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_function_statemen
   }
   else {
     ZS_RETURN_IF_ERROR(expect_get(tok_identifier, var_name));
+
+//    add_instruction<opcode::op_load_root>(_ccs->new_target());
+//    _ccs->push_target(0);
+//    ZS_RETURN_IF_ERROR(helper::add_string_instruction(this, var_name, _ccs->new_target()));
+//
   }
 
   int_t bound_target = 0xFF;
@@ -2929,6 +3363,44 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_function_statemen
     _estate.pos = table_idx;
   }
   else {
+    
+    
+//      int_t value_idx = _ccs->pop_target();
+//      int_t key_idx = _ccs->pop_target();
+//      int_t table_idx = _ccs->pop_target();
+//
+//
+//    if(_ccs->get_parent()) {
+//      add_instruction<opcode::op_set>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+//    }
+//    else {
+//      add_instruction<opcode::op_rawset>((uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx);
+//    }
+//
+//
+//
+//    _estate.type = expr_type::e_expr;
+//    _estate.pos = -1;
+//    _estate.no_get = false;
+//    _estate.no_assign = false;
+    
+    //    _estate.type = expr_type::e_object;
+    //    _estate.pos = _ccs->top_target();
+    //    _estate.no_assign = false;
+    
+//      _estate.type = expr_type::e_object;
+//      _estate.pos = table_idx;
+    
+//    add_instruction<opcode::op_load_global>(_ccs->new_target());
+//    ZS_RETURN_IF_ERROR(helper::add_string_instruction(this, var_name, _ccs->new_target()));
+    
+//    add_instruction<opcode::op_load_global>(_ccs->new_target());
+//
+//    lex();
+//    _estate.type = expr_type::e_object;
+//    _estate.pos = _ccs->top_target();
+//    _estate.no_assign = false;
+ 
     _ccs->pop_target();
     ZS_RETURN_IF_ERROR(_ccs->push_local_variable(var_name));
   }
@@ -2984,7 +3456,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_function_call_arg
       if (is(tok_rbracket)) {
 
         return helper::handle_error(this, zs::error_code::invalid_token, "expression expected, found ')'",
-            std::source_location::current());
+            ZB_CURRENT_SOURCE_LOCATION());
       }
     }
   }
@@ -2997,7 +3469,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_function_call_arg
     if (nargs < 3) {
 
       return helper::handle_error(this, zs::error_code::invalid_argument,
-          "rawcall requires at least 2 parameters (callee and this)", std::source_location::current());
+          "rawcall requires at least 2 parameters (callee and this)", ZB_CURRENT_SOURCE_LOCATION());
     }
 
     nargs -= 2; // removes callee and this from count
@@ -3092,7 +3564,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_function_call_arg
 
       if (is(tok_rbracket)) {
         return helper::handle_error(this, zs::error_code::invalid_token, "expression expected, found ')'",
-            std::source_location::current());
+            ZB_CURRENT_SOURCE_LOCATION());
       }
     }
   }
@@ -3294,7 +3766,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_create_function>(
         return helper::handle_error(this, zs::error_code::invalid_argument,
             "function with default parameters cannot have variable number of "
             "parameters",
-            std::source_location::current());
+            ZB_CURRENT_SOURCE_LOCATION());
       }
 
       ZS_RETURN_IF_ERROR(fct_state->add_parameter(zs::_ss("vargv")));
@@ -3303,7 +3775,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_create_function>(
 
       if (is_not(tok_rbracket)) {
         return helper::handle_error(this, zs::error_code::invalid_token,
-            "expected ')' after a variadic (...) parameter", std::source_location::current());
+            "expected ')' after a variadic (...) parameter", ZB_CURRENT_SOURCE_LOCATION());
       }
 
       break;
@@ -3381,8 +3853,8 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_create_function>(
           if (is(tok_lt)) {
             if (auto err
                 = parse<parse_op::p_variable_type_restriction>(std::ref(mask), std::ref(custom_mask))) {
-              return helper::handle_error(this, err, "parsing variable type restriction `var<....>`",
-                  std::source_location::current());
+              return helper::handle_error(
+                  this, err, "parsing variable type restriction `var<....>`", ZB_CURRENT_SOURCE_LOCATION());
             }
           }
           break;
@@ -3404,7 +3876,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_create_function>(
       // to have one too.
       else if (def_params > 0) {
         return helper::handle_error(this, zs::error_code::invalid_token,
-            "expected '=' after a default paramter definition", std::source_location::current());
+            "expected '=' after a default paramter definition", ZB_CURRENT_SOURCE_LOCATION());
       }
 
       if (is(tok_comma)) {
@@ -3412,7 +3884,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_create_function>(
       }
       else if (is_not(tok_rbracket)) {
         return helper::handle_error(this, zs::error_code::invalid_token,
-            "expected ')' or ',' at the end of function declaration", std::source_location::current());
+            "expected ')' or ',' at the end of function declaration", ZB_CURRENT_SOURCE_LOCATION());
       }
     }
   }
@@ -3572,7 +4044,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_class_statement>(
     switch (_estate.type) {
     case expr_type::e_expr:
       return helper::handle_error(
-          this, zs::error_code::invalid_operation, "Invalid class name", std::source_location::current());
+          this, zs::error_code::invalid_operation, "Invalid class name", ZB_CURRENT_SOURCE_LOCATION());
 
     case expr_type::e_base:
       ZBASE_NO_BREAK;
@@ -3598,7 +4070,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_class_statement>(
     case expr_type::e_capture:
 
       return helper::handle_error(this, zs::error_code::invalid_operation,
-          "Cannot create a class in a local with the syntax(class <local>)", std::source_location::current());
+          "Cannot create a class in a local with the syntax(class <local>)", ZB_CURRENT_SOURCE_LOCATION());
     }
   }
 
@@ -3660,8 +4132,8 @@ zs::error_result jit_compiler::compile(std::string_view content, std::string_vie
 
   _ccs = &c_compile_state;
   ZS_RETURN_IF_ERROR(_ccs->add_parameter(object::create_small_string("this")));
- 
-  if(with_vargs) {
+
+  if (with_vargs) {
     ZS_RETURN_IF_ERROR(_ccs->add_parameter(object::create_small_string("vargs")));
     add_instruction<opcode::op_load_null>(_ccs->new_target());
     _ccs->add_default_param(_ccs->top_target());
@@ -3949,8 +4421,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_prefixed>() {
     }
 
     switch (_token) {
-    case tok_dot: {
-      //        pos = -1;
+    case tok_dot: { 
       lex();
 
       object var_name = object(_engine, _lexer->get_identifier_value());
@@ -3962,7 +4433,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_prefixed>() {
       if (is(tok_eq)) {
         if (_estate.no_assign) {
           return helper::handle_error(this, zs::error_code::invalid_operation,
-              "cannot assign a global variable without the global keyword", std::source_location::current());
+              "cannot assign a global variable without the global keyword", ZB_CURRENT_SOURCE_LOCATION());
         }
 
         int_t table_idx = _ccs->get_up_target(1);
@@ -4004,7 +4475,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_prefixed>() {
         return helper::handle_error(this, zs::error_code::invalid_token,
             "cannot break deref/or comma needed after [exp]=exp slot "
             "declaration",
-            std::source_location::current());
+            ZB_CURRENT_SOURCE_LOCATION());
       }
 
       lex();
@@ -4048,7 +4519,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_prefixed>() {
       switch (_estate.type) {
       case expr_type::e_expr:
         return helper::handle_error(this, zs::error_code::invalid_operation,
-            "Can't '++' or '--' an expression", std::source_location::current());
+            "Can't '++' or '--' an expression", ZB_CURRENT_SOURCE_LOCATION());
 
       case expr_type::e_base:
         zb::print("ERROR");
@@ -4157,7 +4628,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_factor>() {
 
     if (zs::error_result err = expect(tok_lbracket)) {
       return helper::handle_error(
-          this, zs::error_code::invalid_token, "expected '(' after typeid", std::source_location::current());
+          this, zs::error_code::invalid_token, "expected '(' after typeid", ZB_CURRENT_SOURCE_LOCATION());
     }
 
     while (is_not(tok_rbracket)) {
@@ -4179,7 +4650,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_factor>() {
 
     if (zs::error_result err = expect(tok_lbracket)) {
       return helper::handle_error(
-          this, zs::error_code::invalid_token, "expected '(' after typeof", std::source_location::current());
+          this, zs::error_code::invalid_token, "expected '(' after typeof", ZB_CURRENT_SOURCE_LOCATION());
     }
 
     while (is_not(tok_rbracket)) {
@@ -4198,7 +4669,20 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_factor>() {
 
   case tok_double_colon: {
 
-    add_instruction<opcode::op_load_root>(_ccs->new_target());
+  // Should we load the root or the 'this' table?
+
+    if(_ccs->get_parent()) {
+//      _ccs->push_target(0);
+      add_instruction<opcode::op_load_root>(_ccs->new_target());
+    }
+    else {
+      add_instruction<opcode::op_load_root>(_ccs->new_target());
+    }
+    
+    
+//
+    
+    
     //
     //      add_instruction<op_move>(_ccs->new_target(), (uint8_t)0);
     _estate.type = expr_type::e_object;
@@ -4306,7 +4790,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_factor>() {
     default:
       // UnaryOP(_OP_NEG);
       return helper::handle_error(
-          this, zs::error_code::unimplemented, "unimplemented unary minus", std::source_location::current());
+          this, zs::error_code::unimplemented, "unimplemented unary minus", ZB_CURRENT_SOURCE_LOCATION());
 
       break;
     }
@@ -4418,7 +4902,7 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_factor>() {
     //      // UnaryOP(_OP_NEG);
     //      return helper::handle_error(
     //          this, zs::error_code::unimplemented, "unimplemented unary minus",
-    //          std::source_location::current());
+    //          ZB_CURRENT_SOURCE_LOCATION());
     //
     //      break;
     //    }
@@ -4444,8 +4928,8 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_factor>() {
     }
 
     case expr_type::e_base:
-      return helper::handle_error(this, zs::error_code::invalid_operation, "Can't '++' or '--' a base",
-          std::source_location::current());
+      return helper::handle_error(
+          this, zs::error_code::invalid_operation, "Can't '++' or '--' a base", ZB_CURRENT_SOURCE_LOCATION());
 
     case expr_type::e_object: {
       //        int_t key_idx = _ccs->pop_target();
@@ -4493,14 +4977,14 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_factor>() {
 
     if (zs::error_result err = expect(tok_rbracket)) {
       return helper::handle_error(
-          this, zs::error_code::unimplemented, "expression expected", std::source_location::current());
+          this, zs::error_code::unimplemented, "expression expected", ZB_CURRENT_SOURCE_LOCATION());
     }
     break;
   }
 
   case tok_file:
-      ZS_RETURN_IF_ERROR(helper::add_string_instruction(this, _ccs->source_name ));
-      lex();
+    ZS_RETURN_IF_ERROR(helper::add_string_instruction(this, _ccs->source_name));
+    lex();
     break;
 
   case tok_line: {
@@ -4565,14 +5049,14 @@ zs::error_result jit_compiler::parse<jit_compiler::parse_op::p_factor>() {
     }
     else {
       return helper::handle_error(this, zs::error_code::invalid_include_syntax,
-          "expected `as_string`, `as_table` or ??", std::source_location::current());
+          "expected `as_string`, `as_table` or ??", ZB_CURRENT_SOURCE_LOCATION());
     }
     break;
   }
 
   default: {
     return helper::handle_error(
-        this, zs::error_code::unimplemented, "expression expected", std::source_location::current());
+        this, zs::error_code::unimplemented, "expression expected", ZB_CURRENT_SOURCE_LOCATION());
     break;
   }
   }
@@ -4724,5 +5208,6 @@ zs::error_code jit_compiler::expect_get(token_type tok, object& ret) {
 } // namespace zs.
 
 #include "lang/jit/zjit_struct.h"
+#include "lang/jit/variable_declaration.h"
 
 ZBASE_PRAGMA_POP()

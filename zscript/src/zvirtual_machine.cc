@@ -181,6 +181,17 @@ static void destroy_engine(zs::engine* eng) {
 void virtual_machine::release() noexcept {
   zs::engine* eng = _engine;
   const bool owns_engine = _owns_engine;
+  
+  
+  
+  
+  
+  _root_table.reset();
+   _imported_module_cache.reset();
+ 
+  _stack.set_stack_base(0);
+  _stack.pop_to(0);
+   _constexpr_variables.clear();
 
   // Destroy itself (virtual_machine).
   internal::zs_delete(eng, this);
@@ -200,13 +211,15 @@ zs::error_result virtual_machine::init() {
   _root_table = object::create_table(_engine);
   _imported_module_cache = zs::_t(_engine);
 
-  if (auto err = zs::include_lang_lib(this)) {
-    return err;
-  }
 
   table_object& tbl = _imported_module_cache.as_table();
   tbl.reserve(8);
 
+  
+  if (auto err = zs::include_lang_lib(this)) {
+    return err;
+  }
+  
   tbl.set(zs::_ss("zs"), zs::create_zs_lib(this));
   tbl.set(zs::_ss("base64"), zs::create_base64_lib(this));
   tbl.set(zs::_ss("graphics"), zs::create_graphics_lib(this));
@@ -658,7 +671,7 @@ zs::error_result virtual_machine::compile_buffer(
 
   closure_result = zs::object::create_closure(_engine, fct_state, _root_table);
 
-  if(with_vargs) {
+  if (with_vargs) {
     closure_result.as_closure()._default_params.push_back(zs::_a(_engine, 0));
   }
 
@@ -674,6 +687,121 @@ zs::error_result virtual_machine::compile_file(
   }
 
   return compile_buffer(loader.content(), source_name, closure_result, with_vargs);
+}
+
+zs::error_result virtual_machine::call_buffer(std::string_view content, std::string_view source_name, zs::object& ret_value, bool with_vargs) {
+  
+  zs::object closure_result;
+  if(auto err =compile_buffer(content, source_name, closure_result, with_vargs)) {
+    return err;
+  }
+  
+  if(!closure_result.is_closure()) {
+    return zs::error_code::invalid_type;
+  }
+   
+  zs::object this_table = zs::_t(_engine);
+  
+  this_table.as_table().set_delegate(_root_table);
+  
+  if (auto err = call(closure_result, {this_table} , ret_value)) {
+    return err;
+  }
+  
+  return {};
+}
+
+
+zs::error_result virtual_machine::call_buffer(std::string_view content, std::string_view source_name, zs::object& this_table, zs::object& ret_value,std::span<const object> args, bool with_vargs) {
+ 
+  if(!this_table.is_table()) {
+    this_table = create_this_table_from_root();
+  }
+  
+  zs::object closure_result;
+ 
+  {
+    zs::jit_compiler compiler(_engine);
+    zs::object fct_state;
+    
+    if (auto err = compiler.compile(content, source_name, fct_state, nullptr, nullptr, with_vargs)) {
+      _error_message = compiler.get_error();
+      return err;
+    }
+    
+    closure_result = zs::object::create_closure(_engine, fct_state, this_table);
+    
+    if (with_vargs) {
+      closure_result.as_closure()._default_params.push_back(zs::_a(_engine, 0));
+    }
+  }
+ 
+  std::span<const object> params(&this_table, 1);
+  if(auto err =call(closure_result, params , ret_value)) {
+    return err;
+  }
+  
+  return {};
+  
+  
+//  if(!closure_result.is_closure()) {
+//    return zs::error_code::invalid_type;
+//  }
+//
+//  zs::object this_table = zs::_t(_engine);
+//  this_table.as_table().set_delegate(_root_table);
+//
+//
+//    zs::object set_method = zs::_nf( [](zs::vm_ref vm) -> int_t {
+////      vm.set_error("Cannot set value in enum\n");
+//
+//
+//
+////      zs::string* path = ZS_GET_PATH();
+//      const object& this_table = vm[0];
+//      const object& key = vm[1];
+//      const object& value = vm[2];
+//
+//      if(auto err =       this_table.as_table().set(key, value)) {
+//
+//        return -1;
+//
+//      }
+//
+////      vm.push(zs::object::create_none());
+//      return 0;
+//    });
+//
+//
+//
+//  this_table.as_table()[zs::constants::get<meta_method::mt_set>()] = set_method;
+//
+//  if (auto err = call(closure_result, {this_table} , ret_value)) {
+//    return err;
+//  }
+//
+}
+
+zs::error_result virtual_machine::call_file(const std::filesystem::path& filepath, std::string_view source_name, zs::object& ret_value, bool with_vargs) {
+  
+  zs::object closure_result;
+  if(auto err =compile_file(filepath.c_str(), source_name, closure_result, with_vargs)) {
+    return err;
+  }
+  
+  if(!closure_result.is_closure()) {
+    return zs::error_code::invalid_type;
+  }
+   
+  zs::object this_table = zs::_t(_engine);
+  
+  this_table.as_table().set_delegate(_root_table);
+  
+  if (auto err = call(closure_result, {this_table} , ret_value)) {
+    return err;
+  }
+  
+  return {};
 }
 
 zs::error_result virtual_machine::load_buffer_as_array(

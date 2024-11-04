@@ -426,13 +426,12 @@ inline constexpr size_t array_size_v = __zb::array_size<T>::value;
 //
 //
 
-template<typename S, typename T, typename = void>
-struct is_streamable: std::false_type {};
+template <typename S, typename T, typename = void>
+struct is_streamable : std::false_type {};
 
-template<typename S, typename T>
-struct is_streamable<S, T,
-        std::void_t<  decltype( std::declval<S&>()<<std::declval<T>() )  > >
-: std::true_type {};
+template <typename S, typename T>
+struct is_streamable<S, T, std::void_t<decltype(std::declval<S&>() << std::declval<T>())>> : std::true_type {
+};
 
 //
 //
@@ -465,13 +464,13 @@ inline constexpr bool is_tuple_v = __zb::is_tuple<T>::value;
 //
 
 template <class T>
-using has_key_type_def = T::key_type;
+using has_key_type_def = typename T::key_type;
 
 template <class T>
 using has_key_type = __zb::has_members<T, has_key_type_def>;
 
 template <class T>
-using has_mapped_type_def = T::mapped_type;
+using has_mapped_type_def = typename T::mapped_type;
 
 template <class T>
 using has_mapped_type = __zb::has_members<T, has_mapped_type_def>;
@@ -614,29 +613,29 @@ using string_char_type_t = typename __zb::string_char_type<SType>::type;
 //
 
 template <class T>
-inline constexpr auto has_static_allocate(
-    int) -> decltype(T::allocate(std::declval<size_t>()), void(), __zb::true_t{});
+inline constexpr auto has_static_allocate(int)
+    -> decltype(T::allocate(std::declval<size_t>()), void(), __zb::true_t{});
 
 template <class T>
 inline constexpr __zb::false_t has_static_allocate(...);
 
 template <class T, class U>
-inline constexpr auto has_static_deallocate(
-    int) -> decltype(T::deallocate(std::declval<U*>(), std::declval<size_t>()), void(), __zb::true_t{});
+inline constexpr auto has_static_deallocate(int)
+    -> decltype(T::deallocate(std::declval<U*>(), std::declval<size_t>()), void(), __zb::true_t{});
 
 template <class T, class U>
 inline constexpr __zb::false_t has_static_deallocate(...);
 
 namespace detail {
 template <typename T>
-auto is_contiguous_container(
-    int) -> decltype(std::data(std::declval<T&>()), std::size(std::declval<T&>()), void(), __zb::true_t{});
+auto is_contiguous_container(int)
+    -> decltype(std::data(std::declval<T&>()), std::size(std::declval<T&>()), void(), __zb::true_t{});
 template <typename T>
 __zb::false_t is_contiguous_container(...);
 
 template <typename T>
-auto is_iterable_container(
-    int) -> decltype(std::size(std::declval<T&>()), std::begin(std::declval<T&>()), void(), __zb::true_t{});
+auto is_iterable_container(int)
+    -> decltype(std::size(std::declval<T&>()), std::begin(std::declval<T&>()), void(), __zb::true_t{});
 template <typename T>
 __zb::false_t is_iterable_container(...);
 
@@ -657,17 +656,17 @@ __zb::false_t has_static_max_size(...);
 
 template <typename T>
 auto is_iterable_impl(int) -> decltype(std::begin(std::declval<T&>()) != std::end(std::declval<T&>()), void(),
-                               ++std::declval<decltype(std::begin(std::declval<T&>()))&>(),
-                               void(*std::begin(std::declval<T&>())), __zb::true_t{});
+    ++std::declval<decltype(std::begin(std::declval<T&>()))&>(), void(*std::begin(std::declval<T&>())),
+    __zb::true_t{});
 
 template <typename T>
 __zb::false_t is_iterable_impl(...);
 
 template <typename T>
-auto is_const_iterable_impl(
-    int) -> decltype(std::cbegin(std::declval<const T&>()) != std::cend(std::declval<const T&>()), void(),
-             ++std::declval<const decltype(std::cbegin(std::declval<const T&>()))&>(),
-             void(*std::cbegin(std::declval<const T&>())), __zb::true_t{});
+auto is_const_iterable_impl(int)
+    -> decltype(std::cbegin(std::declval<const T&>()) != std::cend(std::declval<const T&>()), void(),
+        ++std::declval<const decltype(std::cbegin(std::declval<const T&>()))&>(),
+        void(*std::cbegin(std::declval<const T&>())), __zb::true_t{});
 
 template <typename T>
 __zb::false_t is_const_iterable_impl(...);

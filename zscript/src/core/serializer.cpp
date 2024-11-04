@@ -240,8 +240,8 @@ std::ostream& operator<<(std::ostream& stream, const serializer& s) {
   }
 
   default:
-
-    std::format_to(std::ostream_iterator<char>{ stream }, "{:#016x}", obj._value);
+    // @Alex
+    //    std::format_to(std::ostream_iterator<char>{ stream }, "{:#016x}", obj._value);
     return stream;
   }
   return stream;

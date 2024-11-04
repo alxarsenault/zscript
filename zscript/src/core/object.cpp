@@ -81,7 +81,7 @@ object object::create_mutable_string(zs::engine* eng, std::string_view s) {
   obj._mstring = mutable_string_object::create(eng, s);
   return obj;
 }
- 
+
 object object::create_concat_string(zs::engine* eng, std::string_view s1, std::string_view s2) {
   size_t sz = s1.size() + s2.size();
 
@@ -828,38 +828,6 @@ object* object::operator[](size_t idx) {
 const object* object::operator[](size_t idx) const {
   if (is_array()) {
     return &as_array()[idx];
-  }
-
-  return nullptr;
-}
-
-object* object::operator[](size_t idx1, size_t idx2) {
-  if (object* obj = object::operator[](idx1)) {
-    return obj->operator[](idx2);
-  }
-
-  return nullptr;
-}
-
-const object* object::operator[](size_t idx1, size_t idx2) const {
-  if (const object* obj = object::operator[](idx1)) {
-    return obj->operator[](idx2);
-  }
-
-  return nullptr;
-}
-
-object* object::operator[](size_t idx1, size_t idx2, size_t idx3) {
-  if (object* obj = object::operator[](idx1, idx2)) {
-    return obj->operator[](idx3);
-  }
-
-  return nullptr;
-}
-
-const object* object::operator[](size_t idx1, size_t idx2, size_t idx3) const {
-  if (const object* obj = object::operator[](idx1, idx2)) {
-    return obj->operator[](idx3);
   }
 
   return nullptr;

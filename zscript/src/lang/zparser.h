@@ -207,7 +207,7 @@ public:
       : _head(head) {}
 
   zs::string serialize(zs::engine* eng) const {
-    zs::ostringstream stream(std::ios_base::out, zs::allocator<char>(eng));
+    zs::ostringstream stream(zs::create_string_stream(eng));
     ast_node_walker::serialize_sub_tree(_head, stream);
     return stream.str();
   }

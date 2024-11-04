@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <meta name="author" content="Zscript">
+
+  <title>ZScript Documentation</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&display=swap" rel="stylesheet">
+
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/code-style.css" rel="stylesheet">
+  <link href="css/doc-style.css" rel="stylesheet">
+</head>
+
+
+<body>
+  <!-- Main Content -->
+  <main class="d-flex flex-nowrap">
+
+    <div class="container">
+      <div class="row">
+        <div class="col content-padding"></div>
+        <div id="content" class="col-8">
+
+          <section class="zscript-top-section">
+            <h2>Code</h2>
+            <p>A file is actually a closure.</p>
+
+            <div class="alert alert-danger d-flex" role="alert">
+              Error: Banana
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                Filename
+              </div>
+              <div class="card-body">
+                <pre class="zcompiled-code"><code id="compile_example_01" class="zscript">for(var i = 0; i &lt; 10; i++) {
+  do(1) {
+    print(i);
+  }
+}</code></pre>
+              </div>
+            </div>
+
+
+          </section>
+        </div>
+
+        <div class="col content-padding"></div>
+      </div>
+    </div>
+
+
+  </main>
+
+  <script
+  src="https://code.jquery.com/jquery-3.7.1.min.js"
+  integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+  crossorigin="anonymous"></script>
+<script src="js/bootstrap.bundle.min.js"></script>
+<script src="js/highlight.min.js"></script>
+<script src="js/zscript-highlight.js"></script>
+<script src="js/highlightjs-line-numbers.min.js"></script>
+<script async defer src="js/app.js"></script>
+
+
+  <script>
+    // Load sections when the page is loaded.
+    window.onload = function () {
+      var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
+      hljs.highlightAll();
+      hljs.initLineNumbersOnLoad();
+    };
+  </script>
+</body>
+
+</html>

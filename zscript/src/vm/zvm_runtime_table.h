@@ -100,7 +100,9 @@ ZS_DECL_RT_ACTION(table_set, objref_t obj, cobjref_t key, cobjref_t value) {
   }
 
   if (tbl.has_delegate()) {
-    return runtime_action<delegate_set>(obj, REF(tbl.get_delegate()), key, value);
+    if(auto err = runtime_action<delegate_set>(obj, REF(tbl.get_delegate()), key, value); err != zs::error_code::not_found) {
+      return err;
+    }
   }
 
   return tbl.set(key, value);

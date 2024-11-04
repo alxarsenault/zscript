@@ -198,6 +198,14 @@ ZS_DECLARE_INSTRUCTION(get, GET, 5);
   X(uint8_t, value_idx)
 ZS_DECLARE_INSTRUCTION(set, SET, 4);
 
+
+///
+#define ZS_INSTRUCTION_RAWSET_TYPES(X) \
+  X(uint8_t, table_idx)             \
+  X(uint8_t, key_idx)               \
+  X(uint8_t, value_idx)
+ZS_DECLARE_INSTRUCTION(rawset, RAWSET, 4);
+
 ///
 #define ZS_INSTRUCTION_EQUALS_TYPES(X) \
   X(uint8_t, target_idx)               \

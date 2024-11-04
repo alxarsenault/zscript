@@ -171,6 +171,9 @@ public:
   ZS_CHECK object& top() noexcept;
   ZS_CHECK const object& top() const noexcept;
 
+  ZS_CHECK object& root() noexcept;
+  ZS_CHECK const object& root() const noexcept;
+  
   ZS_CHECK object& operator[](int_t idx) noexcept;
   ZS_CHECK const object& operator[](int_t idx) const noexcept;
 

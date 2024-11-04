@@ -7,22 +7,20 @@
 #include "xml/zxml_parser.h"
 #include <fstream>
 
-
 TEST_CASE("zs::xml.122321312") {
   std::string_view s = "Alex";
 
-  constexpr uint64_t k_type_shift_mask =0x00FF000000000000;
+  constexpr uint64_t k_type_shift_mask = 0x00FF000000000000;
   constexpr uint64_t k_type_shift_offset = 48;
-  
+
   zs::object ss = zs::object::create_small_string("Bingo");
   zs::object iobj = 32;
   zs::object_base obj;
   obj._int = 32;
   obj._ext = (k_type_shift_mask) & (((uint64_t)zs::object_type::k_integer) << k_type_shift_offset);
- 
+
   constexpr zs::object ddsd = zs::_sv("john");
   REQUIRE(iobj._ext == obj._ext);
-    
 }
 
 TEST_CASE("zs::xml.01") {

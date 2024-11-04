@@ -187,8 +187,9 @@ public:
     zbase_assert(s.size() <= constants::k_small_string_max_size, "invalid size");
     memcpy(_sbuffer, s.data(), s.size());
   }
- 
-  template <size_t Size> requires (Size <= constants::k_small_string_max_size)
+
+  template <size_t Size>
+    requires(Size <= constants::k_small_string_max_size)
   ZS_INLINE object(small_string_tag, const char (&s)[Size]) noexcept
       : object_base{ ._value = 0,
         ._reserved_u32 = 0,
@@ -198,7 +199,8 @@ public:
     memcpy(_sbuffer, &s[0], Size);
   }
 
-  template <size_t Size> requires (Size <= constants::k_small_string_max_size)
+  template <size_t Size>
+    requires(Size <= constants::k_small_string_max_size)
   ZS_CK_INLINE static object create_small_string(const char (&s)[Size]) noexcept {
     static_assert(Size <= constants::k_small_string_max_size, "invalid size");
     return object(small_string_tag{}, s);
@@ -522,14 +524,8 @@ public:
   object* operator[](size_t idx);
   const object* operator[](size_t idx) const;
 
-  object* operator[](size_t idx1, size_t idx2);
-  const object* operator[](size_t idx1, size_t idx2) const;
-
-  object* operator[](size_t idx1, size_t idx2, size_t idx3);
-  const object* operator[](size_t idx1, size_t idx2, size_t idx3) const;
-
   //
-  //
+  // MARK: Delegate.
   //
 
   zs::error_result set_delegate(object delegate) noexcept;
@@ -538,7 +534,7 @@ public:
   bool has_delegate() const noexcept;
 
   //
-  //
+  // MARK: Weak reference.
   //
 
   /// Returns a weak_ref object for reference counted objects.
@@ -547,7 +543,7 @@ public:
   ZS_CHECK object get_weak_ref_value() const noexcept;
 
   //
-  //
+  // MARK: Binary stream.
   //
 
   ZS_CHECK zs::error_result get_binary_size(size_t& write_size) const;

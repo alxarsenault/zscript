@@ -1,7 +1,6 @@
 #include <ztests/ztests.h>
 #include <zbase/utility/scoped.h>
- 
- 
+
 TEST_CASE("scoped") {
   int count = 0;
 
@@ -10,4 +9,3 @@ TEST_CASE("scoped") {
   }
   REQUIRE(count == 1);
 }
- 

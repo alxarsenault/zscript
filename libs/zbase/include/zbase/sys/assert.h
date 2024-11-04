@@ -139,13 +139,13 @@ ZBASE_END_NAMESPACE
 #define __ZBASE_ASSERT_BASE(e, ...)                                                                         \
   ((void)((e) ? ((void)0)                                                                                   \
               : ((void)ZBASE_ASSERT_PRINT(#e, __func__, __ZBASE_ASSERT_FILE_NAME__, __LINE__, __VA_ARGS__), \
-                    ((!zb::assert_handler || zb::assert_handler.call()) ? ZBASE_ABORT() : ((void)0)))))
+                  ((!zb::assert_handler || zb::assert_handler.call()) ? ZBASE_ABORT() : ((void)0)))))
 
 #define __ZBASE_STREAM_ASSERT_BASE(stream, e, ...)                                             \
   ((void)((e) ? ((void)0)                                                                      \
               : ((void)zb::assert_print(                                                       \
                      stream, #e, __func__, __ZBASE_ASSERT_FILE_NAME__, __LINE__, __VA_ARGS__), \
-                    ((!zb::assert_handler || zb::assert_handler.call()) ? ZBASE_ABORT() : ((void)0)))))
+                  ((!zb::assert_handler || zb::assert_handler.call()) ? ZBASE_ABORT() : ((void)0)))))
 
 #define __ZBASE_WARNING_BASE(e, ...) \
   ((void)((e)                        \

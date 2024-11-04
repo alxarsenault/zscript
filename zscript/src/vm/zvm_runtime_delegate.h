@@ -158,6 +158,8 @@ ZS_DECL_RT_ACTION(delegate_set, objref_t obj, objref_t delegate_obj, cobjref_t k
     return runtime_action<runtime_code::delegate_set>(obj, REF(sub_delegate_obj), key, value);
   }
 
-  return obj->_table->set(key, value);
+//  return obj->_table->set(key, value);
+  
+  return zs::error_code::not_found;
 }
 } // namespace zs.

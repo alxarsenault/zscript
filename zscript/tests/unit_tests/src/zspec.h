@@ -294,7 +294,7 @@ struct z_code_test_fixture {
       }                                                                                                     \
       inline TestName()                                                                                     \
           : ClassName(sec, code, code_extra, TestName::get_test_name(), title, desc, require_compile,       \
-                require_call) {}                                                                            \
+              require_call) {}                                                                              \
       void test();                                                                                          \
     };                                                                                                      \
                                                                                                             \

@@ -10,6 +10,7 @@
 #include <zbase/container/span.h>
 #include <zbase/container/vector.h>
 
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -210,7 +211,22 @@ template <class T, class Hash = zb::rapid_hasher<T>, class Pred = std::equal_to<
 using unordered_set = std::unordered_set<T, Hash, Pred, zs::allocator<T>>;
 
 using ostringstream = std::basic_ostringstream<char, std::char_traits<char>, zs::string_allocator>;
-using stringstream = std::basic_stringstream<char, std::char_traits<char>, zs::string_allocator>;
+
+namespace detail {
+  template <class T>
+  inline T create_string_stream(zs::engine* eng) {
+    if constexpr (std::is_constructible_v<T, std::ios_base::openmode, zs::string_allocator>) {
+      return T(std::ios_base::out, zs::string_allocator(eng));
+    }
+    else {
+      return T(zs::string("", zs::string_allocator(eng)), std::ios_base::out);
+    }
+  }
+} // namespace detail.
+
+inline zs::ostringstream create_string_stream(zs::engine* eng) {
+  return detail::create_string_stream<zs::ostringstream>(eng);
+}
 
 using unordered_object_map_allocator = zs::allocator<std::pair<const object, object>>;
 
@@ -271,8 +287,8 @@ ZS_INLINE std::ostream& print(const Args&... args) {
 
 template <zb::string_literal Separator = " ", class... Args>
 ZB_INLINE zs::string strprint(zs::engine* eng, const Args&... args) {
-  zs::ostringstream stream(std::ios_base::out, zs::string_allocator(eng));
+  zs::ostringstream stream(zs::create_string_stream(eng));
   zb::stream_print<Separator>(stream, args...);
-  return stream.str();
+  return zs::string(stream.str(), zs::string_allocator(eng));
 }
 } // namespace zs.

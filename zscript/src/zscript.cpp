@@ -789,18 +789,13 @@ zs::error_result object_base::convert_to_string(zs::string& s) const {
     return {};
 
   case object_type::k_integer: {
-    std::basic_ostringstream<char, std::char_traits<char>, zs::allocator<char>> stream(
-        std::ios_base::out, s.get_allocator());
-
+    zs::ostringstream stream(zs::create_string_stream(s.get_allocator().get_engine()));
     stream << _int;
     s = stream.str();
     return {};
   }
 
   case object_type::k_float: {
-    std::basic_ostringstream<char, std::char_traits<char>, zs::allocator<char>> stream(
-        std::ios_base::out, s.get_allocator());
-
     char buffer[128] = {};
 
     if (zb::optional_result<size_t> res = zb::to_chars(buffer, 128, _float)) {
@@ -833,9 +828,7 @@ zs::error_result object_base::convert_to_string(zs::string& s) const {
   }
 
   default: {
-    std::basic_ostringstream<char, std::char_traits<char>, zs::allocator<char>> stream(
-        std::ios_base::out, s.get_allocator());
-
+    zs::ostringstream stream(zs::create_string_stream(s.get_allocator().get_engine()));
     int_to_hex(stream, _value);
     s = stream.str();
   }
@@ -952,9 +945,7 @@ std::string object_base::to_debug_string() const {
 zs::error_result object_base::to_debug_string(zs::string& s) const {
   const object_type type = get_type();
 
-  std::basic_ostringstream<char, std::char_traits<char>, zs::allocator<char>> stream(
-      std::ios_base::out, s.get_allocator());
-
+  zs::ostringstream stream(zs::create_string_stream(s.get_allocator().get_engine()));
   stream << get_object_type_name(type) << " : ";
 
   switch (type) {

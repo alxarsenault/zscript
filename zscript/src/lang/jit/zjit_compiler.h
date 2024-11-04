@@ -99,6 +99,26 @@ public:
     }
     return false;
   }
+  
+  
+  ZS_CK_INLINE static bool is_var_decl_tok(token_type t)   noexcept {
+    switch (t) {
+    case tok_const:
+    case tok_var:
+    case tok_array:
+    case tok_table:
+    case tok_string:
+    case tok_char:
+    case tok_int:
+    case tok_bool:
+    case tok_float:
+      return true;
+
+    default:
+      return false;
+    }
+    return false;
+  }
 
   ZS_CK_INLINE bool is_var_decl_tok_no_const() const noexcept {
     switch (_token) {

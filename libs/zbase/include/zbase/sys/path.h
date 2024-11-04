@@ -31,7 +31,7 @@
 
 ZBASE_BEGIN_SUB_NAMESPACE(sys)
 
-enum class  file_type :  int8_t {
+enum class file_type : int8_t {
   not_found = -1,
   none = 0,
   regular = 1,
@@ -52,7 +52,6 @@ class path_ref;
 class path_detail {
   template <class>
   friend class path;
- 
   friend class path_ref;
 
   static bool is_root(__zb::string_view path);
@@ -386,33 +385,27 @@ size_t path<_Allocator>::file_size() const {
   return path_detail::file_size(_path.c_str());
 }
 
-
-
-
-
-
-
 class path_ref {
 public:
   using value_type = char;
-  
-  inline path_ref() noexcept  = delete;
- 
+
+  inline path_ref() noexcept = delete;
 
   inline path_ref(const path_ref&) = default;
   inline path_ref(path_ref&&) = default;
-  
-   inline path_ref(const char* p)
-       : _path(p) {}
-  
-  template<class _Allocator>
-   inline path_ref(const std::basic_string<char, std::char_traits<char>, _Allocator>& p)
-       : _path(p.c_str()) {}
-  
-  template<class _StdPath=std::filesystem::path> requires std::is_same_v<std::filesystem::path, _StdPath> and std::is_same_v<std::filesystem::path::value_type, char>
-   inline path_ref(const _StdPath& p)
-       : _path(p.c_str()) {}
-  
+
+  inline path_ref(const char* p)
+      : _path(p) {}
+
+  template <class _Allocator>
+  inline path_ref(const std::basic_string<char, std::char_traits<char>, _Allocator>& p)
+      : _path(p.c_str()) {}
+
+  template <class _StdPath = std::filesystem::path>
+    requires std::is_same_v<std::filesystem::path, _StdPath>
+      and std::is_same_v<std::filesystem::path::value_type, char>
+  inline path_ref(const _StdPath& p)
+      : _path(p.c_str()) {}
 
   inline path_ref& operator=(const path_ref&) = default;
   inline path_ref& operator=(path_ref&&) = default;
@@ -580,102 +573,48 @@ public:
   const char* _path;
 };
 
+bool path_ref::is_directory() const { return path_detail::is_directory(_path); }
 
-bool path_ref::is_directory() const {
-  return path_detail::is_directory(_path);
-}
+bool path_ref::is_root() const { return path_detail::is_root(_path); }
 
-bool path_ref::is_root() const {
-  return path_detail::is_root(_path);
-}
+bool path_ref::is_file() const { return path_detail::is_file(_path); }
 
-bool path_ref::is_file() const {
-  return path_detail::is_file(_path);
-}
+bool path_ref::is_symlink() const { return path_detail::is_symlink(_path); }
 
-bool path_ref::is_symlink() const {
-  return path_detail::is_symlink(_path);
-}
+bool path_ref::is_absolute() const { return path_detail::is_absolute(_path); }
 
-bool path_ref::is_absolute() const {
-  return path_detail::is_absolute(_path);
-}
+bool path_ref::exists() const { return path_detail::exists(_path); }
 
-bool path_ref::exists() const {
-  return path_detail::exists(_path);
-}
+bool path_ref::has_filename() const { return path_detail::has_filename(_path); }
 
-bool path_ref::has_filename() const {
-  return path_detail::has_filename(_path);
-}
+bool path_ref::has_stem() const { return path_detail::has_stem(_path); }
 
-bool path_ref::has_stem() const {
-  return path_detail::has_stem(_path);
-}
+bool path_ref::has_extension() const { return path_detail::has_extension(_path); }
 
-bool path_ref::has_extension() const {
-  return path_detail::has_extension(_path);
-}
+__zb::string_view path_ref::filename() const { return path_detail::get_filename(_path); }
 
+__zb::string_view path_ref::stem() const { return path_detail::get_stem(_path); }
 
-__zb::string_view path_ref::filename() const {
-  return path_detail::get_filename(_path);
-}
+__zb::string_view path_ref::extension() const { return path_detail::get_extension(_path); }
 
+__zb::string_view path_ref::dirname() const { return path_detail::get_dirname(_path); }
 
-__zb::string_view path_ref::stem() const {
-  return path_detail::get_stem(_path);
-}
+__zb::string_view path_ref::root() const { return path_detail::get_root(_path); }
 
+__zb::error_result path_ref::touch() const { return path_detail::touch(_path); }
 
-__zb::string_view path_ref::extension() const {
-  return path_detail::get_extension(_path);
-}
+__zb::error_result path_ref::mkdir() const { return path_detail::mkdir(_path); }
 
+__zb::error_result path_ref::mktree() const { return path_detail::mktree(_path); }
 
-__zb::string_view path_ref::dirname() const {
-  return path_detail::get_dirname(_path);
-}
+__zb::error_result path_ref::unlink() const { return path_detail::unlink(_path); }
 
-
-__zb::string_view path_ref::root() const {
-  return path_detail::get_root(_path);
-}
-
-
-__zb::error_result path_ref::touch() const {
-  return path_detail::touch(_path);
-}
-
-
-__zb::error_result path_ref::mkdir() const {
-  return path_detail::mkdir(_path);
-}
-
-
-__zb::error_result path_ref::mktree() const {
-  return path_detail::mktree(_path);
-}
-
-
-__zb::error_result path_ref::unlink() const {
-  return path_detail::unlink(_path);
-}
-
-
-__zb::error_result path_ref::rmdir() const {
-  return path_detail::rmdir(_path);
-}
-
+__zb::error_result path_ref::rmdir() const { return path_detail::rmdir(_path); }
 
 __zb::error_result path_ref::rename(const char* new_path) const {
   return path_detail::rename(_path, new_path);
 }
 
-
-size_t path_ref::file_size() const {
-  return path_detail::file_size(_path);
-}
-
+size_t path_ref::file_size() const { return path_detail::file_size(_path); }
 
 ZBASE_END_SUB_NAMESPACE(sys)

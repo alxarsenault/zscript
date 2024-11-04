@@ -29,10 +29,10 @@
   <!-- Main Content -->
   <main class="d-flex flex-nowrap">
 
-    
-<!-- Side Bar -->
+    <!-- Side Bar -->
 <div class="zscript-sidebar flex-shrink-0 p-3">
-  <a href="" class="d-flex align-items-center pb-3 mb-3 link-body-emphasis text-decoration-none border-bottom">
+  <a href=""
+    class="d-flex align-items-center pb-3 mb-3 zscript-sidebar-item link-body-emphasis text-decoration-none border-bottom">
     <span class="fs-5 fw-semibold">Documentation</span>
   </a>
 
@@ -40,75 +40,104 @@
 
     <!-- Introduction -->
     <li class="mb-1">
-      <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed"
-        data-bs-toggle="collapse" data-bs-target="#introduction-collapse" aria-expanded="true">
+      <button id="intro-collapse-button"
+        class="btn zscript-sidebar-section-button d-inline-flex align-items-center rounded border-0 collapsed"
+        data-bs-toggle="collapse" data-bs-target="#intro-collapse" aria-expanded="true">
         1. Introduction
       </button>
-      <div class="collapse show" id="introduction-collapse">
-        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-          <li>
-            <a href="getting-started.html" class="link-body-emphasis d-inline-flex text-decoration-none rounded">
-              <span class="zscript-sidebar-num-index">1.1.&nbsp;</span>
-              Getting Started
-            </a>
-          </li>
+      <div class="collapse" id="intro-collapse">
+        <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
 
-          <li>
-            <a href="overview.html" class="link-body-emphasis d-inline-flex text-decoration-none rounded">
-              <span class="zscript-sidebar-num-index">1.2.&nbsp;</span>Overview
-            </a>
-          </li>
+          <li><a id="side-menu-intro-overview" href="intro-overview.html"
+              class="zscript-sidebar-item d-inline-flex"><span
+                class="zscript-sidebar-num-index">1.1.&nbsp;</span><span>Overview</span></a></li>
 
-          <li>
-            <a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">
-              <span class="zscript-sidebar-num-index">1.3.&nbsp;</span>Hello World
-            </a>
-          </li>
+          <li><a id="side-menu-intro-getting-started" href="intro-getting-started.html"
+              class="zscript-sidebar-item d-inline-flex"><span
+                class="zscript-sidebar-num-index">1.2.&nbsp;</span><span>Getting Started</span></a></li>
+
+          <li><a id="side-menu-intro-hello-world" href="intro-hello-world.html"
+              class="zscript-sidebar-item d-inline-flex"><span
+                class="zscript-sidebar-num-index">1.3.&nbsp;</span><span>Hello World</span></a></li>
+
         </ul>
       </div>
     </li>
 
     <!-- Language -->
     <li class="mb-1">
-      <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed"
+      <button id="language-collapse-button"
+        class="btn zscript-sidebar-section-button d-inline-flex align-items-center rounded border-0 collapsed"
         data-bs-toggle="collapse" data-bs-target="#language-collapse" aria-expanded="true">
         2. Language
       </button>
-      <div class="collapse show" id="language-collapse">
-        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-          <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Overview</a></li>
-          <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Weekly</a></li>
-          <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Monthly</a></li>
-          <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Annually</a></li>
+      <div class="collapse" id="language-collapse">
+        <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+          <li><a id="side-menu-language-basics" href="language-basics.html" class="zscript-sidebar-item"><span
+                class="zscript-sidebar-num-index">2.1.&nbsp;</span><span>Basics</span></a></li>
+
+          <li><a id="side-menu-language-types" href="language-types.html" class="zscript-sidebar-item"><span
+                class="zscript-sidebar-num-index">2.2.&nbsp;</span><span>Types</span></a></li>
+
+          <li><a id="side-menu-language-statements" href="language-statements.html" class="zscript-sidebar-item"><span
+                class="zscript-sidebar-num-index">2.3.&nbsp;</span><span>Statements</span></a></li>
+
+          <li><a id="side-menu-language-expressions" href="language-expressions.html" class="zscript-sidebar-item"><span
+                class="zscript-sidebar-num-index">2.4.&nbsp;</span><span>Expressions</span></a></li>
+
+          <li><a id="side-menu-language-scopes" href="language-scopes.html" class="zscript-sidebar-item"><span
+                class="zscript-sidebar-num-index">2.5.&nbsp;</span><span>Scopes</span></a></li>
+
+          <li><a id="side-menu-language-modules" href="language-modules.html" class="zscript-sidebar-item"><span
+                class="zscript-sidebar-num-index">2.6.&nbsp;</span><span>Modules</span></a></li>
+
+          <li><a id="side-menu-language-compile-time" href="language-compile-time.html"
+              class="zscript-sidebar-item"><span
+                class="zscript-sidebar-num-index">2.7.&nbsp;</span><span>Compile-Time</span></a></li>
+
         </ul>
       </div>
     </li>
     <li class="mb-1">
-      <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed"
+      <button class="btn zscript-sidebar-section-button d-inline-flex align-items-center rounded border-0 collapsed"
         data-bs-toggle="collapse" data-bs-target="#orders-collapse" aria-expanded="true">
         Orders
       </button>
-      <div class="collapse show" id="orders-collapse">
-        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-          <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">New</a></li>
-          <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Processed</a></li>
-          <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Shipped</a></li>
-          <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Returned</a></li>
+      <div class="collapse" id="orders-collapse">
+        <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+          <li><a href="#"
+              class="zscript-sidebar-item link-body-emphasis d-inline-flex text-decoration-none rounded">New</a></li>
+          <li><a href="#"
+              class="zscript-sidebar-item link-body-emphasis d-inline-flex text-decoration-none rounded">Processed</a>
+          </li>
+          <li><a href="#"
+              class="zscript-sidebar-item link-body-emphasis d-inline-flex text-decoration-none rounded">Shipped</a>
+          </li>
+          <li><a href="#"
+              class="zscript-sidebar-item link-body-emphasis d-inline-flex text-decoration-none rounded">Returned</a>
+          </li>
         </ul>
       </div>
     </li>
     <li class="border-top my-3"></li>
     <li class="mb-1">
-      <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0 collapsed"
+      <button class="btn zscript-sidebar-section-button d-inline-flex align-items-center rounded border-0 collapsed"
         data-bs-toggle="collapse" data-bs-target="#account-collapse" aria-expanded="true">
         Account
       </button>
-      <div class="collapse show" id="account-collapse">
-        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-          <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">New...</a></li>
-          <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Profile</a></li>
-          <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Settings</a></li>
-          <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded">Sign out</a></li>
+      <div class="collapse" id="account-collapse">
+        <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+          <li><a href="#"
+              class="zscript-sidebar-item link-body-emphasis d-inline-flex text-decoration-none rounded">New...</a></li>
+          <li><a href="#"
+              class="zscript-sidebar-item link-body-emphasis d-inline-flex text-decoration-none rounded">Profile</a>
+          </li>
+          <li><a href="#"
+              class="zscript-sidebar-item link-body-emphasis d-inline-flex text-decoration-none rounded">Settings</a>
+          </li>
+          <li><a href="#"
+              class="zscript-sidebar-item link-body-emphasis d-inline-flex text-decoration-none rounded">Sign out</a>
+          </li>
         </ul>
       </div>
     </li>
@@ -269,19 +298,23 @@ for(var k = 0; k &lt; 10; k++) {
 
   </main>
 
-  
+  <script
+  src="https://code.jquery.com/jquery-3.7.1.min.js"
+  integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+  crossorigin="anonymous"></script>
 <script src="js/bootstrap.bundle.min.js"></script>
-<script src="js/sidebars.js"></script>
 <script src="js/highlight.min.js"></script>
 <script src="js/zscript-highlight.js"></script>
 <script src="js/highlightjs-line-numbers.min.js"></script>
+<script async defer src="js/app.js"></script>
+
   <script>
     // Load sections when the page is loaded.
-    window.onload = function () {
-      var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
-      hljs.highlightAll();
-      // loadSections(pageName);
-    };
+    // window.onload = function () {
+    //   var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
+    //   hljs.highlightAll();
+    //   // loadSections(pageName);
+    // };
   </script>
 </body>
 

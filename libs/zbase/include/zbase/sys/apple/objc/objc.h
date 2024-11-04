@@ -621,7 +621,7 @@ std::string generate_random_alphanum_string(size_t length);
 template <typename Descriptor>
 class_descriptor<Descriptor>::class_descriptor(const char* rootName)
     : m_classObject(allocate_class(
-          get_class(Descriptor::baseName), (rootName + generate_random_alphanum_string(10)).c_str())) {
+        get_class(Descriptor::baseName), (rootName + generate_random_alphanum_string(10)).c_str())) {
 
   if (!add_pointer<Descriptor>(Descriptor::valueName, Descriptor::className)) {
     std::cout << "ERROR" << std::endl;

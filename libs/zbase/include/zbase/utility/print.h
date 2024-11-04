@@ -32,8 +32,8 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-#include <source_location>
 #include <filesystem>
+#include <zbase/sys/source_location.h>
 
 ZBASE_BEGIN_NAMESPACE
 
@@ -42,7 +42,7 @@ ZBASE_BEGIN_NAMESPACE
 #define __ZB_PRINT_IMPL_LAST(name) ZBASE_VNAME(name)
 #define __ZB_PRINT_IMPL(name) ZBASE_VNAME(name),
 #define ZB_NPRINT(...) zb::print(ZBASE_FOR_EACH_WITH_LAST(__ZB_PRINT_IMPL, __ZB_PRINT_IMPL_LAST, __VA_ARGS__))
- 
+
 template <class _CharT = char, _CharT SpaceChar = ' '>
 struct indent_t {
 
@@ -53,17 +53,16 @@ struct indent_t {
   int _indent;
   int _spaces;
 
-  inline indent_t& operator +=(int v) noexcept {
+  inline indent_t& operator+=(int v) noexcept {
     _indent += v;
     return *this;
   }
-  
-  inline indent_t& operator -=(int v) noexcept {
+
+  inline indent_t& operator-=(int v) noexcept {
     _indent -= v;
     return *this;
   }
-  
-  
+
   inline indent_t& operator++(int) noexcept {
     indent_t t = *this;
     ++_indent;
@@ -82,7 +81,7 @@ struct indent_t {
   }
 
   inline indent_t operator--() noexcept {
-     --_indent;
+    --_indent;
     return *this;
   }
 
@@ -188,7 +187,9 @@ struct element_printer {
 
 /// Container.
 template <class T>
-struct element_printer<T, std::enable_if_t<__zb::is_iterable_container_not_string_v<T> and !__zb::is_streamable<std::basic_ostream<char>, T>::value>> {
+struct element_printer<T,
+    std::enable_if_t<__zb::is_iterable_container_not_string_v<T>
+        and !__zb::is_streamable<std::basic_ostream<char>, T>::value>> {
 
   template <__zb::string_literal Separator, class _CharT>
   static inline std::basic_ostream<_CharT>& print_element(std::basic_ostream<_CharT>& stream, const T& t) {
@@ -276,7 +277,7 @@ struct element_printer<T, std::enable_if_t<std::is_enum_v<T>>> {
 };
 
 template <class T>
-struct element_printer<T, std::enable_if_t<std::is_same_v<T, std::source_location>>> {
+struct element_printer<T, std::enable_if_t<std::is_same_v<T, zb::source_location>>> {
 
   template <__zb::string_literal Separator, class _CharT>
   static inline std::basic_ostream<_CharT>& print_element(std::basic_ostream<_CharT>& stream, const T& t) {
@@ -285,6 +286,17 @@ struct element_printer<T, std::enable_if_t<std::is_same_v<T, std::source_locatio
     return stream;
   }
 };
+
+// template <class T>
+// struct element_printer<T, std::enable_if_t<std::is_same_v<T, std::source_location>>> {
+//
+//   template <__zb::string_literal Separator, class _CharT>
+//   static inline std::basic_ostream<_CharT>& print_element(std::basic_ostream<_CharT>& stream, const T& t) {
+//     stream << t.function_name() << " " << t.line() << ":" << t.column() << " "
+//            << std::filesystem::path(t.file_name()).filename().c_str();
+//     return stream;
+//   }
+// };
 
 template <__zb::string_literal Separator, class _CharT, class T>
 inline std::basic_ostream<_CharT>& print_element(
@@ -353,35 +365,35 @@ inline std::string strprint(const Args&... args) {
 }
 
 namespace detail {
-//template <class T, __zb::string_literal Quote = "\"">
-//struct quoted_t {
+// template <class T, __zb::string_literal Quote = "\"">
+// struct quoted_t {
 //
-//  inline constexpr quoted_t(const T& t) noexcept
-//      : _value(t) {}
+//   inline constexpr quoted_t(const T& t) noexcept
+//       : _value(t) {}
 //
-//  const T& _value;
+//   const T& _value;
 //
-//  template <class _CharT>
-//  inline friend std::basic_ostream<_CharT>& operator<<(
-//      std::basic_ostream<_CharT>& stream, const quoted_t& v) {
+//   template <class _CharT>
+//   inline friend std::basic_ostream<_CharT>& operator<<(
+//       std::basic_ostream<_CharT>& stream, const quoted_t& v) {
 //
-//    stream << Quote;
-//    __zb::detail::print_element<"">(stream, v._value, false) << Quote;
+//     stream << Quote;
+//     __zb::detail::print_element<"">(stream, v._value, false) << Quote;
 //
-//    return stream;
-//  }
-//};
+//     return stream;
+//   }
+// };
 template <class T, __zb::string_literal LQuote = "\"", __zb::string_literal RQuote = "\"">
-struct  quoted_t {
+struct quoted_t {
 
-  inline constexpr  quoted_t(const T& t) noexcept
+  inline constexpr quoted_t(const T& t) noexcept
       : _value(t) {}
 
   const T& _value;
 
   template <class _CharT>
   inline friend std::basic_ostream<_CharT>& operator<<(
-      std::basic_ostream<_CharT>& stream, const  quoted_t& v) {
+      std::basic_ostream<_CharT>& stream, const quoted_t& v) {
 
     stream << LQuote;
     __zb::detail::print_element<"">(stream, v._value, false) << RQuote;
@@ -392,11 +404,11 @@ struct  quoted_t {
 } // namespace detail.
 
 template <__zb::string_literal LQuote = "\"", __zb::string_literal RQuote = "\"", class T>
-inline detail::quoted_t<T, LQuote, RQuote>  quoted(const T& t) {
+inline detail::quoted_t<T, LQuote, RQuote> quoted(const T& t) {
   return detail::quoted_t<T, LQuote, RQuote>(t);
 }
-//template <__zb::string_literal Quote = "\"", class T>
-//inline detail::quoted_t<T, Quote> quoted(const T& t) {
-//  return detail::quoted_t<T, Quote>(t);
-//}
+// template <__zb::string_literal Quote = "\"", class T>
+// inline detail::quoted_t<T, Quote> quoted(const T& t) {
+//   return detail::quoted_t<T, Quote>(t);
+// }
 ZBASE_END_NAMESPACE

@@ -1,0 +1,147 @@
+:root {
+  --zscript-font-sans-serif: "Poppins", sans-serif;
+  --zscript-font-monospace: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --zscript-background-color: #f4f4f4;
+  --zscript-title-color: #252930;
+  --zscript-default-color: rgb(92.5, 102.5, 120);
+}
+
+body {
+  font-family: var(--zscript-font-sans-serif);
+  line-height: 1.6;
+  font-size: 1rem;
+  margin: 0;
+  padding: 0;
+  background-color: var(--zscript-background-color);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--zscript-default-color);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--zscript-font-sans-serif);
+  color: var(--zscript-title-color);
+  font-weight: 600;
+}
+
+h2,
+h3,
+h4 {
+  border-bottom: 2px solid #f4f4f4;
+  padding-bottom: 10px;
+}
+
+#content {
+  margin-left: 20%;
+  margin-right: 20%;
+}
+
+.zscript-list-label {
+  border-bottom: 0px solid #f4f4f4;
+  padding-bottom: 0;
+}
+
+/* .zscript-top-section {} */
+
+section {
+  background-color: #fff;
+  padding: 20px;
+
+  margin-bottom: 20px;
+  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
+
+}
+
+.zscript-list {
+  font-size: 1rem;
+}
+
+.zscript-list strong {
+  font-size: 0.9rem;
+}
+
+.zscript-para {
+  margin-top: 20px;
+  margin-right: 50px;
+  /* font-size: .9rem; */
+  /* width: 80%; */
+  /* padding-right: 30%; */
+  /* background-color: red; */
+}
+
+.zscript-sub-title {
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+pre {
+  background-color: #f4f4f4;
+  padding: 10px;
+  border-left: 4px solid #333;
+  white-space: pre-wrap;
+}
+
+code {
+  font-size: 0.9rem;
+  font-family: var(--zscript-font-monospace);
+}
+
+.site-logo .logo-text {
+  color: var(--zscript-title-color);
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.site-logo .text-alt {
+  font-weight: 300;
+}
+
+
+
+/* .fleft {
+
+
+  height: 80vh;
+  width: 200px;
+  position: fixed;
+  z-index: 1;
+  top: 60px;
+  left: 0;
+  background-color: #111;
+  overflow-x: hidden;
+  padding-top: 20px;
+  overflow-y: scroll;
+  max-height: 80vh;
+} */
+ 
+
+#pages-nav ul {
+  list-style-type: none;
+  padding: 0;
+  padding-left: 8px;
+}
+
+#pages-nav ul li {
+  margin: 5px 0;
+  font-weight: 500;
+}
+
+#pages-nav ul li a {
+  text-decoration: none;
+  color: #333;
+}
+
+#pages-nav .selected-page {
+  color: #333;
+  font-weight: bold;
+}
+
+#pages-nav ul li a:hover {
+  text-decoration: underline;
+}

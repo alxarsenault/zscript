@@ -1,15 +1,15 @@
 <!doctype html>
 <html lang="en" data-bs-theme="auto">
 
-%head
+{{{head}}}
 
 <body>
-  %nav
+  {{{nav}}}
 
   <!-- Main Content -->
   <main class="d-flex flex-nowrap">
 
-    %sidebar
+    {{{sidebar}}}
 
     <div class="row">
       <div class="col content-padding"></div>
@@ -17,7 +17,7 @@
 
         <section class="zscript-top-section">
 
-          <h2>1.2. Blabla</h2>
+          <h2>1.3. Hello World</h2>
           <p>
             ZSCRIPT is a modern, dynamically typed scripting language designed for flexibility, ease of use, and
             powerful runtime
@@ -39,14 +39,14 @@
 
   </main>
 
-  %load-scripts
+  {{{load-scripts}}}
 
   <script>
     // Load sections when the page is loaded.
-    window.onload = function () {
-      var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
-      loadSections(pageName);
-    };
+    // window.onload = function () {
+    //   var pageName = window.location.pathname.split('\\').pop().split('/').pop().replace(/\.[^/.]+$/, "");
+    //   loadSections(pageName);
+    // };
   </script>
 </body>
 

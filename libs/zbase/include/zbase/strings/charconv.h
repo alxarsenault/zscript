@@ -3,6 +3,7 @@
 #include <zbase/zbase.h>
 #include <zbase/detail/fast_float/float_common.h>
 #include <zbase/detail/ryu/ryu.h>
+#include <charconv>
 
 ZBASE_BEGIN_SUB_NAMESPACE(fast_float)
 

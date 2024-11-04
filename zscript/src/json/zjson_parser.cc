@@ -3,17 +3,17 @@ ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wswitch")
 ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
 
 #define ZS_JSON_PARSER_HANDLE_ERROR_STREAM(err, ...) \
-  helper::handle_error(this, err, zs::strprint(_engine, __VA_ARGS__), std::source_location::current())
+  helper::handle_error(this, err, zs::strprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
 
 #define ZS_JSON_PARSER_HANDLE_ERROR_STRING(err, msg) \
-  helper::handle_error(this, err, msg, std::source_location::current())
+  helper::handle_error(this, err, msg, ZB_CURRENT_SOURCE_LOCATION())
 
 namespace zs {
 
 struct json_parser::helper {
 
   static inline zs::error_result handle_error(
-      json_parser* p, zs::error_code ec, std::string_view msg, const std::source_location& loc) {
+      json_parser* p, zs::error_code ec, std::string_view msg, const zb::source_location& loc) {
     zs::line_info linfo = p->_lexer->get_last_line_info();
 
     const auto& stream = p->_lexer->_stream;
@@ -101,7 +101,7 @@ zs::error_result json_parser::parse(zs::virtual_machine* vm, std::string_view co
 
   object ret_value;
   if (auto err = parse_value(ret_value)) {
-    return helper::handle_error(this, err, "invalid token", std::source_location::current());
+    return helper::handle_error(this, err, "invalid token", ZB_CURRENT_SOURCE_LOCATION());
   }
 
   if (_token == tok_lex_error) {
@@ -316,7 +316,7 @@ zs::error_code json_parser::expect_get(json_token_type tok, object& ret) {
     _error_message
         += zs::strprint<"">(_engine, "invalid token ", zb::quoted<"'">(zs::json_token_to_string(_token)),
             ", expected ", zb::quoted<"'">(zs::json_token_to_string(tok)), _lexer->get_line_info(),
-            std::source_location::current());
+            ZB_CURRENT_SOURCE_LOCATION());
 
     return zs::error_code::invalid_token;
   }

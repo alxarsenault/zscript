@@ -1,6 +1,6 @@
 #include <ztests/ztests.h>
 #include <zbase/memory/callable_object.h>
- 
+
 TEST_CASE("callable_object") {
   {
     int count = 0;
@@ -193,5 +193,3 @@ TEST_CASE("sssss") {
 
   REQUIRE(!obj);
 }
-
-
