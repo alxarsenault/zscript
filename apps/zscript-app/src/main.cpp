@@ -1,4 +1,4 @@
-#include <zscript/zscript.h>
+#include <zscript.h>
 #include "zvirtual_machine.h"
 
 #include "options.h"

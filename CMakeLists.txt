@@ -52,7 +52,7 @@ endif()
 
 add_sub_directories(${CMAKE_CURRENT_SOURCE_DIR}/deps/*)
 
-add_sub_directories(${CMAKE_CURRENT_SOURCE_DIR}/libs/*)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/zbase)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/zscript)
 

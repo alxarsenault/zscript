@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <zscript/zscript.h>
+#include <zscript.h>
 #include "lang/zlexer.h"
 #include "lang/jit/zclosure_compile_state.h"
 

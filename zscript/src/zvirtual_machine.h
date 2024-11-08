@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <zscript/zscript.h>
-#include <zscript/core/object_stack.h>
+#include <zscript.h>
+#include <zscript/object_stack.h>
 #include "lang/zinstruction_vector.h"
 
 namespace zs {

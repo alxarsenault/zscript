@@ -1,6 +1,6 @@
 
 #include <ztests/ztests.h>
-#include <zscript/zscript.h>
+#include <zscript.h>
 #include <zbase/utility/print.h>
 #include <zbase/container/byte.h>
 #include <zbase/strings/parse_utils.h>

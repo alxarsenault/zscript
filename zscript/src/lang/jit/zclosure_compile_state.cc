@@ -1,6 +1,6 @@
 // #include "lang/zclosure_compile_state.h"
 //
-// #include "object/zfunction_prototype.h"
+// #include "objects/zfunction_prototype.h"
 // #include "lang/zopcode.h"
 
 namespace zs {

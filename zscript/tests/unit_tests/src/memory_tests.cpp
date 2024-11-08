@@ -1,5 +1,5 @@
 #include "ztests.h"
-#include <zscript/core/object_stack.h>
+#include <zscript/object_stack.h>
 
 #include "zvirtual_machine.h"
 #include <numeric>

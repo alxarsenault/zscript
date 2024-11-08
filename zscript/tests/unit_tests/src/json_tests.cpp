@@ -1,6 +1,6 @@
 
 #include <ztests/ztests.h>
-#include <zscript/zscript.h>
+#include <zscript.h>
 #include <zbase/utility/print.h>
 
 #include "json/zjson_parser.h"

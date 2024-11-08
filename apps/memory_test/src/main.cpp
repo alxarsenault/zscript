@@ -1,4 +1,4 @@
-#include <zscript/zscript.h>
+#include <zscript.h>
 #include "profiler.h"
 
 int main(int argc, char** argv) {

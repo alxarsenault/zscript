@@ -1,9 +1,9 @@
 
 #include <ztests/ztests.h>
-#include <zscript/zscript.h>
+#include <zscript.h>
 #include "lang/zinstruction.h"
 #include "lang/zinstruction_vector.h"
-#include <zscript/core/object_stack.h>
+#include <zscript/object_stack.h>
 
 #include "zvirtual_machine.h"
 #include <zbase/utility/print.h>

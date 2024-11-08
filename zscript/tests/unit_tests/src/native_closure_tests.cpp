@@ -1,13 +1,13 @@
 
 #include <ztests/ztests.h>
-#include <zscript/zscript.h>
+#include <zscript.h>
 #include <zbase/utility/print.h>
 #include "lang/ztoken.h"
 #include "lang/zlexer.h"
 
 #include "lang/jit/zjit_compiler.h"
 
-#include "object/zfunction_prototype.h"
+#include "objects/zfunction_prototype.h"
 #include "zvirtual_machine.h"
 
 struct native_closure_tests {};

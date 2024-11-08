@@ -783,7 +783,7 @@ zs::error_result cpp_compiler::generate(zb::string_view filename, zb::string_vie
 
   _header_stream << "// zscript auto generated.\n";
   _header_stream << "#pragma once\n\n";
-  _header_stream << "#include <zscript/zscript.h>\n\n";
+  _header_stream << "#include <zscript.h>\n\n";
 
   _pre_stream << "#include \"" << _filename << ".h\"\n";
   _pre_stream << "#include \"zvirtual_machine.h\"\n";
@@ -905,7 +905,7 @@ zs::error_result cpp_compiler::generate(zb::string_view filename, zb::string_vie
 //
 //  _header_stream << "// zscript auto generated.\n";
 //  _header_stream << "#pragma once\n\n";
-//  _header_stream << "#include <zscript/zscript.h>\n\n";
+//  _header_stream << "#include <zscript.h>\n\n";
 //
 //  _pre_stream << "#include \"" << _filename << ".h\"\n";
 //  // _pre_stream << "\n";

@@ -47,7 +47,7 @@
 #include "lib/zmath.cc"
 #include "lib/zsbase64.cc"
 #include "lib/zslib.cc"
-#include "object/zfunction_prototype.cc"
+#include "objects/zfunction_prototype.cc"
 #include "xml/zxml_lexer.cc"
 #include "xml/zxml_parser.cc"
 #include "zvirtual_machine.cc"

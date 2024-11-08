@@ -1,7 +1,7 @@
-#include <zscript/zscript.h>
+#include <zscript.h>
 #include "zvirtual_machine.h"
 
-#include "object/zfunction_prototype.h"
+#include "objects/zfunction_prototype.h"
 #include "lang/zparser.h"
 
 #include <zbase/strings/string_view.h>

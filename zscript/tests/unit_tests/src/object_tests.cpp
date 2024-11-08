@@ -1,7 +1,7 @@
 
 #include <ztests/ztests.h>
 
-#include <zscript/zscript.h>
+#include <zscript.h>
 #include <zbase/utility/print.h>
 
 #include "lang/ztoken.h"

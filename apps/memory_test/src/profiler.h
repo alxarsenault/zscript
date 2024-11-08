@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zscript/zscript.h>
+#include <zscript.h>
 
 struct profiler {
   static void init();

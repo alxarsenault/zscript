@@ -1,4 +1,4 @@
-#include <zscript/zscript.h>
+#include <zscript.h>
 
 #define ZS_SCRIPT_CPP 1
 
@@ -56,7 +56,7 @@
 #include "zvirtual_machine.h"
 
 // Objects.
-#include "object/zfunction_prototype.h"
+#include "objects/zfunction_prototype.h"
 
 // Lang.
 #include "lang/jit/zclosure_compile_state.h"

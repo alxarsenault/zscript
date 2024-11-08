@@ -17,7 +17,7 @@
 //
 // #pragma once
 //
-// #include <zscript/zscript.h>
+// #include <zscript.h>
 // #include "lang/zparser.h"
 //
 // namespace zs {

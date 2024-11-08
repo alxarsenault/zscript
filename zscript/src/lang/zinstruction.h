@@ -1,6 +1,6 @@
 #pragma once
 
-#include <zscript/zscript.h>
+#include <zscript.h>
 #include "lang/zopcode.h"
 
 namespace zs {

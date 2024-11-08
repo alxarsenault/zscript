@@ -1,6 +1,6 @@
 #include <ztests/ztests.h>
-#include <zscript/zscript.h>
-#include <zscript/core/object_stack.h>
+#include <zscript.h>
+#include <zscript/object_stack.h>
 
 #include <zbase/utility/print.h>
 #include <zbase/container/stack.h>

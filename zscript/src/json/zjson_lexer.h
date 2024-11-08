@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <zscript/zscript.h>
+#include <zscript.h>
 
 #include "json/zjson_token.h"
 
