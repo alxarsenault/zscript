@@ -1,15 +1,15 @@
 <!doctype html>
 <html lang="en" data-bs-theme="auto">
 
-{{{head}}}
+{{> head }}
 
 <body>
-  {{{nav}}}
+  {{> nav }}
 
   <!-- Main Content -->
   <main class="d-flex flex-nowrap">
 
-    {{{sidebar}}}
+    {{> sidebar }}
 
     <div class="container">
       <div class="row">
@@ -166,7 +166,7 @@ for(var k = 0; k &lt; 10; k++) {
 
   </main>
 
-  {{{load-scripts}}}
+  {{> load-scripts }}
 
   <script>
     // Load sections when the page is loaded.

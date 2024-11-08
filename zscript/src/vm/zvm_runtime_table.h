@@ -96,11 +96,23 @@ ZS_DECL_RT_ACTION(table_set, objref_t obj, cobjref_t key, cobjref_t value) {
 
     // Call the set operator.
     object ret;
-    return call(meta_set, { obj, key, value, obj }, ret);
+    auto err = call(meta_set, { obj, key, value, obj }, ret);
+    if (!err) {
+      return {};
+    }
+
+    if (err != zs::error_code::not_found) {
+      return err;
+    }
   }
 
   if (tbl.has_delegate()) {
-    if(auto err = runtime_action<delegate_set>(obj, REF(tbl.get_delegate()), key, value); err != zs::error_code::not_found) {
+    auto err = runtime_action<delegate_set>(obj, REF(tbl.get_delegate()), key, value);
+    if (!err) {
+      return {};
+    }
+
+    if (err != zs::error_code::not_found) {
       return err;
     }
   }

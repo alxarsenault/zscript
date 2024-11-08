@@ -39,8 +39,45 @@ void* reallocate(zs::engine* eng, void* ptr, size_t size, size_t old_size, alloc
 void deallocate(zs::engine* eng, void* ptr, alloc_info_t ainfo) { eng->deallocate(ptr, ainfo); }
 
 //
+// MARK: reference_counted
+//
+
+reference_counted::reference_counted(zs::engine* eng) noexcept
+    : engine_holder(eng) {
+
+  ZS_IF_USE_ENGINE_GLOBAL_REF_COUNT(engine_rc_proxy::incr_global_ref_count(eng));
+}
+
+reference_counted::~reference_counted() {
+  zbase_assert(_ref_count == 0, "~reference_counted: ref_count should be zero");
+}
+
+void reference_counted::retain() noexcept {
+  _ref_count++;
+  ZS_IF_USE_ENGINE_GLOBAL_REF_COUNT(engine_rc_proxy::incr_global_ref_count(_engine));
+}
+
+bool reference_counted::release() noexcept {
+  zbase_assert(_ref_count > 0, "invalid ref count");
+
+  ZS_IF_USE_ENGINE_GLOBAL_REF_COUNT(engine_rc_proxy::decr_global_ref_count(_engine));
+
+  if (--_ref_count == 0) {
+    internal::zs_delete(_engine, this);
+    return true;
+  }
+
+  return false;
+}
+
+//
 // MARK: reference_counted_object
 //
+reference_counted_object::reference_counted_object(zs::engine* eng, zs::object_type objtype) noexcept
+    : reference_counted(eng)
+    , _obj_type(objtype) {
+  ZS_IF_GARBAGE_COLLECTOR(zs::garbage_collector_rc_proxy::add(eng, this));
+}
 
 reference_counted_object::~reference_counted_object() {
 
@@ -56,6 +93,21 @@ reference_counted_object::~reference_counted_object() {
   }
 }
 
+bool reference_counted_object::release() noexcept {
+  zbase_assert(_ref_count > 0, "invalid ref count");
+
+  ZS_IF_USE_ENGINE_GLOBAL_REF_COUNT(engine_rc_proxy::decr_global_ref_count(_engine));
+
+  if (--_ref_count == 0) {
+    ZS_IF_GARBAGE_COLLECTOR(zs::garbage_collector_rc_proxy::remove(_engine, this));
+    internal::zs_delete(_engine, this);
+
+    return true;
+  }
+
+  return false;
+}
+
 object reference_counted_object::get_weak_ref(const object_base& obj) {
   if (!_weak_ref_object) {
     // Create the weak_ref object if it doesn't exists.
@@ -63,6 +115,6 @@ object reference_counted_object::get_weak_ref(const object_base& obj) {
   }
 
   zbase_assert(_weak_ref_object, "Invalid weak_ref_object");
-  return object(_weak_ref_object, object_type::k_weak_ref, true);
+  return object(_weak_ref_object, true);
 }
 } // namespace zs.

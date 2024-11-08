@@ -1,0 +1,46 @@
+<!-- Doc menu -->
+<div class="offcanvas offcanvas-start" id="offcanvas" data-bs-keyboard="false" data-bs-backdrop="false"
+  style="width:280px; background-color: #f4f4f4;">
+  <div class="offcanvas-header">
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body px-0">
+    {{> menu}}
+  </div>
+</div>
+
+<!-- Top Navigation Bar -->
+<nav class="navbar navbar-expand-md fixed-top zscript-navbar">
+  <div class="container-fluid">
+
+    <button class="btn float-end d-block d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#offcanvas" role="button">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <a href="index.html" class="navbar-brand">
+      <img src="logo.png" alt="" width="28" height="28">
+      <span class="logo-text">ZScript</span>
+    </a>
+
+    <div class="collapse navbar-collapse">
+      <div class="navbar-nav">
+        {{ nav-item label="Install" href="install.html" }}
+        {{ nav-item label="Documentation" href="intro-overview.html" }}
+        {{ nav-item label="Examples" href="examples.html" }}
+        {{ nav-item label="Development" href="development.html" }}
+        {{ nav-item label="Contact" href="contact.html" }}
+      </div>
+    </div>
+    <!-- <i class="bi bi-three-dots"></i> -->
+
+    <button class="btn d-block d-md-none" role="button">
+      <i class="bi bi-three-dots"></i>
+    </button>
+
+    <!-- <a class="nav-link d-block d-md-none" href="#"><i class="bi bi-three-dots"></i></a> -->
+    <!-- <a class="nav-link d-block d-md-none" href="#"><i class="fa fa-ellipsis-h"></i></a> -->
+    <!-- <a class="nav-link d-none d-md-none d-lg-block" href="#"><i class="fa fa-github"></i> Github </a> -->
+
+
+
+  </div>
+</nav>

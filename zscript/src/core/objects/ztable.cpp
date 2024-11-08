@@ -3,7 +3,7 @@
 namespace zs {
 
 table_object::table_object(zs::engine* eng)
-    : delegate_object(eng)
+    : delegate_object(eng, zs::object_type::k_table)
     , map_type((zs::unordered_map_allocator<object, object>(eng, zs::memory_tag::nt_table))) {
 
   //_delegate = eng->get_default_table_delegate();

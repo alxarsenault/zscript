@@ -101,7 +101,12 @@ zs::error_code virtual_machine::exec_op<opcode::op_get>(
 
     if (err == zs::error_code::not_found && inst.look_in_root) {
       // TODO: Use closure's root.
-      ZS_RETURN_IF_ERROR(this->get(_root_table, key, dst));
+      //      ZS_RETURN_IF_ERROR(this->get(_root_table, key, dst));
+
+      if (auto err = this->get(_root_table, key, dst)) {
+        zb::print("-------dsljkdjjksadl", key);
+        return err;
+      }
     }
     else {
       set_error("Get failed in type: '", tbl.get_type(), "' with key: ", key, ".\n");
@@ -126,7 +131,6 @@ zs::error_code virtual_machine::exec_op<opcode::op_set>(
   return this->set(tbl, key, value);
 }
 
-
 // op_rawset.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_rawset>(
@@ -134,12 +138,32 @@ zs::error_code virtual_machine::exec_op<opcode::op_rawset>(
   const zs::instruction_t<op_rawset>& inst = it.get_ref<op_rawset>();
 
   object& tbl = _stack[inst.table_idx];
-  
-  if(!tbl.is_table()) {
+
+  if (!tbl.is_table()) {
     return zs::error_code::invalid_type;
   }
-  
+
   const object& key = _stack[inst.key_idx];
+  const object& value = _stack[inst.value_idx];
+  return tbl.as_table().set(key, value);
+}
+
+// op_rawsets.
+template <>
+zs::error_code virtual_machine::exec_op<opcode::op_rawsets>(
+    zs::instruction_iterator& it, exec_op_data_t& op_data) {
+  const zs::instruction_t<op_rawsets>& inst = it.get_ref<op_rawsets>();
+
+  object& tbl = _stack[inst.table_idx];
+
+  if (!tbl.is_table()) {
+    return zs::error_code::invalid_type;
+  }
+
+  const char* sbuffer = (const char*)&inst.value_1;
+  object key = zs::_ss(std::string_view(sbuffer, std::strlen(sbuffer)));
+
+  //  const object& key = _stack[inst.key_idx];
   const object& value = _stack[inst.value_idx];
   return tbl.as_table().set(key, value);
 }
@@ -410,6 +434,40 @@ zs::error_code virtual_machine::exec_op<opcode::op_return>(
   //  return zs::error_code::success;
 }
 
+ZS_DECL_EXEC_OP(return_export) {
+  ZS_INST(return_export);
+
+  object export_table = _stack[inst.idx];
+
+  zbase_assert(export_table.is_table(), "returned export table is not a table");
+
+  // Look for cycling references.
+  table_object& tbl = export_table.as_table();
+
+  //  for(auto it : tbl) {
+  //    zb::print(it);
+  //
+  //    if(it.second.is_closure()) {
+  //      zb::print("DSLKDAAAAA");
+  //
+  //      closure_object& closure_obj = it.second.as_closure();
+  //      zs::vector<zs::object>& captures = closure_obj._capture_values;
+  //
+  //      for(object& captured_obj : captures) {
+  //        if(captured_obj == export_table) {
+  //          zb::print("SAMASASMAMSMAS");
+  //          captured_obj = export_table.get_weak_ref();
+  //        }
+  //      }
+  //    }
+  //  }
+
+  this->push(export_table);
+  op_data.ret_value = export_table;
+
+  return zs::error_code::returned;
+}
+
 // op_line.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_line>(
@@ -638,9 +696,19 @@ zs::error_code virtual_machine::exec_op<opcode::op_new_closure>(
   // TODO: Use closure's root.
   // Create the new closure object.
   object new_closure_obj = zs::object::create_closure(this->get_engine(), new_closure_fct_proto, _root_table);
+  new_closure_obj.as_closure()._module = current_closure.as_closure()._module;
 
-  // In the new closure function prototype, we might have some captures to
-  // fetch.
+  if (int_t module_idx = current_closure_fct_proto._fproto->_export_table_target; module_idx != -1) {
+
+    if (module_idx >= (int_t)_stack.stack_size()) {
+      _error_message += zs::strprint(_engine, "op_new_closure could not find local capture\n");
+      return zs::error_code::out_of_bounds;
+    }
+
+    new_closure_obj.as_closure()._module = _stack[module_idx];
+  }
+
+  // In the new closure function prototype, we might have some captures to fetch.
   const zs::vector<captured_variable>& captures = new_closure_fct_proto._fproto->_captures;
   if (const size_t capture_sz = captures.size()) {
 
@@ -663,7 +731,16 @@ zs::error_code virtual_machine::exec_op<opcode::op_new_closure>(
           return zs::error_code::out_of_bounds;
         }
 
-        new_closure_capture_values.push_back(_stack[cap_idx]);
+        object obj = _stack[cap_idx];
+        if (captured_var.is_weak) {
+          obj = obj.get_weak_ref();
+        }
+
+        new_closure_capture_values.push_back(std::move(obj));
+
+        if (captured_var.name == "__exports__") {
+          new_closure_obj.as_closure()._module = new_closure_capture_values.back();
+        }
         break;
       }
 
@@ -680,7 +757,17 @@ zs::error_code virtual_machine::exec_op<opcode::op_new_closure>(
           return zs::error_code::out_of_bounds;
         }
 
-        new_closure_capture_values.push_back(current_closure_capture_values[cap_idx]);
+        //        new_closure_capture_values.push_back(current_closure_capture_values[cap_idx]);
+        object obj = current_closure_capture_values[cap_idx];
+        if (captured_var.is_weak) {
+          obj = obj.get_weak_ref();
+        }
+
+        new_closure_capture_values.push_back(std::move(obj));
+
+        if (captured_var.name == "__exports__") {
+          new_closure_obj.as_closure()._module = new_closure_capture_values.back();
+        }
         break;
       }
       }

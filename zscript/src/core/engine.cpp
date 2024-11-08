@@ -42,7 +42,8 @@ engine::engine(allocate_t alloc_cb, raw_pointer_t user_pointer, raw_pointer_rele
     , _user_pointer(user_pointer)
     , _user_pointer_release(user_release)
     , _stream_getter(stream_getter)
-    , _initializer(initializer) {
+    , _initializer(initializer) //
+    ZS_IF_GARBAGE_COLLECTOR(, _gc(this)) {
 
   engine_proxy::init_objects(this);
 
@@ -53,10 +54,9 @@ engine::engine(allocate_t alloc_cb, raw_pointer_t user_pointer, raw_pointer_rele
 
 engine::~engine() {
 
-  //  if (_working_buffer) {
-  //    deallocate(_working_buffer, (alloc_info_t)memory_tag::nt_engine);
-  //    _working_buffer = nullptr;
-  //  }
+  engine_proxy::destroy_objects(this);
+
+  ZS_IF_GARBAGE_COLLECTOR(_gc.finalize());
 
   if (_user_pointer_release) {
     (*_user_pointer_release)(this, _user_pointer);
@@ -65,9 +65,8 @@ engine::~engine() {
   _user_pointer = nullptr;
   _user_pointer_release = nullptr;
 
-  engine_proxy::destroy_objects(this);
-
-  zbase_warning(_global_ref_count == 0, "Invalid reference count (", _global_ref_count, ") should be zero");
+  ZS_IF_USE_ENGINE_GLOBAL_REF_COUNT(zbase_warning(
+      _global_ref_count == 0, "Invalid reference count (", _global_ref_count, ") should be zero"));
 }
 
 void* engine::allocate(size_t size, alloc_info_t ainfo) {
@@ -104,6 +103,8 @@ zs::error_result engine::add_import_directory(const std::filesystem::path& direc
 
       std::error_code ec;
       canonical_path = std::filesystem::weakly_canonical(directory, ec);
+      //      zb::print(canonical_path, directory);
+      //      canonical_path = directory;
 
       if (ec) {
         return zs::error_code::invalid_include_file;
@@ -186,5 +187,42 @@ zs::error_result engine::resolve_file_path(std::string_view import_value, object
 
   result = object::create_small_string("");
   return zs::error_code::not_found;
+}
+
+garbage_collector::garbage_collector(zs::engine* eng)
+    : zs::engine_holder(eng)
+    , _objs(zb::aligned_type_storage_construct_tag{}, (zs::allocator<zs::reference_counted_object*>(eng))) {}
+
+void garbage_collector::finalize() {
+  {
+    zs::vector<zs::object> objs((zs::allocator<zs::object>(_engine)));
+    objs.reserve(_objs.get().size());
+
+    for (auto it : _objs.get()) {
+      objs.emplace_back(it, true);
+    }
+
+    for (auto& obj : objs) {
+      if (obj.is_table()) {
+        obj.as_table().clear();
+      }
+      else if (obj.is_array()) {
+        obj.as_array().clear();
+      }
+      else if (obj.is_closure()) {
+        obj.as_closure().clear();
+      }
+    }
+  }
+
+  _objs.destroy();
+}
+
+void garbage_collector::add(zs::engine* eng, zs::reference_counted_object* obj) {
+  ZS_IF_GARBAGE_COLLECTOR(eng->_gc._objs.data()->insert(obj));
+}
+
+void garbage_collector::remove(zs::engine* eng, zs::reference_counted_object* obj) {
+  ZS_IF_GARBAGE_COLLECTOR(eng->_gc._objs.data()->erase(obj));
 }
 } // namespace zs.

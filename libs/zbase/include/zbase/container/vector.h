@@ -91,6 +91,11 @@ public:
   // Find iterator.
   //
 
+  
+  ZB_CHECK ZB_INLINE bool contains(const value_type& v) const noexcept {
+    return std::find(this->begin(), this->end(), v) != this->end();
+  }
+  
   ZB_CHECK ZB_INLINE iterator find(const value_type& v) noexcept {
     return std::find(this->begin(), this->end(), v);
   }

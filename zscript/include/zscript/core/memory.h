@@ -262,13 +262,14 @@ class reference_counted_object : public reference_counted {
 public:
   ZS_OBJECT_CLASS_COMMON;
 
-  ZB_INLINE reference_counted_object(zs::engine* eng) noexcept
-      : reference_counted(eng) {}
+  reference_counted_object(zs::engine* eng, zs::object_type objtype) noexcept;
 
   reference_counted_object(reference_counted_object&&) = delete;
   reference_counted_object(const reference_counted_object&) = delete;
   reference_counted_object& operator=(reference_counted_object&&) = delete;
   reference_counted_object& operator=(const reference_counted_object&) = delete;
+
+  virtual bool release() noexcept override;
 
 protected:
   virtual ~reference_counted_object() override;
@@ -277,6 +278,11 @@ private:
   friend class weak_ref_object;
 
   weak_ref_object* _weak_ref_object = nullptr;
+
+public:
+  object_type _obj_type;
+
+private:
   object get_weak_ref(const object_base& obj);
 };
 

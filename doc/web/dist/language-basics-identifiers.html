@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+
+<head>
+  
+  <!-- meta -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="">
+  <meta name="author" content="Zscript">
+  <title>ZScript Doc - Identifiers</title>
+
+  
+<!-- common-style -->
+
+<link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&display=swap" rel="stylesheet" type="text/css">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=Nunito+Sans:300,400,600,700,800,900" rel="stylesheet" type="text/css">
+<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css">
+<link href="css/code-style.css" rel="stylesheet" type="text/css">
+<link href="css/common-style.css" rel="stylesheet" type="text/css">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+
+  <link href="css/doc-style.css" rel="stylesheet">
+</head>
+
+<body>
+  <!-- Doc menu -->
+  <div class="offcanvas offcanvas-start" id="offcanvas" data-bs-keyboard="false" data-bs-backdrop="false"
+    style="width:280px; background-color: #f4f4f4;">
+    <div class="offcanvas-header">
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body px-0">
+      <!-- Side Bar -->
+      <div class="zscript-sidebar flex-shrink-0 p-3">
+        <!-- <a href="" -->
+          <!-- class="d-flex align-items-center pb-3 mb-3 zscript-sidebar-item link-body-emphasis text-decoration-none border-bottom"> -->
+          <!-- <span class="fs-5 fw-semibold">Documentation</span> -->
+        <!-- </a> -->
+      
+        <ul class="list-unstyled ps-0">
+      
+          <!-- Introduction -->
+          <li class="mb-1">
+            <button id="intro-collapse-button"
+              class="btn zscript-sidebar-section-button  d-inline-flex align-items-center rounded border-0 collapsed"
+              data-bs-toggle="collapse" data-bs-target="#intro-collapse" aria-expanded="true">
+              1. Introduction
+            </button>
+      
+            <div class="collapse" id="intro-collapse">
+              <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+                <li>
+            <a id="side-menu-intro-overview" href="intro-overview.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">1.1.&nbsp;</span>
+                <span>Overview</span>
+            </a>
+            
+          </li>
+                <li>
+            <a id="side-menu-intro-getting-started" href="intro-getting-started.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">1.2.&nbsp;</span>
+                <span>Getting Started</span>
+            </a>
+            
+          </li>
+                <li>
+            <a id="side-menu-intro-hello-world" href="intro-hello-world.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">1.3.&nbsp;</span>
+                <span>Hello World</span>
+            </a>
+            
+          </li>
+              </ul>
+            </div>
+          </li>
+      
+          <!-- Language -->
+          <li class="mb-1">
+            <button id="language-collapse-button"
+              class="btn zscript-sidebar-section-button zscript-sidebar-section-selected d-inline-flex align-items-center rounded border-0 collapsed"
+              data-bs-toggle="collapse" data-bs-target="#language-collapse" aria-expanded="true">
+              2. Language
+            </button>
+            <div class="collapse" id="language-collapse">
+              <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-language-basics" href="language-basics.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.&nbsp;</span>
+                <span>Basics</span>
+            </a>
+                          <ul class="zscript-sidebar-subsection-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-language-basics-comments" href="language-basics-comments.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.1.&nbsp;</span>
+                <span>Comments</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-basics-identifiers" href="language-basics-identifiers.html"
+              class="zscript-sidebar-item zscript-sidebar-selected-item d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.2.&nbsp;</span>
+                <span>Identifiers</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-basics-types" href="language-basics-types.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.3.&nbsp;</span>
+                <span>Types</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-basics-loop" href="language-basics-loop.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.4.&nbsp;</span>
+                <span>Loop</span>
+            </a>
+            
+          </li>              </ul>
+      
+          </li><li>
+            <a id="side-menu-language-types" href="language-types.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.&nbsp;</span>
+                <span>Types</span>
+            </a>
+                          <ul class="zscript-sidebar-subsection-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-language-types-integers" href="language-types-integers.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.1.&nbsp;</span>
+                <span>Integers</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-floats" href="language-types-floats.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.2.&nbsp;</span>
+                <span>Floats</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-strings" href="language-types-strings.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.3.&nbsp;</span>
+                <span>Strings</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-arrays" href="language-types-arrays.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.4.&nbsp;</span>
+                <span>Arrays</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-tables" href="language-types-tables.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.5.&nbsp;</span>
+                <span>Tables</span>
+            </a>
+            
+          </li>              </ul>
+      
+          </li><li>
+            <a id="side-menu-language-statements" href="language-statements.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.3.&nbsp;</span>
+                <span>Statements</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-expressions" href="language-expressions.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.4.&nbsp;</span>
+                <span>Expressions</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-delegates" href="language-delegates.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.5.&nbsp;</span>
+                <span>Delegates</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-scopes" href="language-scopes.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.6.&nbsp;</span>
+                <span>Scopes</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-modules" href="language-modules.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.7.&nbsp;</span>
+                <span>Modules</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-compile-time" href="language-compile-time.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.8.&nbsp;</span>
+                <span>Compile-Time</span>
+            </a>
+            
+          </li>        </ul>
+            </div>
+          </li>
+      
+          <!-- API -->
+          <li class="border-top my-2"></li>
+          <li class="mb-1">
+            <button id="api-collapse-button"
+              class="btn zscript-sidebar-section-button  d-inline-flex align-items-center rounded border-0 collapsed"
+              data-bs-toggle="collapse" data-bs-target="#api-collapse" aria-expanded="true">
+              3. API
+            </button>
+            <div class="collapse" id="api-collapse">
+              <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-api-objects" href="api-objects.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">3.1.&nbsp;</span>
+                <span>Objects</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-api-virtual-machine" href="api-virtual-machine.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">3.2.&nbsp;</span>
+                <span>Virual Machine</span>
+            </a>
+            
+          </li>        </ul>
+            </div>
+          </li>
+        </ul>
+      </div>  </div>
+  </div>
+  
+  <!-- Top Navigation Bar -->
+  <nav class="navbar navbar-expand-md fixed-top zscript-navbar">
+    <div class="container-fluid">
+  
+      <button class="btn float-end d-block d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#offcanvas" role="button">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <a href="index.html" class="navbar-brand">
+        <img src="logo.png" alt="" width="28" height="28">
+        <span class="logo-text">ZScript</span>
+      </a>
+  
+      <div class="collapse navbar-collapse">
+        <div class="navbar-nav">
+          <a class="nav-link " href="install.html">Install</a>
+          <a class="nav-link active" href="intro-overview.html">Documentation</a>
+          <a class="nav-link " href="examples.html">Examples</a>
+          <a class="nav-link " href="development.html">Development</a>
+          <a class="nav-link " href="contact.html">Contact</a>
+        </div>
+      </div>
+      <!-- <i class="bi bi-three-dots"></i> -->
+  
+      <button class="btn d-block d-md-none" role="button">
+        <i class="bi bi-three-dots"></i>
+      </button>
+  
+      <!-- <a class="nav-link d-block d-md-none" href="#"><i class="bi bi-three-dots"></i></a> -->
+      <!-- <a class="nav-link d-block d-md-none" href="#"><i class="fa fa-ellipsis-h"></i></a> -->
+      <!-- <a class="nav-link d-none d-md-none d-lg-block" href="#"><i class="fa fa-github"></i> Github </a> -->
+  
+  
+  
+    </div>
+  </nav>
+  <!-- Main Content -->
+  <main id="main" class="d-flex flex-nowrap">
+    <div id="content-sidebar" class="d-none d-lg-block">
+      <!-- Side Bar -->
+      <div class="zscript-sidebar flex-shrink-0 p-3">
+        <!-- <a href="" -->
+          <!-- class="d-flex align-items-center pb-3 mb-3 zscript-sidebar-item link-body-emphasis text-decoration-none border-bottom"> -->
+          <!-- <span class="fs-5 fw-semibold">Documentation</span> -->
+        <!-- </a> -->
+      
+        <ul class="list-unstyled ps-0">
+      
+          <!-- Introduction -->
+          <li class="mb-1">
+            <button id="intro-collapse-button"
+              class="btn zscript-sidebar-section-button  d-inline-flex align-items-center rounded border-0 collapsed"
+              data-bs-toggle="collapse" data-bs-target="#intro-collapse" aria-expanded="true">
+              1. Introduction
+            </button>
+      
+            <div class="collapse" id="intro-collapse">
+              <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+                <li>
+            <a id="side-menu-intro-overview" href="intro-overview.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">1.1.&nbsp;</span>
+                <span>Overview</span>
+            </a>
+            
+          </li>
+                <li>
+            <a id="side-menu-intro-getting-started" href="intro-getting-started.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">1.2.&nbsp;</span>
+                <span>Getting Started</span>
+            </a>
+            
+          </li>
+                <li>
+            <a id="side-menu-intro-hello-world" href="intro-hello-world.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">1.3.&nbsp;</span>
+                <span>Hello World</span>
+            </a>
+            
+          </li>
+              </ul>
+            </div>
+          </li>
+      
+          <!-- Language -->
+          <li class="mb-1">
+            <button id="language-collapse-button"
+              class="btn zscript-sidebar-section-button zscript-sidebar-section-selected d-inline-flex align-items-center rounded border-0 collapsed"
+              data-bs-toggle="collapse" data-bs-target="#language-collapse" aria-expanded="true">
+              2. Language
+            </button>
+            <div class="collapse" id="language-collapse">
+              <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-language-basics" href="language-basics.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.&nbsp;</span>
+                <span>Basics</span>
+            </a>
+                          <ul class="zscript-sidebar-subsection-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-language-basics-comments" href="language-basics-comments.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.1.&nbsp;</span>
+                <span>Comments</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-basics-identifiers" href="language-basics-identifiers.html"
+              class="zscript-sidebar-item zscript-sidebar-selected-item d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.2.&nbsp;</span>
+                <span>Identifiers</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-basics-types" href="language-basics-types.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.3.&nbsp;</span>
+                <span>Types</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-basics-loop" href="language-basics-loop.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.1.4.&nbsp;</span>
+                <span>Loop</span>
+            </a>
+            
+          </li>              </ul>
+      
+          </li><li>
+            <a id="side-menu-language-types" href="language-types.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.&nbsp;</span>
+                <span>Types</span>
+            </a>
+                          <ul class="zscript-sidebar-subsection-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-language-types-integers" href="language-types-integers.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.1.&nbsp;</span>
+                <span>Integers</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-floats" href="language-types-floats.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.2.&nbsp;</span>
+                <span>Floats</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-strings" href="language-types-strings.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.3.&nbsp;</span>
+                <span>Strings</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-arrays" href="language-types-arrays.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.4.&nbsp;</span>
+                <span>Arrays</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-types-tables" href="language-types-tables.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.2.5.&nbsp;</span>
+                <span>Tables</span>
+            </a>
+            
+          </li>              </ul>
+      
+          </li><li>
+            <a id="side-menu-language-statements" href="language-statements.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.3.&nbsp;</span>
+                <span>Statements</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-expressions" href="language-expressions.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.4.&nbsp;</span>
+                <span>Expressions</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-delegates" href="language-delegates.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.5.&nbsp;</span>
+                <span>Delegates</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-scopes" href="language-scopes.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.6.&nbsp;</span>
+                <span>Scopes</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-modules" href="language-modules.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.7.&nbsp;</span>
+                <span>Modules</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-language-compile-time" href="language-compile-time.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">2.8.&nbsp;</span>
+                <span>Compile-Time</span>
+            </a>
+            
+          </li>        </ul>
+            </div>
+          </li>
+      
+          <!-- API -->
+          <li class="border-top my-2"></li>
+          <li class="mb-1">
+            <button id="api-collapse-button"
+              class="btn zscript-sidebar-section-button  d-inline-flex align-items-center rounded border-0 collapsed"
+              data-bs-toggle="collapse" data-bs-target="#api-collapse" aria-expanded="true">
+              3. API
+            </button>
+            <div class="collapse" id="api-collapse">
+              <ul class="zscript-sidebar-section-list list-unstyled fw-normal pb-1 small">
+      <li>
+            <a id="side-menu-api-objects" href="api-objects.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">3.1.&nbsp;</span>
+                <span>Objects</span>
+            </a>
+            
+          </li><li>
+            <a id="side-menu-api-virtual-machine" href="api-virtual-machine.html"
+              class="zscript-sidebar-item  d-inline-flex">
+                <span class="zscript-sidebar-item-num">3.2.&nbsp;</span>
+                <span>Virual Machine</span>
+            </a>
+            
+          </li>        </ul>
+            </div>
+          </li>
+        </ul>
+      </div></div>
+<div id="content-container" class="container">
+      <div class="row">
+        <div id="content" class="mx-auto col-10">
+                <nav class="zscript-breadcrumb" style="--bs-breadcrumb-divider: url(&#34;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M2.5 0L1 1.5 3.5 4 1 6.5 2.5 8l4-4-4-4z' fill='currentColor'/%3E%3C/svg%3E&#34;);" aria-label="breadcrumb">
+      
+        <ol class="breadcrumb">
+          <li>
+            <a href="language-basics-comments.html" type="button" class="btn btn-outline-primary btn-sm zscript-breadcrumb-button ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8">
+              </path>
+            </svg>
+          </a>
+          </li>
+              <li class="breadcrumb-item active">Language</li>
+            <li class="breadcrumb-item active" > Basics </li>
+      
+          <li class="breadcrumb-item active" aria-current="page">Identifiers</li>
+        </ol>
+      </nav><section class="zscript-top-section">
+        <h1 class="zscript-page-title"><span class="zscript-page-title-num">2.1.2.&nbsp;</span>Identifiers</h1>
+          
+        <p>
+          You use variables as symbolic names for values in your application.
+          The names of variables, called identifiers, conform to certain rules.
+        </p>
+
+        <p>
+          Identifiers start with an alphabetic character or the symbol <code class="zscript-intext-code">_</code> followed by any number of alphabetic characters, <code class="zscript-intext-code">_</code> or digits <span class="zscript-nowrap">[0-9]</span>.
+          <span class="zscript-name-in-text">ZScript</span> is a case sensitive language meaning that the lowercase and uppercase representation of the same alphabetic character are considered different characters.
+          For instance, <code class="zscript-intext-code">foo</code>, <code class="zscript-intext-code">Foo</code> and <code class="zscript-intext-code">FOo</code> are treated as 3 distinct identifiers.
+        </p>
+
+        <p>
+          You can use most Unicode letters such as å and ü in identifiers. (For more details, see the lexical grammar reference.)
+        </p>
+        <p>
+          Some examples of legal names are <code class="zscript-intext-code">Number_hits</code>, <code class="zscript-intext-code">temp99</code> and <code class="zscript-intext-code">_name</code>.
+        </p>
+
+        <h4>Reserved words</h4>
+        <p>
+          These keywords cannot be used as identifiers for variables, functions, classes, etc. anywhere in <span class="zscript-name-in-text">ZScript</span> source.
+
+          <ul>
+            <li><a href="#"><code>array</code></a></li>
+            <li><a href="#"><code>auto</code></a></li>
+            <li><a href="#"><code>bool</code></a></li>
+            <li><a href="#"><code>char</code></a></li>
+            <li><a href="#"><code>float</code></a></li>
+            <li><a href="#"><code>int</code></a></li>
+            <li><a href="#"><code>string</code></a></li>
+            <li><a href="#"><code>table</code></a></li>
+            <li><a href="#"><code>typed_array</code></a></li>
+            <li><a href="#"><code>var</code></a></li>
+          </ul>
+
+
+          <ul style="columns: 2;">
+            <li><a href="#"><code>and</code></a></li>
+            <li><a href="#"><code>base</code></a></li>
+            <li><a href="#"><code>break</code></a></li>
+            <li><a href="#"><code>case</code></a></li>
+            <li><a href="#"><code>catch</code></a></li>
+            <li><a href="#"><code>class</code></a></li>
+            <li><a href="#"><code>const</code></a></li>
+            <li><a href="#"><code>constructor</code></a></li>
+            <li><a href="#"><code>continue</code></a></li>
+            <li><a href="#"><code>default</code></a></li>
+            <li><a href="#"><code>delete</code></a></li>
+            <li><a href="#"><code>destructor</code></a></li>
+            <li><a href="#"><code>do</code></a></li>
+            <li><a href="#"><code>else</code></a></li>
+            <li><a href="#"><code>enum</code></a></li>
+            <li><a href="#"><code>export</code></a></li>
+            <li><a href="#"><code>extends</code></a></li>
+            <li><a href="#"><code>false</code></a></li>
+            <li><a href="#"><code>final</code></a></li>
+            <li><a href="#"><code>for</code></a></li>
+            <li><a href="#"><code>foreach</code></a></li>
+            <li><a href="#"><code>function</code></a></li>
+            <li><a href="#"><code>global</code></a></li>
+            <li><a href="#"><code>if</code></a></li>
+            <li><a href="#"><code>import</code></a></li>
+            <li><a href="#"><code>in</code></a></li>
+            <li><a href="#"><code>include</code></a></li>
+            <li><a href="#"><code>inout</code></a></li>
+            <li><a href="#"><code>none</code></a></li>
+            <li><a href="#"><code>not</code></a></li>
+            <li><a href="#"><code>null</code></a></li>
+            <li><a href="#"><code>or</code></a></li>
+            <li><a href="#"><code>return</code></a></li>
+            <li><a href="#"><code>static</code></a></li>
+            <li><a href="#"><code>super</code></a></li>
+            <li><a href="#"><code>switch</code></a></li>
+            <li><a href="#"><code>this</code></a></li>
+            <li><a href="#"><code>throw</code></a></li>
+            <li><a href="#"><code>true</code></a></li>
+            <li><a href="#"><code>try</code></a></li>
+            <li><a href="#"><code>typeid</code></a></li>
+            <li><a href="#"><code>typeof</code></a></li>
+            <li><a href="#"><code>void</code></a></li>
+            <li><a href="#"><code>while</code></a></li>
+            <li><a href="#"><code>with</code></a></li>
+            <li><a href="#"><code>xor</code></a></li>
+          </ul>
+
+          Identifiers with special meanings
+          A few identifiers have a special meaning in some contexts without being reserved words of any kind. They include:
+          <ul>
+            <li><a href="#"><code>rawset</code></a></li>
+            <li><a href="#"><code>rawget</code></a></li>
+            <li><a href="#"><code>rawcall</code></a></li>
+          </ul>
+
+          <ul>
+            <li><a href="#"><code>@expr</code></a></li>
+            <li><a href="#"><code>@inject</code></a></li>
+            <li><a href="#"><code>@scope</code></a></li>
+          </ul>
+        </p>
+
+
+      </section>      
+      <div class="d-flex bd-highlight mb-3">
+        <div class="p-2 bd-highlight">
+          <a href="language-basics-comments.html" type="button" class="btn btn-outline-secondary ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8">
+              </path>
+            </svg>
+          </a>
+        </div>
+        <div class="ms-auto p-2 bd-highlight">
+          <a href="language-basics-types.html" type="button" class="btn btn-outline-secondary ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8">
+              </path>
+            </svg>
+          </a>
+        </div>
+      </div>
+        </div>
+      </div>
+    </div>  </main>
+
+  
+<!-- footer -->
+<footer id="footer" class="d-flex flex-row align-items-center">
+  <p class="p-2 mb-0">&copy; 2024 Company, Inc</p>
+</footer>
+
+  
+  <!-- load-scripts -->
+  
+  
+  <!-- load-scripts-common -->
+  
+  <!-- jquery -->
+  <script
+    src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+    crossorigin="anonymous"></script>
+  
+  <!-- bootstrap -->
+  <script src="js/bootstrap.bundle.min.js"></script>
+  
+  <!-- highlight -->
+  <script src="js/highlight.min.js"></script>
+  
+  <!-- zscript-highlight -->
+  <script src="js/zscript-highlight.js"></script>
+  <script src="js/highlightjs-line-numbers.min.js"></script>
+  
+  
+  <!-- app -->
+  <script async defer src="js/app.js"></script>
+</body>
+
+</html>

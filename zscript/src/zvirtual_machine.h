@@ -179,13 +179,15 @@ public:
   /// @}
   ///
   ///
-  
-  ZS_CHECK zs::error_result call_file(const std::filesystem::path& filepath, std::string_view source_name, zs::object& ret_value, bool with_vargs = false);
-  
-  
-  ZS_CHECK zs::error_result call_buffer(std::string_view content, std::string_view source_name, zs::object& ret_value, bool with_vargs = false);
 
-  ZS_CHECK zs::error_result call_buffer(std::string_view content, std::string_view source_name, zs::object& this_table, zs::object& ret_value, std::span<const object> args, bool with_vargs = false);
+  ZS_CHECK zs::error_result call_file(const std::filesystem::path& filepath, std::string_view source_name,
+      zs::object& ret_value, bool with_vargs = false);
+
+  ZS_CHECK zs::error_result call_buffer(
+      std::string_view content, std::string_view source_name, zs::object& ret_value, bool with_vargs = false);
+
+  ZS_CHECK zs::error_result call_buffer(std::string_view content, std::string_view source_name,
+      zs::object& this_table, zs::object& ret_value, std::span<const object> args, bool with_vargs = false);
 
   ///
   ZS_CHECK zs::error_result load_buffer_as_value(

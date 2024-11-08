@@ -274,7 +274,6 @@ TEST_CASE("zs::xml.05") {
 }
 
 TEST_CASE("zs::xml.06") {
-
   zs::engine eng;
 
   {

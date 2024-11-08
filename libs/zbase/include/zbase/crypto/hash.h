@@ -280,7 +280,7 @@ ZB_CHECK ZB_INLINE uint64_t rapid_hash(std::string_view t) noexcept {
 
 template <class T>
 struct rapid_hasher {
-  inline size_t operator()(const T& v) noexcept { return __zb::rapid_hash(v); }
+  inline size_t operator()(const T& v) const noexcept { return __zb::rapid_hash(v); }
 };
 
 namespace hash_detail {

@@ -2,8 +2,39 @@
 
 #include <zscript/core/common.h>
 #include <zscript/core/types.h>
+#include <unordered_set>
 
 namespace zs {
+
+class garbage_collector_rc_proxy;
+
+class garbage_collector : zs::engine_holder {
+  friend class zs::engine;
+  friend class zs::garbage_collector_rc_proxy;
+  using unordered_set_type = zs::unordered_set<zs::reference_counted_object*>;
+
+  garbage_collector(zs::engine* eng);
+
+  static void add(zs::engine* eng, zs::reference_counted_object* obj);
+  static void remove(zs::engine* eng, zs::reference_counted_object* obj);
+
+  void finalize();
+
+  zb::aligned_type_storage<unordered_set_type> _objs;
+};
+
+class garbage_collector_rc_proxy {
+  friend class zs::reference_counted_object;
+  ZS_INLINE static void add(zs::engine* eng, zs::reference_counted_object* obj) {
+    garbage_collector::add(eng, obj);
+  }
+
+  ZS_INLINE static void remove(zs::engine* eng, zs::reference_counted_object* obj) {
+    garbage_collector::remove(eng, obj);
+  }
+};
+
+class engine_rc_proxy;
 
 /// @class engine
 class engine final {
@@ -16,8 +47,8 @@ public:
       engine_initializer_t initializer = ZS_DEFAULT_ENGINE_INITIALIZER);
 
   ZS_INLINE engine(const config_t& conf)
-      : engine(
-          conf.alloc_callback, conf.user_pointer, conf.user_release, conf.stream_getter, conf.initializer) {}
+      : engine(conf.alloc_callback, conf.user_pointer, conf.user_release, conf.stream_getter,
+            conf.initializer) {}
 
   engine(const engine&) = delete;
   engine(engine&&) = delete;
@@ -57,6 +88,22 @@ private:
   stream_getter_t _stream_getter;
   engine_initializer_t _initializer;
   std::array<uint8_t, 4 * constants::k_object_size> _objects;
-  int_t _global_ref_count = 0;
+
+  friend class engine_rc_proxy;
+  friend class zs::garbage_collector;
+  ZS_IF_GARBAGE_COLLECTOR(zs::garbage_collector _gc);
+
+  ZS_IF_USE_ENGINE_GLOBAL_REF_COUNT(int_t _global_ref_count = 0);
 };
+
+class engine_rc_proxy {
+  friend class zs::reference_counted;
+  friend class zs::reference_counted_object;
+
+#if ZS_USE_ENGINE_GLOBAL_REF_COUNT
+  static inline void incr_global_ref_count(engine* eng) { eng->_global_ref_count++; }
+  static inline void decr_global_ref_count(engine* eng) { eng->_global_ref_count--; }
+#endif // ZS_USE_ENGINE_GLOBAL_REF_COUNT.
+};
+
 } // namespace zs.

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+
+{{> head }}
+
+<body>
+  {{> nav }}
+
+  <!-- Main Content -->
+  <main id="main" class="d-flex flex-nowrap">
+    {{> sidebar }}
+
+    {{#content-container}}
+      {{> breadcrumb }}
+      {{#page-section}}
+
+        <h3>for statement</h3>
+        <p>
+          The for statement creates a loop that consists of three optional expressions, enclosed in parentheses and separated by semicolons, followed by a statement (usually a block statement) to be executed in the loop.
+          A for loop repeats until a specified condition evaluates to false. The {{zname}} for loop is similar to the Java and C for loop.
+        </p>
+        <p>
+          A for statement looks as follows:
+          {{#code-block}}for (initialization; condition; afterthought)
+  statement
+
+for (initialization; condition; afterthought) {
+  // statement(s).
+}{{/code-block}}
+
+          When a for loop executes, the following occurs:
+        </p>
+        <p>
+          <ul style="list-style-type: numbered">
+          <li>The initializing expression initialization, if any, is executed. This expression usually initializes one or more loop counters, but the syntax allows an expression of any degree of complexity. This expression can also declare variables.</li>
+          <li>The condition expression is evaluated. If the value of condition is true, the loop statements execute. Otherwise, the for loop terminates. (If the condition expression is omitted entirely, the condition is assumed to be true.)</li>
+          <li>The statements executes. To execute multiple statements, use a block statement {{zscript-intext-code "{}"}} to group those statements.</li>
+          <li>If present, the update expression afterthought is executed.</li>
+          <li>Control returns to Step 2.</li>
+          </ul>
+
+          {{#code-block}}for (int i = 0; i < 10; ++i) {
+  print(i);
+}
+
+for (int i = 0, j = 0, k = 0; i < 10 and j < 10; ++i, ++j) {
+  print(i, j, k++);
+}
+
+for (var i = 0, s = "john"; i < s.size(); ++i) {
+  print(s[i]);
+}
+{{/code-block}}
+
+        </p>
+
+        <h5>Initialization</h5>
+        <p>
+          An expression (including assignment expressions) or variable declaration evaluated once before the loop begins. Typically used to initialize a counter variable. This expression may optionally declare new variables with var or let keywords. Variables declared with var are not local to the loop, i.e. they are in the same scope the for loop is in. Variables declared with let are local to the statement.
+        </p>
+
+        <p>
+          The result of this expression is discarded.
+        </p>
+
+        <h5>Condition</h5>
+        <p>
+          An expression to be evaluated before each loop iteration. If this expression evaluates to true, statement is executed. If the expression evaluates to false, execution exits the loop and goes to the first statement after the for construct.
+        </p>
+        <p>
+          This conditional test is optional. If omitted, the condition always evaluates to true.
+        </p>
+
+
+        <h5>Afterthought</h5>
+        <p>
+          An expression to be evaluated at the end of each loop iteration. This occurs before the next evaluation of condition. Generally used to update or increment the counter variable.
+        </p>
+
+        <!-- Statement -->
+        <h5>Statement</h5>
+        <p>
+          A statement that is executed as long as the condition evaluates to true. You can use a block statement to execute multiple statements. To execute no statement within the loop, use an empty statement (;).
+        </p>
+      {{/page-section}}
+      {{> bottom-nav }}
+    {{/content-container}}
+  </main>
+
+  {{{footer}}}
+  {{> load-scripts }}
+</body>
+
+</html>

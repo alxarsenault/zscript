@@ -1,14 +1,15 @@
-#include <zscript/core/zcore.h>
+#include <zscript/zscript.h>
 
 namespace zs {
 node_object::node_object(zs::engine* eng) noexcept
-    : delegate_object(eng)
+    : delegate_object(eng, zs::object_type::k_node)
     , _children(zs::allocator<object>(eng))
     , _attributes(zs::allocator<attribute>(eng)) {}
 
 node_object* node_object::create(zs::engine* eng, const object& name) noexcept {
   node_object* node = internal::zs_new<memory_tag::nt_node, node_object>(eng, eng);
   node->_name = name;
+
   return node;
 }
 
@@ -16,6 +17,7 @@ node_object* node_object::create(zs::engine* eng, const object& name, const obje
   node_object* node = internal::zs_new<memory_tag::nt_node, node_object>(eng, eng);
   node->_name = name;
   node->_value = value;
+
   return node;
 }
 

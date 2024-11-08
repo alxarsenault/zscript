@@ -52,6 +52,7 @@ ZS_DECL_TOKEN(not ) // !
 ZS_DECL_TOKEN(xor) // xor
 ZS_DECL_TOKEN(include) // include or #include
 ZS_DECL_TOKEN(import) // import or #import
+ZS_DECL_TOKEN(module) // @module
 
 //
 ZS_DECL_TOKEN(last_named_token)

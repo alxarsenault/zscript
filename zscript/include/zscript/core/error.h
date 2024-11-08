@@ -9,35 +9,40 @@
   X(returned, "returned")                                           \
   X(unknown, "unknown")                                             \
   X(invalid, "invalid")                                             \
+  X(invalid_size, "invalid_size")                                   \
+  X(invalid_type, "invalid_type")                                   \
+  X(invalid_operation, "invalid_operation")                         \
+  X(invalid_token, "invalid_token")                                 \
+  X(invalid_comma, "invalid_comma")                                 \
+  X(invalid_directory, "invalid_directory")                         \
+  X(invalid_value_type_assignment, "invalid_value_type_assignment") \
+  X(invalid_include_syntax, "invalid_include_syntax")               \
+  X(invalid_include_file, "invalid_include_file")                   \
+  X(invalid_argument, "invalid_argument")                           \
+  X(invalid_parameter_count, "invalid_parameter_count")             \
+  X(invalid_parameter_type, "invalid_parameter_type")               \
+  X(invalid_native_function_call, "invalid_native_function_call")   \
+  X(invalid_name, "invalid_name")                                   \
+  X(invalid_include_directory, "invalid_include_directory")         \
+  X(invalid_native_array_type, "invalid_native_array_type")         \
   X(already_exists, "already_exists")                               \
   X(conversion_error, "conversion_error")                           \
   X(open_file_error, "open_file_error")                             \
   X(memory_error, "memory_error")                                   \
-  X(invalid_type, "invalid_type")                                   \
-  X(invalid_native_array_type, "invalid_native_array_type")         \
-  X(invalid_token, "invalid_token")                                 \
   X(null_type, "null_type")                                         \
   X(out_of_bounds, "out_of_bounds")                                 \
   X(out_of_memory, "out_of_memory")                                 \
   X(inaccessible, "inaccessible")                                   \
   X(unimplemented, "unimplemented")                                 \
-  X(invalid_operation, "invalid_operation")                         \
   X(not_a_table, "not_a_table")                                     \
   X(not_a_for_colon, "not_a_for_colon")                             \
-  X(invalid_value_type_assignment, "invalid_value_type_assignment") \
-  X(invalid_comma, "invalid_comma")                                 \
-  X(invalid_include_syntax, "invalid_include_syntax")               \
-  X(invalid_include_file, "invalid_include_file")                   \
-  X(invalid_include_directory, "invalid_include_directory")         \
-  X(invalid_directory, "invalid_directory")                         \
   X(identifier_expected, "identifier_expected")                     \
-  X(invalid_native_function_call, "invalid_native_function_call")   \
-  X(invalid_argument, "invalid_argument")                           \
-  X(invalid_parameter_count, "invalid_parameter_count")             \
-  X(invalid_parameter_type, "invalid_parameter_type")               \
-  X(invalid_name, "invalid_name")                                   \
   X(too_many_locals, "too many locals")                             \
+  X(duplicated_module, "duplicated_module")                         \
+  X(stack_error, "stack_error")                                     \
   X(not_found, "not_found")                                         \
+  /* Module */                                                      \
+  X(cant_modify_export_table, "cant_modify_export_table")           \
   /* Struct */                                                      \
   X(cant_modify_const_member, "cant_modify_const_member")           \
   X(cant_modify_static_const, "cant_modify_static_const")

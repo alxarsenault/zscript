@@ -1,0 +1,180 @@
+{{#*inline "code-01"}}
+var t = get_unknown_table();
+
+var val;
+if(check_some_stuff(t)) {
+  val = get_some_stuff(t);
+}
+
+print(val);
+{{/inline}}
+
+<!--  -->
+{{#*inline "code-02"}}
+var t = get_unknown_table();
+
+if(check_some_stuff(t)) {
+  var v1 = get_some_stuff(t);
+  outer var v2 = get_some_stuff(t);
+
+  // All good.
+  print(v1, v2);
+}
+
+// Error: v1 is out of scope, only v2 is accessible.
+print(v1, v2);
+{{/inline}}
+
+<!--  -->
+{{#*inline "code-03"}}
+var t = get_unknown_table();
+
+{
+  {
+    if(check_some_stuff(t)) {
+      outer var v1 = get_some_stuff(t);
+      outer&lt;2&gt; var v2 = get_some_stuff(t);
+    }
+
+    // All good.
+    print(v1, v2);
+  }
+
+  // Error: v1 is out of scope, only v2 is accessible.
+  print(v1, v2);
+}
+
+// Error: v1 and v2 are out of scope.
+print(v1, v2);
+{{/inline}}
+
+
+<!--  -->
+{{#*inline "code-04"}}
+@scope my_scope;
+
+var t = get_unknown_table();
+
+{
+  {
+    if(check_some_stuff(t)) {
+      outer&lt;my_scope&gt; var val = get_some_stuff(t);
+    }
+  }
+}
+
+// All good.
+print(val);
+{{/inline}}
+
+
+
+
+<!--  -->
+{{#*inline "code-05"}}
+@block my_block {
+  function init() { print("Init"); }
+  function enter(int count) { print("Enter"); }
+  function exit(int count) { print("Exit"); }
+};
+
+print("A");
+@my_block {
+  print("B");
+}
+print("C");
+@my_block {
+  print("D");
+}
+print("E");
+{{/inline}}
+
+<!--  -->
+{{#*inline "code-06"}}
+@block my_block {
+  init = $() { print("Init"); }
+  can_enter = $(int count) { return count == 1; }
+  enter = $(int count) { print("Enter"); }
+  exit = $(int count) { print("Exit"); }
+};
+
+print("A");
+@my_block {
+  print("B");
+}
+print("C");
+@my_block {
+  print("D");
+}
+print("E");
+{{/inline}}
+
+<!--  -->
+{{#*inline "term-01"}}
+A
+Init
+First Enter
+B
+First Exit
+C
+Enter
+D
+Exit
+E
+{{/inline}}
+
+<!--  -->
+{{#*inline "term-02"}}
+A
+Init
+Enter
+B
+Exit
+C
+E
+{{/inline}}
+
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+
+{{> head }}
+
+<body>
+  {{> nav }}
+
+  <!-- Main Content -->
+  <main class="d-flex flex-nowrap">
+
+    {{> sidebar }}
+
+    {{#content-container}}
+    {{> breadcrumb }}
+    {{#page-section}} 
+        <p></p>
+        {{#code-block label="Compile-time <code>@inject</code> example"}}{{> code-01}}{{/code-block}}
+        {{#code-block label="Compile-time <code>@inject</code> example"}}{{> code-02}}{{/code-block}}
+        {{#code-block label="Compile-time <code>@inject</code> example"}}{{> code-03}}{{/code-block}}
+        {{#code-block label="Compile-time <code>@inject</code> example"}}{{> code-04}}{{/code-block}}
+        {{/page-section}} 
+
+      <section>
+        <h2>2.5. Blocks</h2>
+        <p></p>
+        {{#code-block label="Compile-time <code>@inject</code> example"}}{{> code-05}}{{/code-block}}
+        <p></p>
+        {{#terminal-block}}{{> term-01}}{{/terminal-block}}
+        {{#code-block label="Compile-time <code>@inject</code> example"}}{{> code-06}}{{/code-block}}
+        <p></p>
+        {{#terminal-block}}{{> term-02}}{{/terminal-block}}
+      </section>
+
+      {{> bottom-nav }}
+    {{/content-container}}
+
+  </main>
+
+  {{{footer}}}
+  {{> load-scripts }}
+</body>
+
+</html>

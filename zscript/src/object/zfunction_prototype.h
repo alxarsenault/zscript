@@ -43,6 +43,8 @@ private:
 public:
   zs::object _source_name;
   zs::object _name;
+  zs::object _module_name;
+  //  zs::object _export_table;
   zs::int_t _stack_size;
 
   zs::vector<zs::local_var_info_t> _vlocals;
@@ -53,6 +55,7 @@ public:
   zs::vector<zs::object> _functions;
   zs::vector<zs::captured_variable> _captures;
   size_t _n_capture = 0;
+  int_t _export_table_target = -1;
 
   // Line infos.
   zs::vector<zs::line_info_op_t> _line_info;

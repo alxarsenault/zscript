@@ -173,7 +173,7 @@ public:
 
   ZS_CHECK object& root() noexcept;
   ZS_CHECK const object& root() const noexcept;
-  
+
   ZS_CHECK object& operator[](int_t idx) noexcept;
   ZS_CHECK const object& operator[](int_t idx) const noexcept;
 
@@ -203,7 +203,9 @@ protected:
 class vm : public vm_ref {
 public:
   vm(size_t stack_size = ZS_DEFAULT_STACK_SIZE, allocate_t alloc_cb = ZS_DEFAULT_ALLOCATE,
-      raw_pointer_t user_pointer = nullptr, raw_pointer_release_hook_t user_release = nullptr) noexcept;
+      raw_pointer_t user_pointer = nullptr, raw_pointer_release_hook_t user_release = nullptr,
+      stream_getter_t stream_getter = ZS_DEFAULT_STREAM_GETTER,
+      engine_initializer_t initializer = ZS_DEFAULT_ENGINE_INITIALIZER) noexcept;
 
   vm(zs::engine* eng, size_t stack_size = ZS_DEFAULT_STACK_SIZE) noexcept;
 

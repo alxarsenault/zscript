@@ -3,7 +3,7 @@
 namespace zs {
 
 function_prototype_object::function_prototype_object(zs::engine* eng)
-    : reference_counted_object(eng)
+    : reference_counted_object(eng, zs::object_type::k_function_prototype)
     , _vlocals(zs::allocator<zs::local_var_info_t>(eng))
     , _literals(zs::allocator<zs::object>(eng))
     , _default_params(zs::allocator<zs::int_t>(eng))

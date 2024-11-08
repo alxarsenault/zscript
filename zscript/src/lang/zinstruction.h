@@ -198,13 +198,20 @@ ZS_DECLARE_INSTRUCTION(get, GET, 5);
   X(uint8_t, value_idx)
 ZS_DECLARE_INSTRUCTION(set, SET, 4);
 
-
 ///
 #define ZS_INSTRUCTION_RAWSET_TYPES(X) \
-  X(uint8_t, table_idx)             \
-  X(uint8_t, key_idx)               \
+  X(uint8_t, table_idx)                \
+  X(uint8_t, key_idx)                  \
   X(uint8_t, value_idx)
 ZS_DECLARE_INSTRUCTION(rawset, RAWSET, 4);
+
+///
+#define ZS_INSTRUCTION_RAWSETS_TYPES(X) \
+  X(uint8_t, table_idx)                 \
+  X(uint8_t, value_idx)                 \
+  X(uint64_t, value_1)                  \
+  X(uint64_t, value_2)
+ZS_DECLARE_INSTRUCTION(rawsets, RAWSETS, 19);
 
 ///
 #define ZS_INSTRUCTION_EQUALS_TYPES(X) \
@@ -318,6 +325,10 @@ ZS_DECLARE_INSTRUCTION(get_base, GET_BASE, 2);
   X(uint8_t, idx)                      \
   X(bool, has_value)
 ZS_DECLARE_INSTRUCTION(return, RETURN, 3);
+
+///
+#define ZS_INSTRUCTION_RETURN_EXPORT_TYPES(X) X(uint8_t, idx)
+ZS_DECLARE_INSTRUCTION(return_export, RETURN_EXPORT, 2);
 
 /// Check type.
 /// Makes sure that the object at stack index `idx` is of `obj_type` type.

@@ -19,10 +19,9 @@
 
 #include <zbase/zbase.h>
 #include <zbase/sys/assert.h>
-
 #include <zbase/sys/file_view.h>
-#include <zbase/utility/print.h>
 #include <zbase/strings/string_view.h>
+#include <zbase/utility/print.h>
 #include <zbase/utility/traits.h>
 
 #include <zscript/core/zcore.h>
@@ -39,8 +38,11 @@
 
 namespace zs {
 
+inline constexpr size_t default_stack_size = 1024;
+
 namespace constants {
   inline constexpr bool k_is_object_stack_resizable = true;
+  //  inline constexpr size_t default_stack_size = 1024;
 } // namespace constants.
 
 //
@@ -77,7 +79,8 @@ using file_loader = ZS_DEFAULT_FILE_LOADER;
 ZS_CHECK virtual_machine* create_virtual_machine(size_t stack_size = ZS_DEFAULT_STACK_SIZE,
     allocate_t alloc_cb = ZS_DEFAULT_ALLOCATE, raw_pointer_t user_pointer = nullptr,
     raw_pointer_release_hook_t user_release = nullptr,
-    stream_getter_t stream_getter = ZS_DEFAULT_STREAM_GETTER);
+    stream_getter_t stream_getter = ZS_DEFAULT_STREAM_GETTER,
+    engine_initializer_t initializer = ZS_DEFAULT_ENGINE_INITIALIZER);
 
 ZS_CHECK virtual_machine* create_virtual_machine(zs::engine* eng, size_t stack_size = ZS_DEFAULT_STACK_SIZE);
 

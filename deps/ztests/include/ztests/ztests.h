@@ -19,6 +19,25 @@
 
 #include <ztests/catch2.h>
 
+
+
+
+
+namespace ztests {
+//struct EventListener : Catch::EventListenerBase
+//{
+//  using EventListenerBase::EventListenerBase;
+//  
+//  void testCaseStarting(const Catch::TestCaseInfo&  testInfo ) override {
+//    std::cout << testInfo.name << std::endl;
+//  }
+//  
+//};
+
+
+}
+
+
 #ifdef ZTESTS_MAIN
 #include <zbase/sys/assert.h>
 
@@ -26,5 +45,8 @@ int main(int argc, char* argv[]) {
   zb::assert_handler.set([]() { return true; });
   return Catch::Session().run(argc, argv);
 }
-
 #endif // ZTESTS_MAIN.
+
+
+
+

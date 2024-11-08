@@ -1265,40 +1265,40 @@ return f1(12);
   REQUIRE(vm.top() == 122);
 }
 
-//ZS_CODE_TEST("delegate_01", R"""(
+// ZS_CODE_TEST("delegate_01", R"""(
 //
-//var banana_delegate = {
-//  get_name = $() {
-//    return this.name;
-//  }
+// var banana_delegate = {
+//   get_name = $() {
+//     return this.name;
+//   }
 //
-//  set_name = $(name) {
-//    this.name = name;
-//  }
-//};
+//   set_name = $(name) {
+//     this.name = name;
+//   }
+// };
 //
-//function create_banana(name, obj = {}) {
-//  obj.name = name;
-//  set_delegate(obj, banana_delegate);
-//  return obj;
-//}
+// function create_banana(name, obj = {}) {
+//   obj.name = name;
+//   set_delegate(obj, banana_delegate);
+//   return obj;
+// }
 //
 //
 //
-//var b1 = create_banana("A");
+// var b1 = create_banana("A");
 //
-//var out = b1.get_name();
+// var out = b1.get_name();
 //
-//b1.set_name("B");
+// b1.set_name("B");
 //
-//out += b1.get_name();
-//var b2 = create_banana("C", {});
-//out += b2.get_name();
+// out += b1.get_name();
+// var b2 = create_banana("C", {});
+// out += b2.get_name();
 //
-//return out;
+// return out;
 //)""") {
-//  REQUIRE(vm.top() == "ABC");
-//}
+//   REQUIRE(vm.top() == "ABC");
+// }
 
 ZS_CODE_TEST("if_return", R"""(
 

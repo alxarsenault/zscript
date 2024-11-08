@@ -21,126 +21,19 @@
 #include "lang/zlexer.h"
 #include "lang/jit/zclosure_compile_state.h"
 
-// #define ZS_COMPILER_USE_HANDLER 1
-// #define ZS_COMPILER_DEV 1
-
 namespace zs {
-
 ///
-class jit_compiler : public engine_holder {
+class jit_compiler : public zs::engine_holder, jit::closure_compile_state_ref, zs::lexer_ref {
 public:
   jit_compiler(zs::engine* eng);
-
-  ~jit_compiler();
 
   zs::error_result compile(std::string_view content, std::string_view filename, object& output,
       zs::virtual_machine* vm = nullptr, zs::token_type* prepended_token = nullptr, bool with_vargs = false);
 
-  //
-  // MARK: Parser
-  //
-
-  ZS_CHECK zs::error_code expect(token_type tok) noexcept;
-  ZS_CHECK zs::error_code expect_get(token_type tok, object& ret);
-
   ZS_CK_INLINE const zs::string& get_error() const noexcept { return _error_message; }
 
-  ZS_CK_INLINE bool is_end_of_statement() const noexcept {
-    using enum token_type;
-    return (_lexer->last_token() == tok_endl) || is(tok_eof, tok_rcrlbracket, tok_semi_colon);
-  }
-
-  //
-  // MARK: Lexer
-  //
-
-  token_type lex();
-
-  //
-  // MARK: Token helpers
-  //
-
-  ZS_CK_INLINE bool is(token_type t) const noexcept { return _token == t; }
-
-  template <class... Tokens>
-  ZS_CK_INLINE bool is(Tokens... tokens) const noexcept {
-    return zb::is_one_of(_token, tokens...);
-  }
-
-  template <class... Tokens>
-  ZS_CK_INLINE bool is_not(Tokens... tokens) const noexcept {
-    return !zb::is_one_of(_token, tokens...);
-  }
-
-  template <class... Tokens>
-  ZS_INLINE bool lex_if(Tokens... tokens) noexcept {
-    if (zb::is_one_of(_token, tokens...)) {
-      lex();
-      return true;
-    }
-    return false;
-  }
-
-  ZS_CK_INLINE bool is_var_decl_tok() const noexcept {
-    switch (_token) {
-    case tok_const:
-    case tok_var:
-    case tok_array:
-    case tok_table:
-    case tok_string:
-    case tok_char:
-    case tok_int:
-    case tok_bool:
-    case tok_float:
-      return true;
-
-    default:
-      return false;
-    }
-    return false;
-  }
-  
-  
-  ZS_CK_INLINE static bool is_var_decl_tok(token_type t)   noexcept {
-    switch (t) {
-    case tok_const:
-    case tok_var:
-    case tok_array:
-    case tok_table:
-    case tok_string:
-    case tok_char:
-    case tok_int:
-    case tok_bool:
-    case tok_float:
-      return true;
-
-    default:
-      return false;
-    }
-    return false;
-  }
-
-  ZS_CK_INLINE bool is_var_decl_tok_no_const() const noexcept {
-    switch (_token) {
-    case tok_var:
-    case tok_array:
-    case tok_table:
-    case tok_string:
-    case tok_char:
-    case tok_int:
-    case tok_bool:
-    case tok_float:
-      return true;
-
-    default:
-      return false;
-    }
-    return false;
-  }
-
 private:
-  struct helper;
-  using enum token_type;
+  using enum opcode;
 
   enum class expr_type { e_expr, e_object, e_base, e_local, e_capture };
 
@@ -162,39 +55,21 @@ private:
     bool no_assign = false;
   };
 
-  enum class parser_type { pt_default };
-
-  enum class parse_op : uint8_t;
-
   struct struct_parser;
 
   //
   // MARK: Members
   //
 
-  zs::lexer* _lexer = nullptr;
-  zs::token_type _token = token_type::tok_none;
-  zs::closure_compile_state* _ccs = nullptr;
   zs::string _error_message;
   zs::object _compile_time_consts;
   zs::virtual_machine* _vm = nullptr;
   expr_state _estate;
   scope _scope;
   int_t _enum_counter = 0;
-  bool _in_template = false;
 
-  template <parse_op Op>
-  ZS_CK_INLINE_CXPR static parse_op next_parse_op() noexcept {
-    return static_cast<parse_op>(uint8_t(Op) + 1);
-  }
-
-  template <parse_op Op, class... Args>
-  ZS_CHECK zs::error_result parse(Args... args);
-
-  enum class action_type { act_move_if_current_target_is_local, act_invoke_expr };
-
-  template <action_type Action, class... Args>
-  ZS_CHECK zs::error_result action(Args... args);
+  ZS_CHECK zs::error_code expect(token_type tok) noexcept;
+  ZS_CHECK zs::error_code expect_get(token_type tok, object& ret);
 
   template <opcode Op, class... Args>
   ZS_INLINE void add_instruction(Args... args) {
@@ -205,6 +80,172 @@ private:
 #endif
   }
 
-  zs::error_result parse_include_or_import_statement(token_type tok);
+  ZS_INLINE void add_move_instruction(int_t target) {
+    add_instruction<opcode::op_move>(_ccs->new_target(), (uint8_t)target);
+  }
+
+  template <auto Op, class... Args>
+  ZS_CHECK zs::error_result parse(Args... args);
+
+  zs::error_result add_small_string_instruction(std::string_view s, int_t target_idx);
+
+  ZS_INLINE zs::error_result add_small_string_instruction(std::string_view s) {
+    return add_small_string_instruction(s, _ccs->new_target());
+  }
+
+  zs::error_result add_string_instruction(std::string_view s, int_t target_idx);
+  zs::error_result add_string_instruction(const object& sobj, int_t target_idx);
+
+  ZS_INLINE zs::error_result add_string_instruction(std::string_view s) {
+    return add_string_instruction(s, _ccs->new_target());
+  }
+
+  ZS_INLINE zs::error_result add_string_instruction(const object& sobj) {
+    return add_string_instruction(sobj, _ccs->new_target());
+  }
+
+  zs::error_result add_export_string_instruction(const object& var_name);
+
+  zs::error_result add_to_export_table(const object& var_name);
+
+  zs::error_result handle_error(zs::error_code ec, std::string_view msg, const zb::source_location& loc);
+
+  void move_if_current_target_is_local();
+
+  zs::error_result invoke_expr(zb::member_function_pointer<jit_compiler, zs::error_result> fct);
+
+  template <class Fct>
+  inline zs::error_result expr_call(Fct&& fct);
+
+  template <class Fct>
+  inline zs::error_result expr_call(Fct&& fct, expr_state e);
+
+  inline bool needs_get() const noexcept;
+  inline bool needs_get_no_assign() const noexcept;
+  inline bool will_modify() const noexcept;
+
+  template <opcode Op>
+  ZS_CK_INLINE zs::error_result do_arithmetic_expr(
+      zb::member_function_pointer<jit_compiler, zs::error_result> fct, std::string_view symbol);
 };
+
+template <class Fct>
+inline zs::error_result jit_compiler::expr_call(Fct&& fct) {
+  expr_state es = std::exchange(_estate, expr_state{ expr_type::e_expr, -1, false });
+  zs::error_result res = fct();
+  _estate = es;
+  return res;
+}
+
+template <class Fct>
+inline zs::error_result jit_compiler::expr_call(Fct&& fct, expr_state e) {
+  expr_state es = std::exchange(_estate, e);
+  zs::error_result res = fct();
+  _estate = es;
+  return res;
+}
+
+ZBASE_PRAGMA_PUSH()
+ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wswitch")
+ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
+
+inline bool jit_compiler::needs_get() const noexcept {
+  using enum token_type;
+
+  switch (_token) {
+  case tok_eq:
+  case tok_lbracket:
+  case tok_add_eq:
+  case tok_mul_eq:
+  case tok_div_eq:
+  case tok_minus_eq:
+  case tok_exp_eq:
+  case tok_mod_eq:
+  case tok_lshift_eq:
+  case tok_rshift_eq:
+  case tok_inv_eq:
+  case tok_bitwise_and_eq:
+    return false;
+  case tok_incr:
+  case tok_decr:
+    if (!is_end_of_statement()) {
+      return false;
+    }
+    break;
+
+  case tok_lt: {
+    if (is_template_function_call()) {
+      return false;
+    }
+    break;
+  }
+  }
+
+  return (!_estate.no_get || (_estate.no_get && (_token == tok_dot || _token == tok_lsqrbracket)));
+}
+
+bool jit_compiler::needs_get_no_assign() const noexcept {
+  using enum token_type;
+
+  switch (_token) {
+  case tok_lbracket:
+    return false;
+  case tok_incr:
+  case tok_decr:
+    if (!is_end_of_statement()) {
+      return false;
+    }
+    break;
+
+  case tok_lt: {
+    if (is_template_function_call()) {
+      return false;
+    }
+    break;
+  }
+  }
+
+  return (!_estate.no_get || (_estate.no_get && (_token == tok_dot || _token == tok_lsqrbracket)));
+}
+
+bool jit_compiler::will_modify() const noexcept {
+  using enum token_type;
+
+  switch (_token) {
+  case tok_eq:
+  case tok_lbracket:
+  case tok_add_eq:
+  case tok_mul_eq:
+  case tok_div_eq:
+  case tok_minus_eq:
+  case tok_exp_eq:
+  case tok_mod_eq:
+  case tok_lshift_eq:
+  case tok_rshift_eq:
+  case tok_inv_eq:
+  case tok_bitwise_and_eq:
+  case tok_incr:
+  case tok_decr:
+    return true;
+  }
+
+  return false;
+}
+
+template <opcode Op>
+ZS_CK_INLINE zs::error_result jit_compiler::do_arithmetic_expr(
+    zb::member_function_pointer<jit_compiler, zs::error_result> fct, std::string_view symbol) {
+  lex();
+  ZS_RETURN_IF_ERROR(invoke_expr(fct));
+
+  int_t op2 = _ccs->pop_target();
+  int_t op1 = _ccs->pop_target();
+
+  add_instruction<Op>(_ccs->new_target(), (uint8_t)op1, (uint8_t)op2);
+  _estate.type = expr_type::e_expr;
+
+  return {};
+}
+
+ZBASE_PRAGMA_POP()
 } // namespace zs.

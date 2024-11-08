@@ -1,10 +1,8 @@
-
-//
 #include <zscript/core/zcore.h>
 
 namespace zs {
 struct_instance_object::struct_instance_object(zs::engine* eng) noexcept
-    : zs::reference_counted_object(eng) {}
+    : zs::reference_counted_object(eng, zs::object_type::k_struct_instance) {}
 
 struct_instance_object::~struct_instance_object() {
   zb::span<object> sp = get_span();

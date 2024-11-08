@@ -265,6 +265,8 @@ ZB_CHECK ZB_INLINE size_t required_aligned_size(
   return align_end ? __zb::align(sz, alignment) : sz;
 }
 
+struct aligned_type_storage_construct_tag{};
+
 template <class T>
 struct aligned_type_storage {
   using value_type = T;
@@ -275,6 +277,19 @@ struct aligned_type_storage {
   using size_type = size_t;
   using difference_type = ptrdiff_t;
 
+  aligned_type_storage() noexcept= default;
+  
+  
+  template <class... Args>
+  inline  aligned_type_storage(aligned_type_storage_construct_tag, Args&&... args) noexcept {
+    if constexpr (std::is_trivial_v<T>) {
+      get() = T(std::forward<Args>(args)...);
+    }
+    else {
+      zb_placement_new(_data) T(std::forward<Args>(args)...);
+    }
+  }
+  
   ZB_CHECK static inline constexpr size_type size() noexcept { return sizeof(T); }
   ZB_CHECK static inline constexpr size_type alignment() noexcept { return alignof(T); }
   ZB_CHECK static inline constexpr size_type aligned_size() noexcept { return sizeof(T); }

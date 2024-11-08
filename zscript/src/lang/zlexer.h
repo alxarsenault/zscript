@@ -144,4 +144,90 @@ private:
     _is_string_view_identifier = is_sv_string;
   }
 };
+
+struct lexer_ref {
+  using enum token_type;
+  zs::lexer* _lexer = nullptr;
+  zs::token_type _token = tok_none;
+  bool _in_template = false;
+
+  inline token_type lex() {
+    _token = _lexer->lex();
+
+    if (_in_template and _token == tok_gt) {
+      _token = tok_rsqrbracket;
+    }
+
+    return _token;
+  }
+
+  ZS_CK_INLINE bool is(token_type t) const noexcept { return _token == t; }
+
+  template <class... Tokens>
+  ZS_CK_INLINE bool is(Tokens... tokens) const noexcept {
+    return zb::is_one_of(_token, tokens...);
+  }
+
+  template <class... Tokens>
+  ZS_CK_INLINE bool is_not(Tokens... tokens) const noexcept {
+    return !is(tokens...);
+  }
+
+  template <class... Tokens>
+  ZS_INLINE bool lex_if(Tokens... tokens) noexcept {
+    if (is(tokens...)) {
+      lex();
+      return true;
+    }
+    return false;
+  }
+
+  ZS_CK_INLINE static bool is_var_decl_tok(token_type t) noexcept {
+    switch (t) {
+    case tok_const:
+    case tok_var:
+    case tok_array:
+    case tok_table:
+    case tok_string:
+    case tok_char:
+    case tok_int:
+    case tok_bool:
+    case tok_float:
+      return true;
+
+    default:
+      return false;
+    }
+    return false;
+  }
+
+  ZS_CK_INLINE static bool is_var_decl_tok_no_const(token_type t) noexcept {
+    switch (t) {
+    case tok_var:
+    case tok_array:
+    case tok_table:
+    case tok_string:
+    case tok_char:
+    case tok_int:
+    case tok_bool:
+    case tok_float:
+      return true;
+
+    default:
+      return false;
+    }
+    return false;
+  }
+
+  ZS_CK_INLINE bool is_var_decl_tok() const noexcept { return is_var_decl_tok(_token); }
+
+  ZS_CK_INLINE bool is_var_decl_tok_no_const() const noexcept { return is_var_decl_tok_no_const(_token); }
+
+  ZS_CK_INLINE bool is_template_function_call() const noexcept { return _lexer->is_template_function_call(); }
+
+  ZS_CK_INLINE bool is_end_of_statement() const noexcept {
+    return (_lexer->last_token() == tok_endl) || is(tok_eof, tok_rcrlbracket, tok_semi_colon);
+  }
+};
+
 } // namespace zs.

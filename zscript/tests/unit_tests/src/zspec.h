@@ -9,16 +9,7 @@
 #include <fstream>
 
 #define ZSECTION(X) zspec::section::X
-#define ZCODE(X, R) X, R
-#define ZCODE_A(X) X, "return a;"
-#define ZCODE_R(X, vname) X, "return " vname ";"
-#define ZTITLE(X) X
-#define ZDESCRIPTION(X) X
-// #define ZDESCRIPTION_2(X, Y) X, Y
 
-#define ZBAD -1
-#define ZIGNORE 0
-#define ZGOOD 1
 // ### 1.1 Single line comment
 
 //[***comments-001***]
@@ -294,7 +285,7 @@ struct z_code_test_fixture {
       }                                                                                                     \
       inline TestName()                                                                                     \
           : ClassName(sec, code, code_extra, TestName::get_test_name(), title, desc, require_compile,       \
-              require_call) {}                                                                              \
+                require_call) {}                                                                            \
       void test();                                                                                          \
     };                                                                                                      \
                                                                                                             \

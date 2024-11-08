@@ -1,8 +1,8 @@
-#include <zscript/core/zcore.h>
+#include <zscript/zscript.h>
 
 namespace zs {
 array_object::array_object(zs::engine* eng) noexcept
-    : delegate_object(eng)
+    : delegate_object(eng, zs::object_type::k_array)
     , vector_type(zs::allocator<object>(eng, memory_tag::nt_array)) {
 
   //  _delegate = eng->get_type_delegate(object_type::k_array);

@@ -80,10 +80,12 @@ struct captured_variable {
   captured_variable(const captured_variable&) = default;
   captured_variable(captured_variable&&) = default;
 
-  inline captured_variable(const object& capture_name, int_t capture_src, type_t capture_type)
+  inline captured_variable(
+      const object& capture_name, int_t capture_src, type_t capture_type, bool weak = false)
       : type(capture_type)
       , name(capture_name)
-      , src(capture_src) {}
+      , src(capture_src)
+      , is_weak(weak) {}
 
   captured_variable& operator=(const captured_variable&) = default;
   captured_variable& operator=(captured_variable&&) = default;
@@ -91,22 +93,75 @@ struct captured_variable {
   type_t type;
   object name;
   int_t src;
+  bool is_weak;
 };
+
+namespace jit {
+
+  class shared_state_data_ref;
+
+  struct shared_state_data : public engine_holder {
+    friend class shared_state_data_ref;
+
+    inline shared_state_data(zs::engine* eng)
+        : engine_holder(eng)
+        , _restricted_types(zs::allocator<object>(eng))
+        , _exported_names(zs::allocator<object>(eng))
+        , _imported_files_set(zs::allocator<object>(eng)) {}
+
+    /// Type list.
+    zs::small_vector<zs::object, 8> _restricted_types;
+
+    /// Used to prevent from importing the same file twice (calling `#import`).
+    zs::object_unordered_set _imported_files_set;
+
+    /// The name or the path of the source file.
+    zs::object _source_name;
+
+    zs::object _module_name;
+
+    zs::object_unordered_set _exported_names;
+
+    bool _is_module = false;
+  };
+
+  class shared_state_data_ref {
+  public:
+    inline shared_state_data_ref(shared_state_data& sdata)
+        : _sdata(sdata) {}
+
+    inline zs::engine* get_engine() const noexcept { return _sdata.get_engine(); }
+
+    inline zs::error_result add_exported_name(const object& var_name) {
+      return _sdata._exported_names.insert(var_name).second ? zs::error_code::success
+                                                            : zs::error_code::already_exists;
+    }
+
+    ZB_CHECK ZB_INLINE bool is_module() const noexcept { return _sdata._is_module; }
+
+    ZB_CHECK ZB_INLINE bool has_exported_name(const object& var_name) const noexcept {
+      return _sdata._exported_names.contains(var_name);
+    }
+
+    shared_state_data& _sdata;
+  };
+
+} // namespace jit.
+
+class closure_compile_state;
 
 /// Used by the compiler when parsing/compiling a function.
 /// The end result is a `function_prototype_object` that can be created by
 /// calling `build_function_prototype()`.
-class closure_compile_state : public engine_holder {
+class closure_compile_state : public jit::shared_state_data_ref {
 public:
-  closure_compile_state(zs::engine* eng, closure_compile_state* parent = nullptr);
+  closure_compile_state(zs::engine* eng, jit::shared_state_data& sdata);
+  closure_compile_state(zs::engine* eng, closure_compile_state& parent);
 
   ~closure_compile_state();
 
   /// Name of the closure object (i.e. the function name).
   zs::object name;
-
-  /// The name or the path of the source file.
-  zs::object source_name;
 
   /// Add a parameter.
   /// @{
@@ -166,6 +221,8 @@ public:
   /// @note Avoid calling `push_target(-1)` when creating a new target,
   ///       use `new_target()` for performance reason.
   int_t push_target(int_t n);
+
+  int_t push_export_target();
 
   /// Get the top target index from the target stack.
   ZB_CHECK ZB_INLINE int_t top_target() const noexcept {
@@ -231,6 +288,10 @@ public:
   /// @returns the index of the variable in `_vlocals` or `-1` if not found.
   ZB_CHECK int_t find_local_variable(const object& name) const;
 
+  ZB_CHECK bool is_exported_name(const object& name) const;
+
+  ZB_CHECK bool is_captured_exported_name(const object& name) const;
+
   /// @returns true if the variable in `_vlocals` at the given index is a named
   /// local variable.
   ZB_CHECK bool is_local(size_t pos) const;
@@ -246,6 +307,8 @@ public:
 
   ZB_CHECK zs::error_result get_restricted_type_mask(const object& name, int_t& mask) const noexcept;
 
+  ZB_CHECK zs::error_result create_export_table();
+
   ///
   void add_line_infos(const zs::line_info& linfo);
 
@@ -256,6 +319,14 @@ public:
   ZB_CHECK zs::function_prototype_object* build_function_prototype();
 
   ZB_CHECK ZB_INLINE zs::closure_compile_state* get_parent() const noexcept { return _parent; }
+
+  ZB_CHECK ZB_INLINE bool is_top_level() const noexcept { return _parent == nullptr; }
+
+  ZB_CHECK ZB_INLINE bool has_export() const noexcept { return _export_table_target != -1; }
+
+  ZB_CHECK ZB_INLINE int_t get_export_target() const noexcept { return _export_table_target; }
+
+  ZB_CHECK ZB_INLINE jit::shared_state_data& state_data() noexcept { return _sdata; }
 
   ZB_CHECK zs::closure_compile_state* push_child_state();
   void pop_child_state();
@@ -275,9 +346,6 @@ private:
 
   /// Instruction vector.
   zs::instruction_vector _instructions;
-
-  /// Type list.
-  zs::small_vector<zs::object, 8> _restricted_types;
 
   /// Target stack indexes and type info.
   zs::vector<variable_type_info_t> _target_stack;
@@ -306,9 +374,6 @@ private:
   zs::vector<captured_variable> _captures;
   size_t _n_capture = 0;
 
-  /// Used to prevent from importing the same file twice (calling `#import`).
-  zs::object_unordered_set _imported_files_set;
-
 #if !ZBASE_IS_MACRO_EMPTY(ZS_DEBUG) && ZS_DEBUG
   zs::vector<zs::line_info_op_t> _debug_line_info;
 #endif
@@ -324,9 +389,24 @@ private:
 
   bool _vargs_params = false;
 
+  int_t _export_table_target = -1;
+  //  bool _is_module = false;
+
   void mark_local_as_capture(int_t pos);
 
   ZB_CHECK int_t alloc_stack_pos();
 };
+
+namespace jit {
+  class closure_compile_state_ref {
+  public:
+    /// Removes the top target from the target stack.
+    /// This will also pop it from the `_vlocals` if it was an stack variable
+    /// (unnamed).
+    inline int_t pop_target() { return _ccs->pop_target(); }
+
+    zs::closure_compile_state* _ccs = nullptr;
+  };
+} // namespace jit.
 
 } // namespace zs.

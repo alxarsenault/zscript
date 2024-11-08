@@ -87,6 +87,23 @@ return arr;
   }
 }
 
+ZS_CODE_TEST("for.07", R"""(
+var arr = array(4);
+for (var i = 0, s = "john"; i < s.size(); ++i) {
+  arr[i] = s.replace(s[i], '#');
+}
+
+return arr;
+)""") {
+  REQUIRE(value.is_array());
+
+  zs::array_object& arr = value.as_array();
+
+  for (size_t i = 0; i < 4; i++) {
+    REQUIRE(arr[i].get_string_unchecked()[i] == '#');
+  }
+}
+
 //
 // TEST_CASE("dsadsadsadsad") {
 //

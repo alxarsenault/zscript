@@ -30,8 +30,8 @@ ZS_JIT_COMPILER_PARSE_OP(p_struct_statement) {
 
     switch (_estate.type) {
     case expr_type::e_expr:
-      return helper::handle_error(
-          this, zs::error_code::invalid_operation, "Invalid class name", ZB_CURRENT_SOURCE_LOCATION());
+      return handle_error(
+          zs::error_code::invalid_operation, "Invalid class name", ZB_CURRENT_SOURCE_LOCATION());
 
     case expr_type::e_base:
       ZBASE_NO_BREAK;
@@ -51,7 +51,7 @@ ZS_JIT_COMPILER_PARSE_OP(p_struct_statement) {
       ZBASE_NO_BREAK;
     case expr_type::e_capture:
 
-      return helper::handle_error(this, zs::error_code::invalid_operation,
+      return handle_error(zs::error_code::invalid_operation,
           "Cannot create a class in a local with the syntax(class <local>)", ZB_CURRENT_SOURCE_LOCATION());
     }
   }
@@ -207,7 +207,7 @@ ZS_JIT_COMPILER_PARSE_OP(p_struct_content, struct_parser* sparser) {
     ZS_RETURN_IF_ERROR(expect(tok_lbracket));
 
     int_t bound_target = 0xFF;
-    ZS_RETURN_IF_ERROR(parse<ps::p_create_function>(std::cref(var_name), bound_target, false));
+    ZS_RETURN_IF_ERROR(parse<ps::p_create_function>(CREF(var_name), bound_target, false));
 
     add_instruction<op_new_closure>(
         (uint8_t)_ccs->new_target(), (uint32_t)(_ccs->_functions.size() - 1), (uint8_t)bound_target);
@@ -227,7 +227,7 @@ ZS_JIT_COMPILER_PARSE_OP(p_struct_content, struct_parser* sparser) {
     ZS_COMPILER_RETURN_IF_ERROR_STREAM(
         sparser->add_member(identifier), "struct member variable", identifier, "already exists.\n");
 
-    ZS_RETURN_IF_ERROR(helper::add_string_instruction(this, identifier));
+    ZS_RETURN_IF_ERROR(add_string_instruction(identifier));
 
     int_t val = -1;
 

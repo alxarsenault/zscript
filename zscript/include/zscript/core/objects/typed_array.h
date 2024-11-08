@@ -18,7 +18,7 @@ public:
 
 protected:
   inline native_array_object_interface(zs::engine* eng) noexcept
-      : delegate_object(eng) {}
+      : delegate_object(eng, zs::object_type::k_native_array) {}
 };
 
 /// native_array_object.

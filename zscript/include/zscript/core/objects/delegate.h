@@ -5,8 +5,8 @@ class delegate_object : public zs::reference_counted_object {
 public:
   ZS_OBJECT_CLASS_COMMON;
 
-  inline delegate_object(zs::engine* eng)
-      : zs::reference_counted_object(eng) {}
+  inline delegate_object(zs::engine* eng, zs::object_type objtype)
+      : zs::reference_counted_object(eng, objtype) {}
 
   virtual ~delegate_object() override = default;
 

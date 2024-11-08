@@ -5,6 +5,10 @@ enum class runtime_code {
   invalid_set,
   delegate_get,
   delegate_set,
+
+  weak_get,
+  weak_set,
+
   table_get,
   table_set,
   array_get,
@@ -96,6 +100,9 @@ ZS_DECL_RT_ACTION(class_get, cobjref_t obj, cobjref_t class_obj, cobjref_t key, 
 ZS_DECL_RT_ACTION(table_get, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(array_get, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(array_set, objref_t obj, cobjref_t key, cobjref_t value);
+
+ZS_DECL_RT_ACTION(weak_get, cobjref_t obj, cobjref_t key, objref_t dest);
+ZS_DECL_RT_ACTION(weak_set, objref_t obj, cobjref_t key, cobjref_t value);
 
 // Struct.
 ZS_DECL_RT_ACTION(struct_get, cobjref_t obj, cobjref_t key, objref_t dest);
@@ -292,6 +299,7 @@ ZS_DECL_RT_ACTION(native_array_set, objref_t obj, cobjref_t key, cobjref_t value
 #include "vm/zvm_runtime_table.h"
 #include "vm/zvm_runtime_class.h"
 #include "vm/zvm_runtime_user_data.h"
+#include "vm/zvm_runtime_weak.h"
 #include "vm/zvm_runtime_array.h"
 #include "vm/zvm_runtime_delegate.h"
 #include "vm/zvm_runtime_instance.h"

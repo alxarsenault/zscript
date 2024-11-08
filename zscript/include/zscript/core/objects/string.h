@@ -19,7 +19,7 @@ public:
 
 private:
   inline string_object(zs::engine* eng) noexcept
-      : reference_counted_object(eng) {}
+      : reference_counted_object(eng, zs::object_type::k_long_string) {}
 
   size_t _size;
   char _str[1];

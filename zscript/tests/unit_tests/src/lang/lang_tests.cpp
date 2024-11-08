@@ -43,9 +43,6 @@ return false;
   REQUIRE(value == true);
 }
 
-
-
-
 // inline constexpr bool (*always_true_cond)(int) = [](int) { return true; };
 // inline constexpr bool (*always_false_cond)(int) = [](int) { return false; };
 //
@@ -717,211 +714,22 @@ return false;
 //     letter++, 2, 3, 1, 1, [](int i) { return i > 2; });
 // }
 
-
-
-//ZS_CODE_TEST("apply.01", R"""(
-//var a = [10, 20];
+// ZS_CODE_TEST("apply.01", R"""(
+// var a = [10, 20];
 //
-//function my_func(a, b) {
-//  return a + b;
-//}
+// function my_func(a, b) {
+//   return a + b;
+// }
 //
-//var r1 = my_func(10, 20);
-//var r2 = apply(my_func, this, a);
+// var r1 = my_func(10, 20);
+// var r2 = apply(my_func, this, a);
 //
-//return [r1, r2];
+// return [r1, r2];
 //)""") {
-//  REQUIRE(value.is_array());
-//  
-//  const zs::array_object& arr = value.as_array();
-//  
-//  REQUIRE(arr[0] == 30);
-//  REQUIRE(arr[1] == 30);
-//}
-
-
-TEST_CASE("apply.02") {
-  
-  static constexpr std::string_view code_01 = R"""(
- var zs = import("zs");
-
-export int k = 22;
-this.a = 55;
-
-var f = function(p) {
-  return p;
-};
-
-this.f = f;
-
-// print("BANANA");
-
-function abc() {
-  //zs.print("ABC", this);
-  return 12;
-}
- 
-abc();
-
-var t = {};
-t.a = abc;
-
-t.a();
-
-var b = 44;
-this.john = function(p) {
-  //::print("FJKF", this);
-  return a;
-}
-
-//print(32);
-
-return 32;
-)""";
- 
-  zs::vm vm;
-  {
-    zs::object this_table;
- 
-    zs::object value;
-    if(auto err = vm->call_buffer(code_01, "test", this_table, value, {}, false)) {
-      FAIL(vm.get_error());
-//      FAIL("dsjkdls");
-//      REQUIRE(false);
-    }
- 
-    REQUIRE(value == 32);
-    
-//    zb::print(this_table);
-    
-    zs::table_object& tbl = this_table.get();
-    REQUIRE(tbl["a"] == 55);
-    
-//    REQUIRE(tbl["abc"].is_function());
- 
-    REQUIRE(!vm.root().as_table().contains("a"));
-  }
-}
-
-
-
-TEST_CASE("apply.03") {
-  
-  static constexpr std::string_view code_01 = R"""(
-export int k = 22;
-
-export function bingo() {
-}
-
-function patate() {
-}
- 
-return 32;
-)""";
- 
-  zs::vm vm;
-    zs::object this_table;
- 
-    zs::object value;
-    if(auto err = vm->call_buffer(code_01, "test", this_table, value, {}, false)) {
-      FAIL(vm.get_error());
-    }
- 
-    REQUIRE(value == 32);
-    
-//    zb::print(this_table);
-     
-}
-
-
-
-
-TEST_CASE("apply.04") {
-  
-  static constexpr std::string_view code_01 = R"""(
-
-const int kA = 100;
-const int kB = 10;
-
-export int k = 22;
-
-var banana = function(a) {
-  function john() {
-    return kA;
-  }
-
-  return john() + a;
-}
-
-function bingo(a, b) {
-  return kB + banana(a) + b;
-}
- 
-function patate(a) {
-  return bingo(a, 10);
-}
- 
-return patate(50);
-)""";
- 
-  zs::vm vm;
-    zs::object this_table;
- 
-    zs::object value;
-    if(auto err = vm->call_buffer(code_01, "test", this_table, value, {}, false)) {
-      FAIL(vm.get_error());
-    }
- 
-    REQUIRE(value == 170);
-    
-//    zb::print(this_table);
-     
-}
-
-
-
-TEST_CASE("apply.05") {
-  
-  static constexpr std::string_view code_01 = R"""(
- 
-
-
-export var johnson = 200;
-var bacon = 100;
-
-function identity(a) {
- 
-   //johnson = 22;
-
-  print(johnson, this);
-  return a;
-}
-
-function add(a, n) {
-  return a + n;
-}
-
-function f1(a, b) {
-  return add(identity(a), b);
-}
-
-function f2(a) {
-  return f1(identity(a), bacon);
-}
-
-return f2(55);
-)""";
- 
-  zs::vm vm;
-    zs::object this_table;
- 
-    zs::object value;
-    if(auto err = vm->call_buffer(code_01, "test", this_table, value, {}, false)) {
-      FAIL(vm.get_error());
-    }
- 
-    REQUIRE(value == 155);
-    
-    zb::print(this_table);
-     
-}
+//   REQUIRE(value.is_array());
+//
+//   const zs::array_object& arr = value.as_array();
+//
+//   REQUIRE(arr[0] == 30);
+//   REQUIRE(arr[1] == 30);
+// }

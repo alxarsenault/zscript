@@ -1,5 +1,6 @@
 #include <zscript/core/zcore.h>
 
+#include "zvirtual_machine.h"
 namespace zs {
 
 struct object::helper {
@@ -15,6 +16,79 @@ struct object::helper {
     obj._type = ObjectType;
   }
 };
+
+object object::create_vm(zs::engine* eng) {
+  //  object obj = create_user_data(eng, (size_t)sizeof(zs::vm));
+  //  zb_placement_new(obj.get_user_data_data()) zs::vm(eng);
+
+  object obj;
+  obj._type = object_type::k_user_data;
+  zs::user_data_object* uobj = zs::user_data_object::create(eng, sizeof(zs::vm));
+  obj._udata = uobj;
+
+  zb_placement_new(uobj->data()) zs::vm(eng);
+
+  uobj->set_release_hook([](zs::engine* eng, zs::raw_pointer_t ptr) {
+    zs::vm* t = (zs::vm*)ptr;
+    t->~vm();
+  });
+
+  uobj->set_uid(zs::_ss("__vm__"));
+  uobj->set_typeid(zs::_ss("__vm__"));
+
+  // VERY DANGEROUS.
+  //  obj.set_user_data_copy_to_type_function(
+  //      [](void* dst, size_t data_size, std::string_view tid, void* data) -> zs::error_result {
+  //        if (data_size == sizeof(T) and tid == typeid(T).name()) {
+  //          T& dst_ref = *((T*)dst);
+  //          const T& src_ref = *((const T*)data);
+  //          dst_ref = src_ref;
+  //          return {};
+  //        }
+  //
+  //        return zs::error_code::invalid_type;
+  //      });
+
+  return obj;
+}
+
+object object::create_vm(size_t stack_size, allocate_t alloc_cb, raw_pointer_t user_pointer,
+    raw_pointer_release_hook_t user_release) {
+  //  object obj = create_user_data(eng, (size_t)sizeof(zs::vm));
+  //  zb_placement_new(obj.get_user_data_data()) zs::vm(eng);
+  zs::virtual_machine* vm = create_virtual_machine(stack_size, alloc_cb, user_pointer, user_release);
+  zs::engine* eng = vm->get_engine();
+
+  object obj;
+  obj._type = object_type::k_user_data;
+  zs::user_data_object* uobj = zs::user_data_object::create(eng, sizeof(zs::vm));
+  obj._udata = uobj;
+
+  zb_placement_new(uobj->data()) zs::vm(eng);
+
+  uobj->set_release_hook([](zs::engine* eng, zs::raw_pointer_t ptr) {
+    zs::vm* t = (zs::vm*)ptr;
+    t->~vm();
+  });
+
+  uobj->set_uid(zs::_ss("__vm__"));
+  uobj->set_typeid(zs::_ss("__vm__"));
+
+  // VERY DANGEROUS.
+  //  obj.set_user_data_copy_to_type_function(
+  //      [](void* dst, size_t data_size, std::string_view tid, void* data) -> zs::error_result {
+  //        if (data_size == sizeof(T) and tid == typeid(T).name()) {
+  //          T& dst_ref = *((T*)dst);
+  //          const T& src_ref = *((const T*)data);
+  //          dst_ref = src_ref;
+  //          return {};
+  //        }
+  //
+  //        return zs::error_code::invalid_type;
+  //      });
+
+  return obj;
+}
 
 object::object(native_closure_object* obj, bool should_retain) noexcept {
   helper::set_type<object_type::k_native_closure>(*this);

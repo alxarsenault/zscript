@@ -108,8 +108,10 @@ const object* vm_ref::stack_base_pointer() const noexcept { return _vm->stack().
 struct vm::helper {};
 
 vm::vm(size_t stack_size, allocate_t alloc_cb, raw_pointer_t user_pointer,
-    raw_pointer_release_hook_t user_release) noexcept
-    : vm_ref(create_virtual_machine(stack_size, alloc_cb, user_pointer, user_release)) {}
+    raw_pointer_release_hook_t user_release, stream_getter_t stream_getter,
+    engine_initializer_t initializer) noexcept
+    : vm_ref(create_virtual_machine(
+          stack_size, alloc_cb, user_pointer, user_release, stream_getter, initializer)) {}
 
 vm::vm(zs::engine* eng, size_t stack_size) noexcept
     : vm_ref(create_virtual_machine(eng, stack_size)) {}

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+
+{{> head }}
+
+<body>
+  {{> nav }}
+
+  <!-- Main Content -->
+  <main class="d-flex flex-nowrap">
+
+    {{> sidebar }}
+
+    {{#content-container}}
+    {{> breadcrumb }}
+    {{#page-section}} 
+        <p>
+          ZSCRIPT is a modern, dynamically typed scripting language designed for flexibility, ease of use, and
+          powerful runtime
+          features.
+          It offers a hybrid type system, combining the best of both weak and strong typing, giving developers the
+          freedom to
+          choose between dynamic flexibility
+          and static type safety when needed.
+        </p>
+
+        <p>
+          The zscript language is an hybrid between <strong>weakly</strong> and <strong>strongly</strong> typed.
+
+Basic types are `null`, `bool`, `integer`, `float`, `string`, `table`, `array`, `function`, `class`, `instance` and `userdata`.
+
+A variable declared with {{zscript-intext-code "var"}} is <strong>weakly</strong> typed and can be assigned or reassigned any type.
+
+<!-- ### 2.1 Builtin types -->
+
+<!-- <ul class="list-group col-md-3">
+
+<li class="list-group-item">null</li>
+<li class="list-group-item">bool</li>
+<li class="list-group-item">char</li>
+<li class="list-group-item">integer</li>
+<li class="list-group-item">float</li>
+<li class="list-group-item">string</li>
+<li class="list-group-item">array</li>
+<li class="list-group-item">table</li>
+<li class="list-group-item">class</li>
+<li class="list-group-item">instance (class instance)</li>
+<li class="list-group-item">function</li>
+<li class="list-group-item">user_data</li>
+<li class="list-group-item">raw_pointer</li>
+<li class="list-group-item">weak_ref</li>
+</ul> -->
+</p>
+A variable declared with {{zscript-intext-code "var"}} is <strong>weakly</strong> typed and can be assigned or reassigned any type.
+{{#code-block label="load_file"}}var a = null;
+assert(typeof(a) == "null");
+
+a = 1;
+assert(typeof(a) == "integer");
+
+a = "abc";
+assert(typeof(a) == "string");{{/code-block}}
+
+
+<!--  -->
+
+<p>
+A variable declared with a type, is <strong>strongly</strong> typed and can only be assigned the same type.
+
+{{#code-block label="load_file"}}int a = 51;
+assert(typeof(a) == "integer");
+
+// ERROR - Trying to assign a string value to an integer variable.
+a = "abc";{{/code-block}}
+
+
+A variable declared with the {{zscript-intext-code "auto"}} keyword is also <strong>strongly</strong> typed but the assigned type is automatically detected.
+
+{{#code-block label="load_file"}}auto a = 31;
+assert(typeof(a) == "integer");
+
+// ERROR - Trying to assign a string value to an integer variable.
+a = "abc";{{/code-block}}
+
+
+<!--  -->
+It is also possible to restrict a variable assignable types.
+
+{{#code-block label="load_file"}}var<int, float> a = 31;
+assert(typeof(a) == "integer");
+
+a = 31.1;
+assert(typeof(a) == "float");
+
+// ERROR - Trying to assign a string value to a var<int, float> variable.
+a = "abc";{{/code-block}}
+</p>
+
+        {{/page-section}} 
+        {{> bottom-nav }}
+      {{/content-container}}
+
+  </main>
+
+  {{{footer}}}
+  {{> load-scripts }}
+</body>
+
+</html>

@@ -1,7 +1,8 @@
 #include <zscript/core/zcore.h>
+
 namespace zs {
 struct_object::struct_object(zs::engine* eng) noexcept
-    : zs::reference_counted_object(eng)
+    : zs::reference_counted_object(eng, zs::object_type::k_struct)
     , vector_type(zs::allocator<struct_item>(eng))
     , _statics(zs::allocator<struct_item>(eng)) {}
 
@@ -145,7 +146,7 @@ struct_instance_object* struct_object::create_instance() const noexcept {
   const size_t sz = this_vec.size();
 
   struct_instance_object* sobj = struct_instance_object::create(_engine, sz);
-  sobj->_base = zs::object((struct_object*)this, k_struct, true);
+  sobj->_base = zs::object((reference_counted_object*)this, true);
 
   zb::span<object> ivec = sobj->get_span();
 
@@ -154,11 +155,11 @@ struct_instance_object* struct_object::create_instance() const noexcept {
 
     switch (sitem.value.get_type()) {
     case k_long_string:
-      ivec[i] = object(sitem.value.as_string().clone(), k_long_string, false);
+      ivec[i] = object(sitem.value.as_string().clone(), false);
       break;
 
     case k_mutable_string:
-      ivec[i] = object(sitem.value.as_mutable_string().clone(), k_mutable_string, false);
+      ivec[i] = object(sitem.value.as_mutable_string().clone(), false);
       break;
 
     case k_closure:
@@ -167,7 +168,7 @@ struct_instance_object* struct_object::create_instance() const noexcept {
       break;
 
     case k_native_closure:
-      ivec[i] = object(sitem.value.as_native_closure().clone(), k_native_closure, false);
+      ivec[i] = object(sitem.value.as_native_closure().clone(), false);
       break;
 
     case k_class:
@@ -183,11 +184,11 @@ struct_instance_object* struct_object::create_instance() const noexcept {
       break;
 
     case k_table:
-      ivec[i] = object(sitem.value.as_table().clone(), k_table, false);
+      ivec[i] = object(sitem.value.as_table().clone(), false);
       break;
 
     case k_array:
-      ivec[i] = object(sitem.value.as_array().clone(), k_array, false);
+      ivec[i] = object(sitem.value.as_array().clone(), false);
       break;
 
     case k_native_array: {
@@ -198,11 +199,11 @@ struct_instance_object* struct_object::create_instance() const noexcept {
     }
 
     case k_struct:
-      ivec[i] = object(sitem.value.as_struct().clone(), k_struct, false);
+      ivec[i] = object(sitem.value.as_struct().clone(), false);
       break;
 
     case k_struct_instance:
-      ivec[i] = object(sitem.value.as_struct_instance().clone(), k_struct_instance, false);
+      ivec[i] = object(sitem.value.as_struct_instance().clone(), false);
       break;
 
     case k_user_data:
@@ -246,11 +247,11 @@ struct_object* struct_object::clone() const noexcept {
 
     switch (sitem.value.get_type()) {
     case k_long_string:
-      aitem.value = object(sitem.value.as_string().clone(), k_long_string, false);
+      aitem.value = object(sitem.value.as_string().clone(), false);
       break;
 
     case k_mutable_string:
-      aitem.value = object(sitem.value.as_mutable_string().clone(), k_mutable_string, false);
+      aitem.value = object(sitem.value.as_mutable_string().clone(), false);
       break;
 
     case k_closure:
@@ -259,7 +260,7 @@ struct_object* struct_object::clone() const noexcept {
       break;
 
     case k_native_closure:
-      aitem.value = object(sitem.value.as_native_closure().clone(), k_native_closure, false);
+      aitem.value = object(sitem.value.as_native_closure().clone(), false);
       break;
 
     case k_class:
@@ -275,11 +276,11 @@ struct_object* struct_object::clone() const noexcept {
       break;
 
     case k_table:
-      aitem.value = object(sitem.value.as_table().clone(), k_table, false);
+      aitem.value = object(sitem.value.as_table().clone(), false);
       break;
 
     case k_array:
-      aitem.value = object(sitem.value.as_array().clone(), k_array, false);
+      aitem.value = object(sitem.value.as_array().clone(), false);
       break;
 
     case k_native_array: {
@@ -290,11 +291,11 @@ struct_object* struct_object::clone() const noexcept {
     }
 
     case k_struct:
-      aitem.value = object(sitem.value.as_struct().clone(), k_struct, false);
+      aitem.value = object(sitem.value.as_struct().clone(), false);
       break;
 
     case k_struct_instance:
-      aitem.value = object(sitem.value.as_struct_instance().clone(), k_struct_instance, false);
+      aitem.value = object(sitem.value.as_struct_instance().clone(), false);
       break;
 
     case k_user_data:

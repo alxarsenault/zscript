@@ -57,7 +57,7 @@ public:
 
 private:
   inline user_data_object(zs::engine* eng) noexcept
-      : delegate_object(eng) {}
+      : delegate_object(eng, zs::object_type::k_user_data) {}
 
   user_data_release_hook_t _release_hook = nullptr;
   zs::object _uid;

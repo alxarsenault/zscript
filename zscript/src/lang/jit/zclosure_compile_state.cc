@@ -4,13 +4,12 @@
 // #include "lang/zopcode.h"
 
 namespace zs {
-closure_compile_state::closure_compile_state(zs::engine* eng, closure_compile_state* parent)
-    : engine_holder(eng)
-    , _parent(parent)
+closure_compile_state::closure_compile_state(zs::engine* eng, jit::shared_state_data& sdata)
+    : jit::shared_state_data_ref(sdata)
     , _parameter_names(zs::allocator<zs::object>(eng))
     , _children(zs::allocator<zs::unique_ptr<closure_compile_state>>(eng))
     , _instructions(eng)
-    , _restricted_types(zs::allocator<object>(eng))
+    //    , _restricted_types(zs::allocator<object>(eng))
     , _target_stack(zs::allocator<variable_type_info_t>(eng))
     , _literals(zs::unordered_map_allocator<object, int_t>(eng))
     , _vlocals(zs::allocator<zs::local_var_info_t>(eng))
@@ -19,7 +18,30 @@ closure_compile_state::closure_compile_state(zs::engine* eng, closure_compile_st
     , _functions(zs::allocator<object>(eng))
     , _default_params(zs::allocator<int_t>(eng))
     , _captures(zs::allocator<captured_variable>(eng))
-    , _imported_files_set(zs::allocator<object>(eng))
+
+//    , _imported_files_set(zs::allocator<object>(eng))
+
+#if ZS_DEBUG
+    , _debug_line_info(zs::allocator<zs::line_info_op_t>(eng))
+#endif
+{
+}
+
+closure_compile_state::closure_compile_state(zs::engine* eng, closure_compile_state& parent)
+    : jit::shared_state_data_ref(parent._sdata)
+    , _parent(&parent)
+    , _parameter_names(zs::allocator<zs::object>(eng))
+    , _children(zs::allocator<zs::unique_ptr<closure_compile_state>>(eng))
+    , _instructions(eng)
+    //    , _restricted_types(zs::allocator<object>(eng))
+    , _target_stack(zs::allocator<variable_type_info_t>(eng))
+    , _literals(zs::unordered_map_allocator<object, int_t>(eng))
+    , _vlocals(zs::allocator<zs::local_var_info_t>(eng))
+    , _local_var_infos(zs::allocator<zs::local_var_info_t>(eng))
+    , _line_info(zs::allocator<zs::line_info_op_t>(eng))
+    , _functions(zs::allocator<object>(eng))
+    , _default_params(zs::allocator<int_t>(eng))
+    , _captures(zs::allocator<captured_variable>(eng))
 
 #if ZS_DEBUG
     , _debug_line_info(zs::allocator<zs::line_info_op_t>(eng))
@@ -103,6 +125,13 @@ int_t closure_compile_state::push_target(int_t n) {
   return n;
 }
 
+int_t closure_compile_state::push_export_target() {
+  zbase_assert(has_export(), "no export table");
+  const zs::local_var_info_t& v = _vlocals[_export_table_target];
+  _target_stack.push_back({ _export_table_target, v._mask, v._custom_mask, v._is_const });
+  return _export_table_target;
+}
+
 uint8_t closure_compile_state::new_target() {
   size_t n = alloc_stack_pos();
   _target_stack.emplace_back((int_t)n);
@@ -159,6 +188,15 @@ int_t closure_compile_state::find_local_variable(const object& name) const {
   return -1;
 }
 
+bool closure_compile_state::is_exported_name(const object& name) const {
+  return is_top_level() and has_exported_name(name);
+}
+
+bool closure_compile_state::is_captured_exported_name(const object& name) const {
+
+  return (!is_top_level()) and has_exported_name(name);
+}
+
 void closure_compile_state::mark_local_as_capture(int_t pos) {
   local_var_info_t& lvi = _vlocals[pos];
   lvi._end_op = std::numeric_limits<uint_t>::max();
@@ -177,13 +215,15 @@ int_t closure_compile_state::get_capture(const object& name) {
     return -1;
   }
 
+  const bool is_export = name == "__exports__";
+
   if (int_t pos = _parent->find_local_variable(name); pos != -1) {
     _parent->mark_local_as_capture(pos);
-    _captures.push_back(captured_variable(name, pos, captured_variable::local));
+    _captures.push_back(captured_variable(name, pos, captured_variable::local, is_export));
     return _captures.size() - 1;
   }
   else if (pos = _parent->get_capture(name); pos != -1) {
-    _captures.push_back(captured_variable(name, pos, captured_variable::outer));
+    _captures.push_back(captured_variable(name, pos, captured_variable::outer, is_export));
     return _captures.size() - 1;
   }
 
@@ -220,12 +260,12 @@ void closure_compile_state::set_stack_size(int_t n) {
 }
 
 zs::error_result closure_compile_state::get_restricted_type_index(const object& name, int_t& index) {
-  const size_t sz = _restricted_types.size();
+  const size_t sz = _sdata._restricted_types.size();
 
   std::string_view name_str = name.get_string_unchecked();
 
   for (size_t i = 0; i < sz; i++) {
-    if (_restricted_types[i].get_string_unchecked() == name_str) {
+    if (_sdata._restricted_types[i].get_string_unchecked() == name_str) {
       index = (int_t)i;
       return {};
     }
@@ -236,19 +276,19 @@ zs::error_result closure_compile_state::get_restricted_type_index(const object& 
     return zs::error_code::inaccessible;
   }
 
-  _restricted_types.push_back(name);
+  _sdata._restricted_types.push_back(name);
   index = (int_t)sz;
   return {};
 }
 
 zs::error_result closure_compile_state::get_restricted_type_mask(
     const object& name, int_t& mask) const noexcept {
-  const size_t sz = _restricted_types.size();
+  const size_t sz = _sdata._restricted_types.size();
 
   std::string_view name_str = name.get_string_unchecked();
 
   for (size_t i = 0; i < sz; i++) {
-    const object& obj = _restricted_types[i];
+    const object& obj = _sdata._restricted_types[i];
     if (obj.is_string() and obj.get_string_unchecked() == name_str) {
       mask = (int_t)(1 << i);
       return {};
@@ -256,6 +296,17 @@ zs::error_result closure_compile_state::get_restricted_type_mask(
   }
 
   return zs::error_code::not_found;
+}
+
+zs::error_result closure_compile_state::create_export_table() {
+  if (has_export()) {
+    return {};
+  }
+
+  add_instruction<opcode::op_new_obj>(new_target(), object_type::k_table);
+  pop_target();
+  object var_name = zs::_ss("__exports__");
+  return push_local_variable(var_name, &_export_table_target);
 }
 
 void closure_compile_state::add_line_infos(const zs::line_info& linfo) {
@@ -333,9 +384,9 @@ void closure_compile_state::add_debug_line_info(const zs::line_info& linfo) {
 
 zs::function_prototype_object* closure_compile_state::build_function_prototype() {
 
-  zs::function_prototype_object* fpo = zs::function_prototype_object::create(_engine);
+  zs::function_prototype_object* fpo = zs::function_prototype_object::create(get_engine());
 
-  fpo->_source_name = std::move(source_name);
+  fpo->_source_name = _sdata._source_name;
   fpo->_name = name;
   fpo->_stack_size = _total_stack_size;
   fpo->_vlocals = std::move(_local_var_infos);
@@ -349,13 +400,15 @@ zs::function_prototype_object* closure_compile_state::build_function_prototype()
   }
 
   fpo->_parameter_names = std::move(_parameter_names);
-  fpo->_restricted_types = std::move(_restricted_types);
+  fpo->_restricted_types = _sdata._restricted_types;
   fpo->_instructions = std::move(_instructions);
   fpo->_functions = std::move(_functions);
   fpo->_captures = std::move(_captures);
   fpo->_line_info = std::move(_line_info);
   fpo->_default_params = _default_params;
   fpo->_n_capture = _n_capture;
+  fpo->_export_table_target = _export_table_target;
+  fpo->_module_name = _sdata._module_name;
 
 #if ZS_DEBUG
   fpo->_debug_line_info = std::move(_debug_line_info);
@@ -364,8 +417,8 @@ zs::function_prototype_object* closure_compile_state::build_function_prototype()
 }
 
 zs::closure_compile_state* closure_compile_state::push_child_state() {
-  closure_compile_state* cs = internal::zs_new<closure_compile_state>(_engine, _engine, this);
-  _children.push_back(zs::unique_ptr<closure_compile_state>(cs, { _engine }));
+  closure_compile_state* cs = internal::zs_new<closure_compile_state>(get_engine(), get_engine(), *this);
+  _children.push_back(zs::unique_ptr<closure_compile_state>(cs, { get_engine() }));
   return cs;
 }
 
@@ -375,4 +428,41 @@ void closure_compile_state::pop_child_state() {
       "empty.");
   _children.pop_back();
 }
+
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+//
+// top_level_compile_state_data::top_level_compile_state_data(zs::engine* eng )
+//  : engine_holder(eng)
+//  , _restricted_types(zs::allocator<object>(eng))
+//  , _exported_names(zs::allocator<object>(eng))
+//  , _imported_files_set(zs::allocator<object>(eng))
+//{
+//}
+//
+// top_level_compile_state_data::~top_level_compile_state_data() {}
+//
+
+namespace jit {} // namespace jit.
+
 } // namespace zs.

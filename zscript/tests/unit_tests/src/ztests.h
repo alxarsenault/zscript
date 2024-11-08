@@ -16,6 +16,17 @@
 
 #define ZS_TEST_PRINT_METHODS 0
 
+#define ZCODE(X, R) X, R
+#define ZCODE_A(X) X, "return a;"
+#define ZCODE_R(X, vname) X, "return " vname ";"
+#define ZTITLE(X) X
+#define ZDESCRIPTION(X) X
+// #define ZDESCRIPTION_2(X, Y) X, Y
+
+#define ZBAD -1
+#define ZIGNORE 0
+#define ZGOOD 1
+
 #define ZSTD_PATH(name) ZSCRIPT_STANDARD_TESTS_RESOURCES_DIRECTORY "/" name
 
 #define ZS_FILE_TEST_INTERNAL_CATCH_TEST_CASE_METHOD2(TestName, ClassName, filename, ...)                 \
@@ -304,4 +315,119 @@ inline void run_file_test(const char* filepath, Fct&& fct) {
   run_code_test(file.str(), 128, "test", std::forward<Fct>(fct));
 }
 
+// CATCH_REGISTER_LISTENER(EventListener)
+
+extern std::string s_current_test_name;
+
 } // namespace ztest.
+
+namespace zcode {
+
+struct test_fixture {
+  inline test_fixture(std::string_view ccode, std::string_view test_name, std::string_view title,
+      int require_compile, int require_call)
+      : vm(128)
+      , code(ccode) {
+
+    INFO(title);
+    //    vm.get_engine()->add_import_directory(ZSCRIPT_STANDARD_TESTS_RESOURCES_DIRECTORY);
+
+    if (auto err = vm->compile_buffer(code, test_name, closure)) {
+      error = err;
+
+      if (require_compile == ZGOOD) {
+        zb::print(vm.get_error());
+        REQUIRE(false);
+      }
+
+      return;
+    }
+
+    if (require_compile == ZBAD) {
+      zb::print(vm.get_error());
+      REQUIRE(false);
+    }
+
+    REQUIRE(closure.is_closure());
+
+    zs::int_t n_params = 1;
+    vm.push_root();
+
+    // Top index = 3
+    // N param = 1
+
+    //
+    if (auto err = vm->call(closure, n_params, vm.stack_size() - n_params, value)) {
+      error = err;
+      if (require_call == ZGOOD) {
+        zb::print(vm.get_error());
+        REQUIRE(false);
+      }
+
+      return;
+    }
+
+    vm.push(value);
+
+    if (require_call == ZBAD) {
+      zb::print(vm.get_error());
+      REQUIRE(false);
+    }
+  }
+
+  zs::vm vm;
+  zs::object closure;
+  zs::object value;
+  std::string code;
+  zs::error_result error;
+};
+
+inline size_t& get_unique_number() {
+  static size_t __uid = 0;
+  return ++__uid;
+}
+
+inline std::string generate_test_name() {
+  std::stringstream ss;
+  ss << "zcode-" << std::setfill('0') << std::setw(3) << get_unique_number();
+  return ss.str();
+}
+
+#define ZCODE_TEST_INTERNAL_CATCH_TEST_CASE_METHOD2(                                                        \
+    TestName, ClassName, code, title, require_compile, require_call)                                        \
+  CATCH_INTERNAL_START_WARNINGS_SUPPRESSION                                                                 \
+  CATCH_INTERNAL_SUPPRESS_GLOBALS_WARNINGS                                                                  \
+  CATCH_INTERNAL_SUPPRESS_UNUSED_VARIABLE_WARNINGS                                                          \
+  namespace {                                                                                               \
+    struct TestName : ClassName {                                                                           \
+      static inline std::string& get_test_name() {                                                          \
+        static std::string n = zcode::generate_test_name();                                                 \
+        return n;                                                                                           \
+      }                                                                                                     \
+      inline TestName()                                                                                     \
+          : ClassName(code, TestName::get_test_name(), title, require_compile, require_call) {}             \
+      void test();                                                                                          \
+    };                                                                                                      \
+                                                                                                            \
+    const Catch::AutoReg INTERNAL_CATCH_UNIQUE_NAME(autoRegistrar)(Catch::makeTestInvoker(&TestName::test), \
+        CATCH_INTERNAL_LINEINFO, #ClassName##_catch_sr, Catch::NameAndTags{ TestName::get_test_name() });   \
+  }                                                                                                         \
+  CATCH_INTERNAL_STOP_WARNINGS_SUPPRESSION                                                                  \
+  void TestName::test()
+
+#define ZCODE_TEST_2(title, code)              \
+  ZCODE_TEST_INTERNAL_CATCH_TEST_CASE_METHOD2( \
+      INTERNAL_CATCH_UNIQUE_NAME(CATCH2_INTERNAL_TEST_), zcode::test_fixture, code, title, ZGOOD, ZGOOD)
+
+//#define ZCODE_TEST_3( title,code,require_compile)                        \
+//ZCODE_TEST_INTERNAL_CATCH_TEST_CASE_METHOD2(INTERNAL_CATCH_UNIQUE_NAME(CATCH2_INTERNAL_TEST_), \
+//                                            zcode::test_fixture, code,  title, desc, require_compile, ZGOOD)
+//
+//   #define ZCODE_TEST_4( title, code,   require_compile, require_call)          \
+//ZCODE_TEST_INTERNAL_CATCH_TEST_CASE_METHOD2(INTERNAL_CATCH_UNIQUE_NAME(CATCH2_INTERNAL_TEST_), \
+//                                            zcode::test_fixture, code,   title,  require_compile,   \
+//      require_call)
+
+#define ZCODE_TEST(...) ZBASE_DEFER(ZBASE_CONCAT(ZCODE_TEST_, ZBASE_NARG(__VA_ARGS__)), __VA_ARGS__)
+
+} // namespace zcode.

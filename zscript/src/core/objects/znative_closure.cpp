@@ -5,17 +5,19 @@ namespace zs {
 native_closure_object* native_closure_object::create(zs::engine* eng, zs::native_closure* closure) {
   native_closure_object* nc
       = internal::zs_new<memory_tag::nt_native_closure, native_closure_object>(eng, eng, closure);
+
   return nc;
 }
 
 native_closure_object* native_closure_object::create(zs::engine* eng, zs::native_cclosure_t closure) {
   native_closure_object* nc
       = internal::zs_new<memory_tag::nt_native_closure, native_closure_object>(eng, eng, closure);
+
   return nc;
 }
 
 native_closure_object::native_closure_object(zs::engine* eng, zs::native_closure* closure) noexcept
-    : reference_counted_object(eng)
+    : reference_counted_object(eng, zs::object_type::k_native_closure)
     , _type_check(zs::allocator<uint32_t>(eng)) {
 
   _closure.closure = closure;
@@ -23,7 +25,7 @@ native_closure_object::native_closure_object(zs::engine* eng, zs::native_closure
 }
 
 native_closure_object::native_closure_object(zs::engine* eng, zs::native_cclosure_t closure) noexcept
-    : reference_counted_object(eng)
+    : reference_counted_object(eng, zs::object_type::k_native_closure)
     , _type_check(zs::allocator<uint32_t>(eng)) {
   _closure.c_fct = closure;
   _ctype = closure_type::c_func;

@@ -52,6 +52,11 @@ ZS_CK_INLINE zs::engine* get_engine(const T& v) noexcept {
 ///
 class object : public object_base {
 public:
+  static object create_vm(zs::engine* eng);
+  static object create_vm(size_t stack_size = ZS_DEFAULT_STACK_SIZE,
+      allocate_t alloc_cb = ZS_DEFAULT_ALLOCATE, raw_pointer_t user_pointer = nullptr,
+      raw_pointer_release_hook_t user_release = nullptr);
+
   /// @brief Default constructor for object.
   /// Initializes an empty object (null).
   ZS_INLINE_CXPR object() noexcept;
@@ -64,8 +69,7 @@ public:
 
   ZS_INLINE_CXPR explicit object(const object_base& obj, bool should_retain) noexcept;
 
-  ZS_INLINE_CXPR explicit object(
-      reference_counted_object* ref_obj, object_type otype, bool should_retain) noexcept;
+  ZS_INLINE_CXPR explicit object(reference_counted_object* ref_obj, bool should_retain) noexcept;
 
   ZS_INLINE_CXPR object(zs::engine*, const object& obj) noexcept;
 
@@ -893,11 +897,11 @@ ZS_CXPR object::object(const object_base& obj, bool should_retain) noexcept
   }
 }
 
-ZS_CXPR object::object(reference_counted_object* ref_obj, object_type otype, bool should_retain) noexcept {
+ZS_CXPR object::object(reference_counted_object* ref_obj, bool should_retain) noexcept {
 
   ::memset(this, 0, sizeof(object_base));
 
-  _type = otype;
+  _type = ref_obj->_obj_type;
   _ref_counted = ref_obj;
 
   if (should_retain && is_ref_counted()) {

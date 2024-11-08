@@ -1196,59 +1196,64 @@ int object_base::compare(const object_base& rhs) const noexcept {
     return _value == rhs._value ? 0 : _value < rhs._value ? -1 : 1;
   }
 }
-
 //
-// MARK: reference_counted
+////
+//// MARK: reference_counted
+////
 //
-
-namespace {
-  struct reference_counted_engine_proxy_tag {};
-} // namespace.
-
-template <>
-struct internal::proxy<reference_counted_engine_proxy_tag> {
-  static inline int_t& global_ref_count(engine* eng) { return eng->_global_ref_count; }
-};
-
-namespace {
-  using eng_proxy = internal::proxy<reference_counted_engine_proxy_tag>;
-}
-reference_counted::reference_counted(zs::engine* eng) noexcept
-    : engine_holder(eng) {
-
-  eng_proxy::global_ref_count(eng)++;
-}
-
-reference_counted::~reference_counted() {
-  zbase_assert(_ref_count == 0, "~reference_counted: ref_count should be zero");
-}
-
-void reference_counted::retain() noexcept {
-  _ref_count++;
-
-  eng_proxy::global_ref_count(_engine)++;
-}
-
-bool reference_counted::release() noexcept {
-  zbase_assert(_ref_count > 0, "invalid ref count");
-
-  eng_proxy::global_ref_count(_engine)--;
-
-  if (--_ref_count == 0) {
-    internal::zs_delete(_engine, this);
-    return true;
-  }
-
-  return false;
-}
+// namespace {
+//  struct reference_counted_engine_proxy_tag {};
+//} // namespace.
+//
+// template <>
+// struct internal::proxy<reference_counted_engine_proxy_tag> {
+//  static inline int_t& global_ref_count(engine* eng) { return eng->_global_ref_count; }
+//};
+//
+// namespace {
+//  using eng_proxy = internal::proxy<reference_counted_engine_proxy_tag>;
+//}
+// reference_counted::reference_counted(zs::engine* eng) noexcept
+//    : engine_holder(eng) {
+//
+//  eng_proxy::global_ref_count(eng)++;
+//}
+//
+// reference_counted::~reference_counted() {
+//  zbase_assert(_ref_count == 0, "~reference_counted: ref_count should be zero");
+//}
+//
+// void reference_counted::retain() noexcept {
+//  _ref_count++;
+//
+//  eng_proxy::global_ref_count(_engine)++;
+//}
+//
+// bool reference_counted::release() noexcept {
+//  zbase_assert(_ref_count > 0, "invalid ref count");
+//
+//  eng_proxy::global_ref_count(_engine)--;
+//
+//  if (--_ref_count == 0) {
+//
+////    _engine->_gc_objs.erase(());
+//
+//    internal::zs_delete(_engine, this);
+//    return true;
+//  }
+//
+//  return false;
+//}
 
 //
 //
 //
 
 virtual_machine* create_virtual_machine(size_t stack_size, allocate_t alloc_cb, raw_pointer_t user_pointer,
-    raw_pointer_release_hook_t user_release, stream_getter_t stream_getter) {
-  return virtual_machine::create(stack_size, alloc_cb, user_pointer, user_release, stream_getter);
+    raw_pointer_release_hook_t user_release, stream_getter_t stream_getter,
+    engine_initializer_t initializer) {
+  return virtual_machine::create(
+      stack_size, alloc_cb, user_pointer, user_release, stream_getter, initializer);
 }
 
 virtual_machine* create_virtual_machine(zs::engine* eng, size_t stack_size) {

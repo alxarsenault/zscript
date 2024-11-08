@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+
+{{> head }}
+
+<body>
+  {{> nav }}
+
+  <!-- Main Content -->
+  <main id="main" class="d-flex flex-nowrap">
+    {{> sidebar }}
+
+    {{#content-container}}
+      {{> breadcrumb }}
+      {{#page-section}}
+        <p>
+        </p>
+      {{/page-section}}
+      {{> bottom-nav }}
+    {{/content-container}}
+  </main>
+
+  {{{footer}}}
+  {{> load-scripts }}
+</body>
+
+</html>

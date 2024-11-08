@@ -48,8 +48,8 @@ struct lexer::helper {
       { "namespace", zs::token_type::tok_namespace },
       { "global", zs::token_type::tok_global },
       { "const", zs::token_type::tok_const },
-    { "static", zs::token_type::tok_static },
-    { "export", zs::token_type::tok_export },
+      { "static", zs::token_type::tok_static },
+      { "export", zs::token_type::tok_export },
       { "function", zs::token_type::tok_function },
       { "typeof", zs::token_type::tok_typeof },
       { "typeid", zs::token_type::tok_typeid },
@@ -985,7 +985,16 @@ token_type lexer::lex() {
       next();
       return _current_token;
 
-    case '@':
+    case '@': {
+      const size_t sz = _stream.rsize();
+
+      // @module
+      if (sz >= 7 and std::string_view(_stream.ptr(), 7) == "@module") {
+        set_token(tok_module);
+        next(7);
+        return _current_token;
+      }
+
       if (_stream.safe_get_next() == '@') {
         set_token(tok_double_at);
         next(2);
@@ -995,6 +1004,7 @@ token_type lexer::lex() {
       set_token(tok_at);
       next();
       return _current_token;
+    }
 
     case '/': {
       if (_stream.is_next_valid()) {
