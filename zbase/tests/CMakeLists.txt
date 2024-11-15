@@ -14,7 +14,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
 add_executable(${TEST_NAME} ${ZBASE_TESTS_SOURCE_FILES})
 
 # wp_add_test(${TEST_NAME})
-target_link_libraries(${TEST_NAME} PUBLIC ztests)
+target_link_libraries(${TEST_NAME} PUBLIC catch2)
 
 set_target_properties(${TEST_NAME} PROPERTIES
   FOLDER tests

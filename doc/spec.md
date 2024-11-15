@@ -421,13 +421,13 @@ var a = v1 == v2;
 #### 4.10.5 as_string  <sub><sup>[var-decl-040]</sup></sub>
 
 ```zscript
-var a = #as_string("/Users/alexarse/Develop/zscript/zscript/tests/unit_tests/resources/data/text_01.txt");
+var a = #as_string("/Users/alexarse/Develop/zscript/tests/unit_tests/resources/data/text_01.txt");
 ```
 
 #### 4.10.6 as_table  <sub><sup>[var-decl-041]</sup></sub>
 
 ```zscript
-var a = #as_table("/Users/alexarse/Develop/zscript/zscript/tests/unit_tests/resources/data/obj_01.json");
+var a = #as_table("/Users/alexarse/Develop/zscript/tests/unit_tests/resources/data/obj_01.json");
 ```
 
 #### 4.10.7 define  <sub><sup>[var-decl-042]</sup></sub>
@@ -447,7 +447,7 @@ var a = @@k_my_value;
 #### 4.10.9 blabalbal  <sub><sup>[var-decl-044]</sup></sub>
 
 ```zscript
-var a = #load_json_file("/Users/alexarse/Develop/zscript/zscript/tests/unit_tests/resources/data/obj_01.json");
+var a = #load_json_file("/Users/alexarse/Develop/zscript/tests/unit_tests/resources/data/obj_01.json");
 ```
 
 ## 5. Typed Variable Declaration

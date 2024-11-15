@@ -239,12 +239,12 @@ void run(std::string_view code) {
 
       for (auto it = ivec.begin(); it != ivec.end(); ++it) {
         switch (it.get_opcode()) {
-#define ZS_DECL_OPCODE(name)                        \
-  case zs::opcode::op_##name:                       \
-    zb::print(it.get_ref<zs::opcode::op_##name>()); \
+#define ZS_DECL_OPCODE(name, INST_TYPES)                        \
+  case ZS_OPCODE_ENUM_VALUE(name):                       \
+    zb::print(it.get_ref<ZS_OPCODE_ENUM_VALUE(name)>()); \
     break;
 
-#include "lang/zopcode_def.h"
+#include "bytecode/zopcode_def.h"
 #undef ZS_DECL_OPCODE
 
         default:

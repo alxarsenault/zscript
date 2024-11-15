@@ -326,8 +326,9 @@ namespace detail {
 
   public:
     template <typename L, typename R>
-    constexpr auto operator()(L lhs, R rhs) const noexcept -> std::enable_if_t<
-        std::is_same_v<std::decay_t<L>, char_type> && std::is_same_v<std::decay_t<R>, char_type>, bool> {
+    constexpr auto operator()(L lhs, R rhs) const noexcept
+        -> std::enable_if_t<
+            std::is_same_v<std::decay_t<L>, char_type> && std::is_same_v<std::decay_t<R>, char_type>, bool> {
       return Op{}(to_lower(lhs), to_lower(rhs));
     }
   };
@@ -1511,8 +1512,8 @@ template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
 // Returns enum value at specified index.
 // No bounds checking is performed: the behavior is undefined if index >= number of enum values.
 template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
-[[nodiscard]] constexpr auto enum_value(std::size_t index) noexcept
-    -> detail::enable_if_t<E, std::decay_t<E>> {
+[[nodiscard]] constexpr auto enum_value(
+    std::size_t index) noexcept -> detail::enable_if_t<E, std::decay_t<E>> {
   using D = std::decay_t<E>;
   static_assert(
       detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
@@ -1557,8 +1558,8 @@ template <typename E>
 
 // Returns underlying value from enum value.
 template <typename E>
-[[nodiscard]] constexpr auto enum_underlying(E value) noexcept
-    -> detail::enable_if_t<E, underlying_type_t<E>> {
+[[nodiscard]] constexpr auto enum_underlying(
+    E value) noexcept -> detail::enable_if_t<E, underlying_type_t<E>> {
   return static_cast<underlying_type_t<E>>(value);
 }
 
@@ -1678,8 +1679,8 @@ inline constexpr auto case_insensitive = detail::case_insensitive<>{};
 // Obtains enum value from integer value.
 // Returns optional with enum value.
 template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
-[[nodiscard]] constexpr auto enum_cast(underlying_type_t<E> value) noexcept
-    -> detail::enable_if_t<E, optional<std::decay_t<E>>> {
+[[nodiscard]] constexpr auto enum_cast(
+    underlying_type_t<E> value) noexcept -> detail::enable_if_t<E, optional<std::decay_t<E>>> {
   using D = std::decay_t<E>;
   static_assert(
       detail::is_reflected_v<D, S>, "magic_enum requires enum implementation and valid max and min.");
@@ -1753,8 +1754,8 @@ template <detail::enum_subtype S, typename E>
 
 // Checks whether enum contains value with such integer value.
 template <typename E, detail::enum_subtype S = detail::subtype_v<E>>
-[[nodiscard]] constexpr auto enum_contains(underlying_type_t<E> value) noexcept
-    -> detail::enable_if_t<E, bool> {
+[[nodiscard]] constexpr auto enum_contains(
+    underlying_type_t<E> value) noexcept -> detail::enable_if_t<E, bool> {
   using D = std::decay_t<E>;
 
   return static_cast<bool>(enum_cast<D, S>(value));

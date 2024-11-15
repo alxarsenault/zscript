@@ -1,4 +1,4 @@
-#include <ztests/ztests.h>
+#include <catch2.h>
 #include <zbase/strings/unicode.h>
 
 namespace common {

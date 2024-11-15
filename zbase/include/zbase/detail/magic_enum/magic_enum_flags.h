@@ -64,8 +64,8 @@ namespace detail {
 // Returns name from enum-flags value.
 // If enum-flags value does not have name or value out of range, returns empty string.
 template <typename E>
-[[nodiscard]] auto enum_flags_name(E value, char_type sep = static_cast<char_type>('|'))
-    -> detail::enable_if_t<E, string> {
+[[nodiscard]] auto enum_flags_name(
+    E value, char_type sep = static_cast<char_type>('|')) -> detail::enable_if_t<E, string> {
   using D = std::decay_t<E>;
   using U = underlying_type_t<D>;
   constexpr auto S = detail::enum_subtype::flags;
@@ -98,8 +98,8 @@ template <typename E>
 // Obtains enum-flags value from integer value.
 // Returns optional with enum-flags value.
 template <typename E>
-[[nodiscard]] constexpr auto enum_flags_cast(underlying_type_t<E> value) noexcept
-    -> detail::enable_if_t<E, optional<std::decay_t<E>>> {
+[[nodiscard]] constexpr auto enum_flags_cast(
+    underlying_type_t<E> value) noexcept -> detail::enable_if_t<E, optional<std::decay_t<E>>> {
   using D = std::decay_t<E>;
   using U = underlying_type_t<D>;
   constexpr auto S = detail::enum_subtype::flags;
@@ -188,8 +188,8 @@ template <typename E>
 
 // Checks whether enum-flags contains value with such integer value.
 template <typename E>
-[[nodiscard]] constexpr auto enum_flags_contains(underlying_type_t<E> value) noexcept
-    -> detail::enable_if_t<E, bool> {
+[[nodiscard]] constexpr auto enum_flags_contains(
+    underlying_type_t<E> value) noexcept -> detail::enable_if_t<E, bool> {
   using D = std::decay_t<E>;
 
   return static_cast<bool>(enum_flags_cast<D>(value));

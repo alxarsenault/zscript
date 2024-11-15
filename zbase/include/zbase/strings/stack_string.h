@@ -400,6 +400,17 @@ public:
     return append(view_type(s));
   }
 
+  inline constexpr basic_stack_string& clipped_append(view_type v) noexcept {
+
+    if (size_t msize = zb::minimum(maximum_size - _size, v.size())) {
+      ::memcpy(_data.data() + _size, v.data(), msize * sizeof(value_type));
+      _size += msize;
+      _data[_size] = 0;
+    }
+
+    return *this;
+  }
+
   //
   // Insert.
   //

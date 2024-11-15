@@ -1,4 +1,4 @@
-#include <ztests/ztests.h>
+#include <catch2.h>
 #include <zbase/strings/charconv.h>
 #include <zbase/memory/memory.h>
 

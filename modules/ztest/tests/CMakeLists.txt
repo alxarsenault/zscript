@@ -1,0 +1,33 @@
+
+set(TEST_NAME ztest-tests)
+set(ZTEST_TESTS_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+file(GLOB_RECURSE ZTEST_TESTS_SOURCE_FILES
+  "${ZTEST_TESTS_SOURCE_DIRECTORY}/*.h"
+  "${ZTEST_TESTS_SOURCE_DIRECTORY}/*.cpp"
+)
+
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
+  FILES
+  ${ZTEST_TESTS_SOURCE_FILES})
+
+add_executable(${TEST_NAME} ${ZTEST_TESTS_SOURCE_FILES})
+
+target_link_libraries(${TEST_NAME} PUBLIC catch2)
+
+set_target_properties(${TEST_NAME} PROPERTIES
+  FOLDER tests
+  XCODE_GENERATE_SCHEME YES)
+
+target_include_directories(${TEST_NAME}
+  PUBLIC
+  ${ZTEST_TESTS_SOURCE_DIRECTORY}
+  ${ZSCRIPT_SOURCE_DIRECTORY})
+
+target_link_libraries(${TEST_NAME}
+  PUBLIC
+  ztest)
+
+target_compile_definitions(${TEST_NAME}
+  PUBLIC
+  -DZTEST_TESTS_RESOURCES_DIRECTORY="${CMAKE_CURRENT_SOURCE_DIR}/resources")

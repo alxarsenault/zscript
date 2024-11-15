@@ -1,0 +1,33 @@
+
+set(TEST_NAME zaudio-tests)
+set(ZAUDIO_TESTS_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+file(GLOB_RECURSE ZAUDIO_TESTS_SOURCE_FILES
+  "${ZAUDIO_TESTS_SOURCE_DIRECTORY}/*.h"
+  "${ZAUDIO_TESTS_SOURCE_DIRECTORY}/*.cpp"
+)
+
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
+  FILES
+  ${ZAUDIO_TESTS_SOURCE_FILES})
+
+add_executable(${TEST_NAME} ${ZAUDIO_TESTS_SOURCE_FILES})
+
+target_link_libraries(${TEST_NAME} PUBLIC catch2)
+
+set_target_properties(${TEST_NAME} PROPERTIES
+  FOLDER tests
+  XCODE_GENERATE_SCHEME YES)
+
+target_include_directories(${TEST_NAME}
+  PUBLIC
+  ${ZAUDIO_TESTS_SOURCE_DIRECTORY}
+  ${ZSCRIPT_SOURCE_DIRECTORY})
+
+target_link_libraries(${TEST_NAME}
+  PUBLIC
+  zaudio)
+
+target_compile_definitions(${TEST_NAME}
+  PUBLIC
+  -DZAUDIO_TESTS_RESOURCES_DIRECTORY="${CMAKE_CURRENT_SOURCE_DIR}/resources")

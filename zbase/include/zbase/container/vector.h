@@ -91,11 +91,10 @@ public:
   // Find iterator.
   //
 
-  
   ZB_CHECK ZB_INLINE bool contains(const value_type& v) const noexcept {
     return std::find(this->begin(), this->end(), v) != this->end();
   }
-  
+
   ZB_CHECK ZB_INLINE iterator find(const value_type& v) noexcept {
     return std::find(this->begin(), this->end(), v);
   }
@@ -173,7 +172,7 @@ public:
 
   template <class UnaryPred>
   ZB_CHECK ZB_INLINE size_type ifind_if(UnaryPred&& fct) const noexcept {
-    iterator it = this->find_if(std::forward<UnaryPred>(fct));
+    const_iterator it = this->find_if(std::forward<UnaryPred>(fct));
     return it == this->end() ? npos : std::distance(this->begin(), it);
   }
 

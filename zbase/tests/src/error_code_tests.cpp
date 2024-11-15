@@ -1,4 +1,4 @@
-#include <ztests/ztests.h>
+#include <catch2.h>
 #include <zbase/sys/error_code.h>
 
 TEST_CASE("error_code") {

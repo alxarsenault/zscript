@@ -265,7 +265,7 @@ ZB_CHECK ZB_INLINE size_t required_aligned_size(
   return align_end ? __zb::align(sz, alignment) : sz;
 }
 
-struct aligned_type_storage_construct_tag{};
+struct aligned_type_storage_construct_tag {};
 
 template <class T>
 struct aligned_type_storage {
@@ -277,11 +277,10 @@ struct aligned_type_storage {
   using size_type = size_t;
   using difference_type = ptrdiff_t;
 
-  aligned_type_storage() noexcept= default;
-  
-  
+  aligned_type_storage() noexcept = default;
+
   template <class... Args>
-  inline  aligned_type_storage(aligned_type_storage_construct_tag, Args&&... args) noexcept {
+  inline aligned_type_storage(aligned_type_storage_construct_tag, Args&&... args) noexcept {
     if constexpr (std::is_trivial_v<T>) {
       get() = T(std::forward<Args>(args)...);
     }
@@ -289,7 +288,7 @@ struct aligned_type_storage {
       zb_placement_new(_data) T(std::forward<Args>(args)...);
     }
   }
-  
+
   ZB_CHECK static inline constexpr size_type size() noexcept { return sizeof(T); }
   ZB_CHECK static inline constexpr size_type alignment() noexcept { return alignof(T); }
   ZB_CHECK static inline constexpr size_type aligned_size() noexcept { return sizeof(T); }
@@ -602,6 +601,15 @@ ZB_CHECK ZB_INLINE constexpr size_t strlen(const char* str) noexcept {
   return ::strlen(str);
 #endif
 }
+
+ZB_CK_INLINE_CXPR size_t constexpr_strlen(const char* str) noexcept {
+  size_t i = 0;
+  for (; str[i] != '\0'; ++i)
+  {}
+
+  return i;
+}
+ 
 
 ZB_CHECK ZB_INLINE size_t strnlen(const char* str, size_t max_length) noexcept {
 #if __ZBASE_WINDOWS__

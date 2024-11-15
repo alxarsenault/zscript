@@ -711,6 +711,9 @@
 #define ZBASE_NARG(...) ZBASE_NARG_(__VA_ARGS__ __VA_OPT__(, ) ZBASE_RSEQ_N())
 #define ZBASE_NARG_(...) ZBASE_ARG_N(__VA_ARGS__)
 
+#define ZBASE_NARG_BINARY(...) ZBASE_NARG_(__VA_ARGS__ __VA_OPT__(, ) ZBASE_RSEQ_BINARY(MULTIPLE))
+ 
+
 #define ZBASE_NARG0(...) ZBASE_NARG0_(__VA_ARGS__ __VA_OPT__(, ) ZBASE_RSEQ_N())
 #define ZBASE_NARG0_(...) ZBASE_ARG_N0(__VA_ARGS__)
 
@@ -730,6 +733,11 @@
   63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, \
       37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, \
       12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+
+#define ZBASE_RSEQ_BINARY(K)                                                                                    \
+K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, \
+      K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, K, \
+      K, K, K, K, K, K, K, K, K, K, K, 1, 0
 
 #define __ZBASE_FE_1(W, LST, x) LST(x)
 #define __ZBASE_FE_2(W, LST, x, ...) ZBASE_DEFER(W, x) __ZBASE_FE_1(W, LST, __VA_ARGS__)

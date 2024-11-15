@@ -25,6 +25,8 @@
 
 ZBASE_BEGIN_NAMESPACE
 
+#define ZB_STRING_LITERAL_FROM_STRING_VIEW(sv) zb::string_literal<sv.size()>(sv)
+
 /// string_literal.
 template <size_t N>
 class string_literal {
@@ -35,6 +37,12 @@ public:
   using view_type = std::string_view;
 
   constexpr string_literal(const char (&s)[N]) noexcept {
+    for (size_type i = 0; i < N; i++) {
+      value[i] = s[i];
+    }
+  }
+
+  constexpr string_literal(std::string_view s) noexcept {
     for (size_type i = 0; i < N; i++) {
       value[i] = s[i];
     }

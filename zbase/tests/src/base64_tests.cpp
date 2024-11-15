@@ -1,4 +1,4 @@
-#include <ztests/ztests.h>
+#include <catch2.h>
 #include <zbase/crypto/base64.h>
 
 TEST_CASE("Base64 : get_encoded_size") {

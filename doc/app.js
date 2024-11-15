@@ -1,3 +1,5 @@
-console.log("DSLDJKSDL")
+const john = require("./john");
+const johnson = require("./john.js");
 
-var beautify = require('js-beautify')
+john.bingo = "DJSK";
+console.log(john, johnson);

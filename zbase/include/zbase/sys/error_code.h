@@ -44,6 +44,9 @@ ZBASE_DECL_HAS_MEMBER(has_default_value, meta_default_value);
 ZBASE_DECL_USING_DECLTYPE(meta_to_string, to_string);
 ZBASE_DECL_HAS_MEMBER(has_to_string, meta_to_string);
 
+ZBASE_DECL_USING_DECLTYPE(meta_throw_error, throw_error);
+ZBASE_DECL_HAS_MEMBER(has_throw_error, meta_throw_error);
+
 template <class T, class = void>
 struct get_enum_type {
   using type = typename T::enum_type;
@@ -62,27 +65,28 @@ template <class ErrorDescriptor>
 struct generic_status_result {
   using descriptor = ErrorDescriptor;
   using enum_type = typename generic_error_result_detail::get_enum_type<descriptor>::type;
+
   using message_type = std::conditional_t<generic_error_result_detail::has_to_string<descriptor>::value,
       const char*, std::string_view>;
 
   enum_type code = default_value();
 
-  ZB_ALWAYS_INLINE constexpr generic_status_result() noexcept = default;
-  ZB_ALWAYS_INLINE constexpr generic_status_result(const generic_status_result&) noexcept = default;
-  ZB_ALWAYS_INLINE constexpr generic_status_result(generic_status_result&&) noexcept = default;
+  ZB_INLINE_CXPR generic_status_result() noexcept = default;
+  ZB_INLINE_CXPR generic_status_result(const generic_status_result&) noexcept = default;
+  ZB_INLINE_CXPR generic_status_result(generic_status_result&&) noexcept = default;
 
-  ZB_ALWAYS_INLINE constexpr generic_status_result(generic_error_result<ErrorDescriptor> ec) noexcept;
+  ZB_INLINE_CXPR generic_status_result(generic_error_result<ErrorDescriptor> ec) noexcept;
 
-  ZB_ALWAYS_INLINE constexpr generic_status_result(enum_type c) noexcept
+  ZB_INLINE_CXPR generic_status_result(enum_type c) noexcept
       : code(c) {}
 
   ZB_ALWAYS_INLINE ~generic_status_result() noexcept = default;
 
-  ZB_ALWAYS_INLINE constexpr generic_status_result& operator=(const generic_status_result&) noexcept
-      = default;
-  ZB_ALWAYS_INLINE constexpr generic_status_result& operator=(generic_status_result&&) noexcept = default;
+  ZB_INLINE_CXPR generic_status_result& operator=(const generic_status_result&) noexcept = default;
 
-  static ZB_ALWAYS_INLINE constexpr enum_type default_value() noexcept {
+  ZB_INLINE_CXPR generic_status_result& operator=(generic_status_result&&) noexcept = default;
+
+  ZB_CK_INLINE_CXPR static enum_type default_value() noexcept {
     if constexpr (generic_error_result_detail::has_default_value<descriptor>::value) {
       return descriptor::default_value;
     }
@@ -92,10 +96,9 @@ struct generic_status_result {
   }
 
   /// Returns false on error.
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr explicit operator bool() const noexcept { return is_valid(); }
+  ZB_CK_INLINE_CXPR explicit operator bool() const noexcept { return is_valid(); }
 
-  ///
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool is_valid() const noexcept {
+  ZB_CK_INLINE_CXPR bool is_valid() const noexcept {
     if constexpr (generic_error_result_detail::has_is_valid<descriptor>::value) {
       return descriptor::is_valid(code);
     }
@@ -104,22 +107,15 @@ struct generic_status_result {
     }
   }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool operator==(generic_status_result c) const noexcept {
-    return code == c.code;
-  }
+  ZB_CK_INLINE_CXPR bool operator==(generic_status_result c) const noexcept { return code == c.code; }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool operator!=(generic_status_result c) const noexcept {
-    return code != c.code;
-  }
+  ZB_CK_INLINE_CXPR bool operator!=(generic_status_result c) const noexcept { return code != c.code; }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool operator==(
-      generic_error_result<ErrorDescriptor> ec) const noexcept;
+  ZB_CK_INLINE_CXPR bool operator==(generic_error_result<ErrorDescriptor> ec) const noexcept;
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool operator!=(
-      generic_error_result<ErrorDescriptor> ec) const noexcept;
-  //
+  ZB_CK_INLINE_CXPR bool operator!=(generic_error_result<ErrorDescriptor> ec) const noexcept;
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr message_type message() const noexcept {
+  ZB_CK_INLINE_CXPR message_type message() const noexcept {
     if constexpr (generic_error_result_detail::has_to_string<descriptor>::value) {
       return descriptor::to_string(code);
     }
@@ -128,7 +124,7 @@ struct generic_status_result {
     }
   }
 
-  friend ZB_ALWAYS_INLINE std::ostream& operator<<(
+  friend inline std::ostream& operator<<(
       std::ostream& stream, const __zb::generic_status_result<ErrorDescriptor>& err) {
     return stream << err.message();
   }
@@ -143,22 +139,22 @@ struct generic_error_result {
 
   enum_type code = default_value();
 
-  ZB_ALWAYS_INLINE constexpr generic_error_result() noexcept = default;
-  ZB_ALWAYS_INLINE constexpr generic_error_result(const generic_error_result&) noexcept = default;
-  ZB_ALWAYS_INLINE constexpr generic_error_result(generic_error_result&&) noexcept = default;
+  ZB_INLINE_CXPR generic_error_result() noexcept = default;
+  ZB_INLINE_CXPR generic_error_result(const generic_error_result&) noexcept = default;
+  ZB_INLINE_CXPR generic_error_result(generic_error_result&&) noexcept = default;
 
-  ZB_ALWAYS_INLINE constexpr generic_error_result(generic_status_result<descriptor> err) noexcept
+  ZB_INLINE_CXPR generic_error_result(generic_status_result<descriptor> err) noexcept
       : code(err.code) {}
 
-  ZB_ALWAYS_INLINE constexpr generic_error_result(enum_type c) noexcept
+  ZB_INLINE_CXPR generic_error_result(enum_type c) noexcept
       : code(c) {}
 
-  ZB_ALWAYS_INLINE ~generic_error_result() noexcept = default;
+  ZB_INLINE ~generic_error_result() noexcept = default;
 
-  ZB_ALWAYS_INLINE constexpr generic_error_result& operator=(const generic_error_result&) noexcept = default;
-  ZB_ALWAYS_INLINE constexpr generic_error_result& operator=(generic_error_result&&) noexcept = default;
+  ZB_INLINE_CXPR generic_error_result& operator=(const generic_error_result&) noexcept = default;
+  ZB_INLINE_CXPR generic_error_result& operator=(generic_error_result&&) noexcept = default;
 
-  static ZB_ALWAYS_INLINE constexpr enum_type default_value() noexcept {
+  ZB_CK_INLINE_CXPR static enum_type default_value() noexcept {
     if constexpr (generic_error_result_detail::has_default_value<descriptor>::value) {
       return descriptor::default_value;
     }
@@ -168,10 +164,9 @@ struct generic_error_result {
   }
 
   /// Returns true on error.
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr explicit operator bool() const noexcept { return !is_valid(); }
+  ZB_CK_INLINE_CXPR explicit operator bool() const noexcept { return !is_valid(); }
 
-  ///
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool is_valid() const noexcept {
+  ZB_CK_INLINE_CXPR bool is_valid() const noexcept {
     if constexpr (generic_error_result_detail::has_is_valid<descriptor>::value) {
       return descriptor::is_valid(code);
     }
@@ -180,19 +175,15 @@ struct generic_error_result {
     }
   }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool operator==(generic_error_result c) const noexcept {
-    return code == c.code;
-  }
+  ZB_CK_INLINE_CXPR bool operator==(generic_error_result c) const noexcept { return code == c.code; }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool operator!=(generic_error_result c) const noexcept {
-    return code != c.code;
-  }
+  ZB_CK_INLINE_CXPR bool operator!=(generic_error_result c) const noexcept { return code != c.code; }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool operator==(enum_type c) const noexcept { return code == c; }
+  ZB_CK_INLINE_CXPR bool operator==(enum_type c) const noexcept { return code == c; }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool operator!=(enum_type c) const noexcept { return code != c; }
+  ZB_CK_INLINE_CXPR bool operator!=(enum_type c) const noexcept { return code != c; }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr message_type message() const noexcept {
+  ZB_CK_INLINE_CXPR message_type message() const noexcept {
     if constexpr (generic_error_result_detail::has_to_string<descriptor>::value) {
       return descriptor::to_string(code);
     }
@@ -201,9 +192,17 @@ struct generic_error_result {
     }
   }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr operator enum_type() const noexcept { return code; }
+  ZB_CK_INLINE_CXPR operator enum_type() const noexcept { return code; }
 
-  friend ZB_ALWAYS_INLINE std::ostream& operator<<(
+  template <class Dummy = descriptor>
+    requires std::is_same_v<Dummy, descriptor> and generic_error_result_detail::has_throw_error<Dummy>::value
+  ZBASE_ATTRIBUTE_NO_RETURN inline void throw_error() const {
+    if (!is_valid()) {
+      descriptor::throw_error(code);
+    }
+  }
+
+  friend inline std::ostream& operator<<(
       std::ostream& stream, const __zb::generic_error_result<ErrorDescriptor>& err) {
     return stream << err.message();
   }
@@ -233,23 +232,23 @@ public:
   using enum_type = typename generic_error_result_detail::get_enum_type<descriptor>::type;
   using value_type = T;
 
-  ZB_ALWAYS_INLINE constexpr generic_optional_result()
+  ZB_INLINE_CXPR generic_optional_result()
       : generic_optional_result(value_type{}) {}
 
-  ZB_ALWAYS_INLINE constexpr generic_optional_result(const value_type& value)
+  ZB_INLINE_CXPR generic_optional_result(const value_type& value)
       : _value(value) {}
 
-  ZB_ALWAYS_INLINE constexpr generic_optional_result(value_type&& value)
+  ZB_INLINE_CXPR generic_optional_result(value_type&& value)
       : _value(std::forward<value_type>(value)) {}
 
-  ZB_ALWAYS_INLINE constexpr generic_optional_result(enum_type err) noexcept
+  ZB_INLINE_CXPR generic_optional_result(enum_type err) noexcept
       : _error(err) {}
 
-  ZB_ALWAYS_INLINE constexpr generic_optional_result(enum_type err, const value_type& value) noexcept
+  ZB_INLINE_CXPR generic_optional_result(enum_type err, const value_type& value) noexcept
       : _value(value)
       , _error(err) {}
 
-  ZB_ALWAYS_INLINE constexpr generic_optional_result(enum_type err, value_type&& value) noexcept
+  ZB_INLINE_CXPR generic_optional_result(enum_type err, value_type&& value) noexcept
       : _value(std::forward<value_type>(value))
       , _error(err) {}
 
@@ -257,16 +256,14 @@ public:
       std::enable_if_t<
           std::is_convertible_v<U, value_type> && !std::is_same_v<std::remove_cvref_t<U>, value_type>, int>
       = 0>
-  ZB_ALWAYS_INLINE constexpr generic_optional_result(U&& value)
+  ZB_INLINE_CXPR generic_optional_result(U&& value)
       : _value(std::forward<U>(value)) {}
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr explicit operator bool() const noexcept { return is_valid(); }
+  ZB_CK_INLINE_CXPR explicit operator bool() const noexcept { return is_valid(); }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool is_valid() const noexcept {
-    return has_value() && !has_error();
-  }
+  ZB_CK_INLINE_CXPR bool is_valid() const noexcept { return has_value() && !has_error(); }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool has_value() const noexcept {
+  ZB_CK_INLINE_CXPR bool has_value() const noexcept {
     if constexpr (std::is_trivial_v<value_type>) {
       return !has_error();
     }
@@ -275,7 +272,7 @@ public:
     }
   }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool has_error() const noexcept {
+  ZB_CK_INLINE_CXPR bool has_error() const noexcept {
     if constexpr (generic_error_result_detail::has_is_valid<descriptor>::value) {
       return !descriptor::is_valid(_error);
     }
@@ -284,7 +281,7 @@ public:
     }
   }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr value_type& value() {
+  ZB_CK_INLINE_CXPR value_type& value() {
     if constexpr (std::is_trivial_v<value_type>) {
       return _value;
     }
@@ -293,7 +290,7 @@ public:
     }
   }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr const value_type& value() const {
+  ZB_CK_INLINE_CXPR const value_type& value() const {
     if constexpr (std::is_trivial_v<value_type>) {
       return _value;
     }
@@ -302,10 +299,10 @@ public:
     }
   }
 
-  ZB_INLINE constexpr value_type* operator->() noexcept { return &value(); }
-  ZB_INLINE constexpr const value_type* operator->() const noexcept { return &value(); }
+  ZB_INLINE_CXPR value_type* operator->() noexcept { return &value(); }
+  ZB_INLINE_CXPR const value_type* operator->() const noexcept { return &value(); }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr enum_type error() const noexcept { return _error; }
+  ZB_CK_INLINE_CXPR enum_type error() const noexcept { return _error; }
 
   template <class _U>
   inline void set_value(_U&& v) {
@@ -314,14 +311,14 @@ public:
 
   inline void set_error(enum_type e) { _error = e; }
 
-  friend ZB_ALWAYS_INLINE std::ostream& operator<<(
+  friend inline std::ostream& operator<<(
       std::ostream& stream, const __zb::generic_optional_result<ErrorDescriptor, T>& result) {
 
     if (result) {
-
       __zb::stream_print(stream, result.value());
       return stream;
     }
+
     return stream << __zb::generic_error_result<ErrorDescriptor>(result.error());
   }
 
@@ -329,7 +326,7 @@ private:
   std::conditional_t<std::is_trivial_v<value_type>, value_type, std::optional<value_type>> _value;
   enum_type _error = default_error_value();
 
-  static ZB_ALWAYS_INLINE constexpr enum_type default_error_value() noexcept {
+  ZB_CK_INLINE_CXPR static enum_type default_error_value() noexcept {
     if constexpr (generic_error_result_detail::has_default_value<descriptor>::value) {
       return descriptor::default_value;
     }
@@ -346,18 +343,18 @@ public:
   using enum_type = typename generic_error_result_detail::get_enum_type<descriptor>::type;
   using value_type = void;
 
-  ZB_ALWAYS_INLINE constexpr generic_optional_result() noexcept = default;
+  ZB_INLINE_CXPR generic_optional_result() noexcept = default;
 
-  ZB_ALWAYS_INLINE constexpr generic_optional_result(enum_type err) noexcept
+  ZB_INLINE_CXPR generic_optional_result(enum_type err) noexcept
       : _error(err) {}
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr explicit operator bool() const noexcept { return is_valid(); }
+  ZB_CK_INLINE_CXPR explicit operator bool() const noexcept { return is_valid(); }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool is_valid() const noexcept { return !has_error(); }
+  ZB_CK_INLINE_CXPR bool is_valid() const noexcept { return !has_error(); }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool has_value() const noexcept { return false; }
+  ZB_CK_INLINE_CXPR bool has_value() const noexcept { return false; }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr bool has_error() const noexcept {
+  ZB_CK_INLINE_CXPR bool has_error() const noexcept {
     if constexpr (generic_error_result_detail::has_is_valid<descriptor>::value) {
       return !descriptor::is_valid(_error);
     }
@@ -366,12 +363,12 @@ public:
     }
   }
 
-  [[nodiscard]] ZB_ALWAYS_INLINE constexpr enum_type error() const noexcept { return _error; }
+  ZB_CK_INLINE_CXPR enum_type error() const noexcept { return _error; }
 
 private:
   enum_type _error = default_error_value();
 
-  static ZB_ALWAYS_INLINE constexpr enum_type default_error_value() noexcept {
+  ZB_CK_INLINE_CXPR static enum_type default_error_value() noexcept {
     if constexpr (generic_error_result_detail::has_default_value<descriptor>::value) {
       return descriptor::default_value;
     }
@@ -539,7 +536,7 @@ enum class error_code : int32_t {
 
 using errc = error_code;
 
-[[nodiscard]] inline constexpr const char* status_message(__zb::error_code code) noexcept {
+ZB_CHECK inline constexpr const char* status_message(__zb::error_code code) noexcept {
   switch (code) {
 #define _X(name, str, idx)     \
   case __zb::error_code::name: \
@@ -554,9 +551,9 @@ using errc = error_code;
 struct error_result_descriptor {
   using enum_type = __zb::error_code;
   static constexpr enum_type default_value = enum_type::success;
-  static ZB_ALWAYS_INLINE constexpr bool is_valid(enum_type v) noexcept { return v == enum_type::success; }
+  ZB_CK_INLINE_CXPR static bool is_valid(enum_type v) noexcept { return v == enum_type::success; }
 
-  static ZB_ALWAYS_INLINE constexpr const char* to_string(enum_type code) noexcept {
+  ZB_CK_INLINE_CXPR static const char* to_string(enum_type code) noexcept {
     return __zb::status_message(code);
   }
 };
@@ -571,30 +568,11 @@ using noresult = __zb::optional_result<void>;
 
 template <class Exception>
 inline void throw_exception(const char* msg) {
-  // #ifdef AASLIB_USE_EXCEPTION
   throw Exception(msg);
-  // #else
-  //         fprintf(stderr, "ERROR: %s\n", msg);
-  //         std::abort();
-  // #endif // AASLIB_USE_EXCEPTION
 }
 
-ZBASE_END_NAMESPACE
-
-template <class CharT, class CharTraits>
-inline std::basic_ostream<CharT, CharTraits>& operator<<(
-    std::basic_ostream<CharT, CharTraits>& stream, __zb::error_code sc) {
+inline std::ostream& operator<<(std::ostream& stream, const __zb::error_code& sc) {
   return stream << __zb::status_result(sc).message();
 }
 
-// template <class CharT, class CharTraits>
-// inline std::basic_ostream<CharT, CharTraits>& operator<<(
-//     std::basic_ostream<CharT, CharTraits>& stream, __zb::error_result err) {
-//   return stream << err.message();
-// }
-
-template <class CharT, class CharTraits>
-inline std::basic_ostream<CharT, CharTraits>& operator<<(
-    std::basic_ostream<CharT, CharTraits>& stream, __zb::status_result st) {
-  return stream << st.message();
-}
+ZBASE_END_NAMESPACE

@@ -1,4 +1,4 @@
-#include <ztests/ztests.h>
+#include <catch2.h>
 #include <zbase/memory/ref_wrapper.h>
 
 namespace {

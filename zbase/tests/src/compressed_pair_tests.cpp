@@ -1,4 +1,4 @@
-#include <ztests/ztests.h>
+#include <catch2.h>
 #include <zbase/utility/compressed_pair.h>
 
 TEST_CASE("compressed_pair") {

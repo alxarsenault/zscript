@@ -1,4 +1,4 @@
-#include <ztests/ztests.h>
+#include <catch2.h>
 #include <zbase/container/stack.h>
 
 TEST_CASE("zbase.stack.01") {

@@ -250,6 +250,7 @@ inline constexpr std::string_view strip_trailing_spaces(std::string_view s) {
 inline constexpr std::string_view strip_leading_and_trailing_spaces(std::string_view s) {
   return strip_trailing_spaces(strip_leading_spaces(s));
 }
+
 inline constexpr std::string_view strip_all(std::string_view s) {
   s = strip_leading_and_trailing_spaces(strip_leading_and_trailing_endlines(s));
   return strip_leading_and_trailing_spaces(strip_leading_and_trailing_endlines(s));

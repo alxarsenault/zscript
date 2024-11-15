@@ -1,4 +1,4 @@
-#include <ztests/ztests.h>
+#include <catch2.h>
 #include <zbase/container/vector.h>
 #include <zbase/crypto/hash.h>
 

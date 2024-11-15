@@ -29,7 +29,7 @@ public:
 
   inline constexpr T* allocate(size_t n) {
     if (ZBASE_UNLIKELY(n > std::allocator_traits<profiler_allocator>::max_size(*this))) {
-      zs::throw_exception(zs::error_code::out_of_memory);
+      zs::throw_error(zs::error_code::out_of_memory);
     }
 
     return static_cast<T*>(::malloc(n * sizeof(T)));

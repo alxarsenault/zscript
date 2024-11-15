@@ -1,4 +1,4 @@
-#include <ztests/ztests.h>
+#include <catch2.h>
 #include <zbase/memory/reference_counted_ptr.h>
 
 TEST_CASE("reference_counted") {
