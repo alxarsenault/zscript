@@ -1,5 +1,45 @@
 namespace zs {
 
+inline zs::error_result object_char_or_string_to_string(
+    const object& obj, zs::string& s, std::string_view& sv) {
+
+  if (obj.is_string()) {
+    sv = obj.get_string_unchecked();
+    return {};
+  }
+  if (obj.is_integer()) {
+    s.clear();
+    zb::unicode::append_to(sv_from_char<char32_t>((char32_t)obj._int), s);
+    sv = s;
+    return {};
+  }
+
+  return zs::error_code::invalid;
+}
+
+class tmp_string_view {
+public:
+  inline tmp_string_view(zs::engine* eng)
+      : _buffer((zs::string_allocator(eng))) {}
+
+  inline tmp_string_view(zs::engine* eng, std::string_view s)
+      : _buffer((zs::string_allocator(eng)))
+      , _str(s) {}
+
+  zs::error_result assign(const object& obj) { return object_char_or_string_to_string(obj, _buffer, _str); }
+
+  inline bool empty() const noexcept { return _str.empty(); }
+
+  friend inline std::ostream& operator<<(std::ostream& stream, const tmp_string_view& s) {
+    if (!s.empty()) {
+      return stream << s._str;
+    }
+    return stream;
+  }
+  zs::string _buffer;
+  std::string_view _str;
+};
+
 namespace {
   int_t zlang_import_impl(zs::vm_ref vm) {
     const int_t nargs = vm.stack_size();
@@ -233,45 +273,47 @@ namespace {
   int_t zlang_create_struct_impl(zs::vm_ref vm) {
     return vm.push(zs::object::create_struct(vm.get_engine()));
   }
-
-  zs::error_result object_char_or_string_to_string(const object& obj, zs::string& s, std::string_view& sv) {
-
-    if (obj.is_string()) {
-      sv = obj.get_string_unchecked();
-      return {};
-    }
-    if (obj.is_integer()) {
-      s.clear();
-      zb::unicode::append_to(sv_from_char<char32_t>((char32_t)obj._int), s);
-      sv = s;
-      return {};
-    }
-
-    return zs::error_code::invalid;
-  }
-
-  class tmp_string_view {
-  public:
-    inline tmp_string_view(zs::engine* eng)
-        : _buffer((zs::string_allocator(eng))) {}
-
-    inline tmp_string_view(zs::engine* eng, std::string_view s)
-        : _buffer((zs::string_allocator(eng)))
-        , _str(s) {}
-
-    zs::error_result assign(const object& obj) { return object_char_or_string_to_string(obj, _buffer, _str); }
-
-    inline bool empty() const noexcept { return _str.empty(); }
-
-    friend inline std::ostream& operator<<(std::ostream& stream, const tmp_string_view& s) {
-      if (!s.empty()) {
-        return stream << s._str;
-      }
-      return stream;
-    }
-    zs::string _buffer;
-    std::string_view _str;
-  };
+  //
+  //  zs::error_result object_char_or_string_to_string(const object& obj, zs::string& s, std::string_view& sv)
+  //  {
+  //
+  //    if (obj.is_string()) {
+  //      sv = obj.get_string_unchecked();
+  //      return {};
+  //    }
+  //    if (obj.is_integer()) {
+  //      s.clear();
+  //      zb::unicode::append_to(sv_from_char<char32_t>((char32_t)obj._int), s);
+  //      sv = s;
+  //      return {};
+  //    }
+  //
+  //    return zs::error_code::invalid;
+  //  }
+  //
+  //  class tmp_string_view {
+  //  public:
+  //    inline tmp_string_view(zs::engine* eng)
+  //        : _buffer((zs::string_allocator(eng))) {}
+  //
+  //    inline tmp_string_view(zs::engine* eng, std::string_view s)
+  //        : _buffer((zs::string_allocator(eng)))
+  //        , _str(s) {}
+  //
+  //    zs::error_result assign(const object& obj) { return object_char_or_string_to_string(obj, _buffer,
+  //    _str); }
+  //
+  //    inline bool empty() const noexcept { return _str.empty(); }
+  //
+  //    friend inline std::ostream& operator<<(std::ostream& stream, const tmp_string_view& s) {
+  //      if (!s.empty()) {
+  //        return stream << s._str;
+  //      }
+  //      return stream;
+  //    }
+  //    zs::string _buffer;
+  //    std::string_view _str;
+  //  };
   //
   //  zs::error_result zlang_print_internal(zs::vm_ref vm, zb::span<const object> params, std::ostream&
   //  stream,

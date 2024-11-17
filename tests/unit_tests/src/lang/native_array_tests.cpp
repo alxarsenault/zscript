@@ -1,4 +1,4 @@
-#include "ztests.h"
+#include "unit_tests.h"
 
 ZS_CODE_TEST("native_array_01", R"""(
 var na = import("na");

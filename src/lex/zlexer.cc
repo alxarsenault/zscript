@@ -1513,16 +1513,16 @@ token_type lexer::lex(bool keep_endl) {
           }
           break;
 
-        case tok_struct:
-          switch (c) {
-          case '(':
-            set_identifier("create_struct");
-            ZBASE_NO_BREAK;
-          case '.':
-            // Can't use `set_token()` here, we don't want `_last_token` to change.
-            return _current_token = tok_identifier;
-          }
-          break;
+          //        case tok_struct:
+          //          switch (c) {
+          //          case '(':
+          //            set_identifier("create_struct");
+          //            ZBASE_NO_BREAK;
+          //          case '.':
+          //            // Can't use `set_token()` here, we don't want `_last_token` to change.
+          //            return _current_token = tok_identifier;
+          //          }
+          //          break;
         }
 
         if (_identifier == "operator") {

@@ -247,7 +247,7 @@ public:
 
   template <class... Args>
   inline void set_error(Args&&... args) {
-    set_error(std::string_view(zs::strprint<"">(_engine, std::forward<Args>(args)...)));
+    set_error(std::string_view(zs::strprint(_engine, std::forward<Args>(args)...)));
   }
 
   inline void set_error(std::string_view s) { _error_message += s; }

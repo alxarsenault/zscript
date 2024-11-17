@@ -1,4 +1,4 @@
-#include "ztests.h"
+#include "unit_tests.h"
 
 #define ZS_CHECK_TABLE()     \
   REQUIRE(value.is_table()); \

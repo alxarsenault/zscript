@@ -253,7 +253,7 @@ ZS_DECL_OPCODE(new_class_slot, ZS_INSTRUCTION_NEW_CLASS_SLOT)
 
 /// op_new_struct_slot.
 #define ZS_INSTRUCTION_NEW_STRUCT_SLOT(X) \
-  X(u8, table_idx)                        \
+  X(u8, struct_idx)                       \
   X(u8, key_idx)                          \
   X(u8, value_idx)                        \
   X(u32, mask)                            \
@@ -262,9 +262,20 @@ ZS_DECL_OPCODE(new_class_slot, ZS_INSTRUCTION_NEW_CLASS_SLOT)
   X(bool, is_const)
 ZS_DECL_OPCODE(new_struct_slot, ZS_INSTRUCTION_NEW_STRUCT_SLOT)
 
+/// op_new_struct_slot_ss
+#define ZS_INSTRUCTION_NEW_STRUCT_SLOT_SS(X) \
+  X(u8, struct_idx)                          \
+  X(ss_inst_data, key)                       \
+  X(u8, value_idx)                           \
+  X(u32, mask)                               \
+  X(bool, is_static)                         \
+  X(bool, has_value)                         \
+  X(bool, is_const)
+ZS_DECL_OPCODE(new_struct_slot_ss, ZS_INSTRUCTION_NEW_STRUCT_SLOT_SS)
+
 /// op_new_struct_constructor.
 #define ZS_INSTRUCTION_NEW_STRUCT_CONSTRUCTOR(X) \
-  X(u8, table_idx)                               \
+  X(u8, struct_idx)                              \
   X(u8, value_idx)
 ZS_DECL_OPCODE(new_struct_constructor, ZS_INSTRUCTION_NEW_STRUCT_CONSTRUCTOR)
 

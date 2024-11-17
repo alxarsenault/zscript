@@ -40,6 +40,6 @@
   _preprocessor->handle_error(*this, err, msg, ZB_CURRENT_SOURCE_LOCATION())
 
 #define ZS_PREPROCESSOR_ERROR_MULTIPLE(err, ...) \
-  _preprocessor->handle_error(*this, err, zs::strprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
+  _preprocessor->handle_error(*this, err, zs::sstrprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
 
 namespace zs {} // namespace zs.

@@ -73,7 +73,7 @@ inline std::ostream& operator<<(std::ostream& s, const local_var_info_t& vinfo) 
 }
 
 struct captured_variable {
-  enum class type_t { local, outer };
+  enum class type_t : uint8_t { local, outer };
   using enum type_t;
 
   captured_variable() = default;
@@ -225,9 +225,10 @@ public:
   int_t push_export_target();
 
   /// Get the top target index from the target stack.
-  ZB_CHECK ZB_INLINE int_t top_target() const noexcept {
+  ZB_CHECK ZB_INLINE uint8_t top_target() const noexcept {
     zbase_assert(!_target_stack.empty(), "Trying to get the top target of an empty stack.");
-    return _target_stack.back().index;
+    zbase_assert(_target_stack.back().index >= 0);
+    return (uint8_t)_target_stack.back().index;
   }
 
   /// Get the top target type info from the target stack.
@@ -244,7 +245,7 @@ public:
   /// Removes the top target from the target stack.
   /// This will also pop it from the `_vlocals` if it was an stack variable
   /// (unnamed).
-  int_t pop_target();
+  uint8_t pop_target();
 
   /// Get the last instruction index.
   /// Since the instructions have variable lengths, the last instruction cannot

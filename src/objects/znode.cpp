@@ -93,7 +93,7 @@ node_object* node_object::clone() const noexcept {
 }
 
 std::ostream& node_object::stream_internal(std::ostream& stream, int indent) const {
-  stream << zb::indent_t(indent) << "<" << name().get_string_unchecked();
+  stream << zb::indent_t(indent, 2) << "<" << name().get_string_unchecked();
 
   if (const size_t sz = _attributes.size()) {
     for (size_t i = 0; i < sz; i++) {
@@ -105,7 +105,7 @@ std::ostream& node_object::stream_internal(std::ostream& stream, int indent) con
 
   if (!_value.is_null()) {
     stream << "\n";
-    stream << zb::indent_t(indent + 1) << _value;
+    stream << zb::indent_t(indent + 1, 2) << _value;
   }
 
   if (const size_t sz = _children.size()) {
@@ -118,17 +118,17 @@ std::ostream& node_object::stream_internal(std::ostream& stream, int indent) con
         stream << "\n";
       }
       else if (_children[i].is_string()) {
-        stream << zb::indent_t(indent + 1) << _children[i].get_string_unchecked() << "\n";
+        stream << zb::indent_t(indent + 1, 2) << _children[i].get_string_unchecked() << "\n";
       }
       else {
-        stream << zb::indent_t(indent + 1) << _children[i] << "\n";
+        stream << zb::indent_t(indent + 1, 2) << _children[i] << "\n";
       }
     }
 
-    stream << zb::indent_t(indent) << "</" << name().get_string_unchecked() << ">";
+    stream << zb::indent_t(indent, 2) << "</" << name().get_string_unchecked() << ">";
   }
   else {
-    stream << "\n" << zb::indent_t(indent) << "</" << name().get_string_unchecked() << ">";
+    stream << "\n" << zb::indent_t(indent, 2) << "</" << name().get_string_unchecked() << ">";
   }
 
   return stream;

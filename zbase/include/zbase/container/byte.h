@@ -48,6 +48,7 @@ public:
   using base::pointer;
   using base::const_pointer;
   using base::iterator;
+  using const_iterator = base::iterator;
   using base::reverse_iterator;
   using base::data;
   static constexpr const size_type npos = -1; // size_type(-1);

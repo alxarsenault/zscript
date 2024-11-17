@@ -85,14 +85,14 @@ private:
 #endif
   }
 
-  //  ZS_INLINE void add_move_instruction(int_t target) {
-  //    add_instruction<opcode::op_move>(_ccs->new_target(), (uint8_t)target);
-  //  }
-  //
-
   template <opcode Op, class... Args>
   ZS_INLINE void add_new_target_instruction(Args... args) {
     add_instruction<Op>(_ccs->new_target(), std::forward<Args>(args)...);
+  }
+  
+  template <opcode Op, class... Args>
+  ZS_INLINE void add_top_target_instruction(Args... args) {
+    add_instruction<Op>(_ccs->top_target(), std::forward<Args>(args)...);
   }
 
   template <auto Op, class... Args>

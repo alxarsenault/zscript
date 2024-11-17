@@ -294,12 +294,12 @@ std::ostream& operator<<(std::ostream& stream, const object_stream_proxy::table_
     else {
 
       if (streamer_common::last_char == last_char_t::first) {
-        stream << zb::indent_t(indent) << "{\n";
+        stream << zb::indent_t(indent, 2) << "{\n";
         streamer_common::last_char = last_char_t::endl;
       }
       else {
 
-        stream << "\n" << zb::indent_t(indent) << "{\n";
+        stream << "\n" << zb::indent_t(indent, 2) << "{\n";
         streamer_common::last_char = last_char_t::endl;
       }
     }
@@ -337,7 +337,7 @@ std::ostream& operator<<(std::ostream& stream, const object_stream_proxy::table_
     }
     else {
       if (!is_small_table) {
-        stream << zb::indent_t(indent);
+        stream << zb::indent_t(indent, 2);
       }
     }
 
@@ -410,7 +410,7 @@ std::ostream& operator<<(std::ostream& stream, const object_stream_proxy::table_
     else {
       indent--;
       streamer_common::last_char = last_char_t::bracket;
-      return stream << zb::indent_t(indent) << "}";
+      return stream << zb::indent_t(indent, 2) << "}";
     }
   }
 }
@@ -465,7 +465,7 @@ std::ostream& operator<<(
           streamer_common::last_char = last_char_t::comma;
         }
         else {
-          stream << ",\n" << zb::indent_t(indent);
+          stream << ",\n" << zb::indent_t(indent, 2);
           streamer_common::last_char = last_char_t::endl;
         }
       }
@@ -510,7 +510,7 @@ std::ostream& operator<<(
           streamer_common::last_char = last_char_t::comma;
         }
         else {
-          stream << ",\n" << zb::indent_t(indent);
+          stream << ",\n" << zb::indent_t(indent, 2);
           streamer_common::last_char = last_char_t::endl;
         }
       }
@@ -632,7 +632,7 @@ std::ostream& operator<<(std::ostream& stream, const object_stream_proxy::array_
       return stream << "]";
     }
     else {
-      return stream << "\n" << zb::indent_t(indent) << "]";
+      return stream << "\n" << zb::indent_t(indent, 2) << "]";
     }
   }
   else {
@@ -693,7 +693,7 @@ namespace {
     }
 
     default:
-      return stream << int_to_hex(obj._value);
+      return stream << zs::get_exposed_object_type_name(obj.get_type()) << " " << int_to_hex(obj._value);
     }
     return stream;
   }

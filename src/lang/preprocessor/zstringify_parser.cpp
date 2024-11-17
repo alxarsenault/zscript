@@ -3,7 +3,7 @@
 #include <random>
 
 #define ZS_MACRO_PARSER_HANDLE_ERROR_STREAM(err, ...) \
-  handle_error(err, zs::strprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
+  handle_error(err, zs::sstrprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
 
 #define ZS_MACRO_PARSER_HANDLE_ERROR_STRING(err, msg) handle_error(err, msg, ZB_CURRENT_SOURCE_LOCATION())
 
@@ -55,13 +55,13 @@ zs::error_result stringify_parser::handle_error(
   std::string_view fname = loc.function_name();
 
   if (fname.size() > 80) {
-    _error_message += zs::strprint<"">(_engine, "\nerror: ", linfo, new_line_padding, line_content,
+    _error_message += zs::strprint(_engine, "\nerror: ", linfo, new_line_padding, line_content,
         new_line_padding, zb::indent_t(column, 1), "^", new_line_padding, "from '", fname.substr(0, 80),
         "\n               ", fname.substr(80), "'", new_line_padding, "     in '", loc.file_name(), "'",
         new_line_padding, "      at line ", loc.line(), "\n", new_line_padding, "*** ", msg);
   }
   else {
-    _error_message += zs::strprint<"">(_engine, "\nerror: ", linfo, new_line_padding, line_content,
+    _error_message += zs::strprint(_engine, "\nerror: ", linfo, new_line_padding, line_content,
         new_line_padding, zb::indent_t(column, 1), "^", new_line_padding, "from '", loc.function_name(), "'",
         new_line_padding, "      in '", loc.file_name(), "'", new_line_padding, "      at line ", loc.line(),
         "\n", new_line_padding, "*** ", msg);

@@ -1,4 +1,4 @@
-#include "ztests.h"
+#include "unit_tests.h"
 
 ZS_CODE_TEST("tostring_01", "return tostring(5);") { REQUIRE(vm.top() == "5"); }
 ZS_CODE_TEST("tostring_02", "return tostring(false);") { REQUIRE(vm.top() == "false"); }

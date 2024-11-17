@@ -161,7 +161,7 @@ ZS_DECL_RT_ACTION(
   }
 
   constexpr std::string_view pre = "\n      ";
-  _error_message += zs::strprint(_engine, "error: opcode:", it.get_opcode(), //
+  _error_message += zs::sstrprint(_engine, "error: opcode:", it.get_opcode(), //
       pre, "error_code:", zs::error_code_to_string(ec), //
       pre, "closure name:", fct->_name, //
       pre, "closure source name:", fct->_source_name, //
@@ -174,12 +174,12 @@ ZS_DECL_RT_ACTION(
       pre, "call stack previous top index:", _call_stack.back().previous_top_index);
 
   if (last_linfo) {
-    _error_message += zs::strprint<"">(_engine, //
+    _error_message += zs::strprint(_engine, //
         pre, " line: [ ", last_linfo->line, " : ", last_linfo->column, " ]");
   }
 
   if (linfo) {
-    _error_message += zs::strprint<"">(_engine, //
+    _error_message += zs::strprint(_engine, //
         pre, " line end: [ ", linfo->line, " : ", linfo->column, " ]");
   }
 

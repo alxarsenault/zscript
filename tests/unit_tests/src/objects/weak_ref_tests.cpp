@@ -1,5 +1,5 @@
 
-#include "ztests.h"
+#include "unit_tests.h"
 
 TEST_CASE("zs::weak_ref_01") {
 

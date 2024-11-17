@@ -177,6 +177,14 @@ public:
     }
   }
 
+  inline bool operator==(const span& rhs) const {
+    if(rhs.size() != this->size()) {
+      return false;
+    }
+     
+    return std::equal(this->begin(), this->end(), rhs.begin());
+  }
+  
   template <auto, class... Ts>
   auto ext(Ts...);
 };

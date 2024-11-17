@@ -90,21 +90,21 @@ zs::error_result struct_object::set_static(const object& name, const object& obj
 }
 
 zs::error_result struct_object::new_slot(
-    const object& name, const object& obj, uint32_t mask, bool is_static, bool is_const) noexcept {
+    const object& name, const object& value, uint32_t mask, bool is_static, bool is_const) noexcept {
 
   if (contains(name)) {
     return zs::error_code::already_exists;
   }
 
-  if (mask and !obj.has_type_mask(mask)) {
+  if (mask and !value.has_type_mask(mask)) {
     return zs::error_code::invalid_type_assignment;
   }
 
   if (is_static) {
-    _statics.emplace_back(name, obj, mask, is_const);
+    _statics.emplace_back(name, value, mask, is_const);
   }
   else {
-    vector_type::emplace_back(name, obj, mask, is_const);
+    vector_type::emplace_back(name, value, mask, is_const);
   }
 
   return {};
@@ -228,7 +228,7 @@ struct_object* struct_object::clone() const noexcept {
   using enum object_type;
 
   struct_object* sobj = struct_object::create(_engine, 0);
-  sobj->_constructor = _constructor;
+  sobj->_constructors = _constructors;
   sobj->_statics = _statics;
 
   const zs::vector<struct_item>& this_vec = (*this);

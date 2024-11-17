@@ -148,7 +148,7 @@ uint8_t closure_compile_state::new_target(uint32_t mask, uint64_t custom_mask, b
   return (uint8_t)n;
 }
 
-int_t closure_compile_state::pop_target() {
+uint8_t closure_compile_state::pop_target() {
   int_t npos = _target_stack.back().index;
   zbase_assert(npos < (int_t)_vlocals.size());
 
@@ -160,7 +160,7 @@ int_t closure_compile_state::pop_target() {
 
   zbase_assert(!_target_stack.empty(), "trying to pop an empty target stack");
   _target_stack.pop_back();
-  return npos;
+  return (uint8_t)npos;
 }
 
 int_t closure_compile_state::get_literal(const object& name) {

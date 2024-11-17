@@ -3,6 +3,18 @@ ZBASE_PRAGMA_PUSH()
 ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wswitch")
 ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
 
+///
+#define ZS_COMPILER_EXPECT(...) \
+  ZBASE_DEFER(ZBASE_CONCAT(__ZS_COMPILER_EXPECT_, ZBASE_NARG(__VA_ARGS__)), __VA_ARGS__)
+
+#define ZS_COMPILER_EXPECT_WITH_MESSAGE(tok, ...)                                                            \
+  if (!lex_if(tok)) {                                                                                        \
+    return handle_error(zs::error_code::invalid_token,                                                       \
+        zs::strprint(_engine, "invalid token ", zb::quoted<"'">(zs::token_to_string(_token)), ", expected ", \
+            zb::quoted<"'">(zs::token_to_string(tok)), "\n", __VA_ARGS__),                                   \
+        ZB_CURRENT_SOURCE_LOCATION());                                                                       \
+  }
+
 #define ZS_COMPILER_ERROR(err, ...) \
   ZBASE_DEFER(ZBASE_CONCAT(__ZS_COMPILER_ERROR_, ZBASE_NARG_BINARY(__VA_ARGS__)), err, __VA_ARGS__)
 
@@ -25,7 +37,7 @@ ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
 #define __ZS_COMPILER_ERROR_1(err, msg) handle_error(err, msg, ZB_CURRENT_SOURCE_LOCATION())
 
 #define __ZS_COMPILER_ERROR_MULTIPLE(err, ...) \
-  handle_error(err, zs::strprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
+  handle_error(err, zs::sstrprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
 
 #define ZS_COMPILER_PARSE(exprname, ...) ZS_RETURN_IF_ERROR(parse<exprname>(__VA_ARGS__))
 
@@ -38,16 +50,13 @@ ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
 
 #define __ZS_COMPILER_EXPECT_1(tok) __ZS_COMPILER_EXPECT_2(tok, zs::error_code::invalid_token)
 
-#define __ZS_COMPILER_EXPECT_2(tok, ec)                                                                      \
-  if (!lex_if(tok)) {                                                                                        \
-    return handle_error(ec,                                                                                  \
-        zs::strprint(_engine, "invalid token ", zb::quoted<"'">(zs::token_to_string(_token)), ", expected ", \
-            zb::quoted<"'">(zs::token_to_string(tok))),                                                      \
-        ZB_CURRENT_SOURCE_LOCATION());                                                                       \
+#define __ZS_COMPILER_EXPECT_2(tok, ec)                                                        \
+  if (!lex_if(tok)) {                                                                          \
+    return handle_error(ec,                                                                    \
+        zs::sstrprint(_engine, "invalid token ", zb::quoted<"'">(zs::token_to_string(_token)), \
+            ", expected ", zb::quoted<"'">(zs::token_to_string(tok))),                         \
+        ZB_CURRENT_SOURCE_LOCATION());                                                         \
   }
-
-#define ZS_COMPILER_EXPECT(...) \
-  ZBASE_DEFER(ZBASE_CONCAT(__ZS_COMPILER_EXPECT_, ZBASE_NARG(__VA_ARGS__)), __VA_ARGS__)
 
 namespace zs {
 
@@ -160,6 +169,7 @@ enum class parse_op : uint8_t {
 };
 
 using enum parse_op;
+using enum object_type;
 
 #define ZS_JIT_COMPILER_PARSE_OP(name, ...) \
   template <>                               \
@@ -223,6 +233,46 @@ jit_compiler::jit_compiler(zs::engine* eng)
     , _macros(zs::allocator<macro>(eng)) {
   _scope.n_captures = 0;
   _scope.stack_size = 0;
+}
+
+static std::string_view get_line_content(const zb::utf8_span_stream& stream, const zs::line_info& linfo) {
+
+  const char* begin = &(*stream._data.begin());
+  const char* end = &(*stream._data.end());
+
+  const char* it_line_begin = stream.ptr() - 1;
+  while (it_line_begin > begin) {
+    if (*it_line_begin == '\n') {
+      ++it_line_begin;
+      break;
+    }
+
+    --it_line_begin;
+  }
+
+  const char* it_line_end = stream.ptr();
+  while (it_line_end < end) {
+    if (*it_line_end == '\n') {
+      break;
+    }
+
+    ++it_line_end;
+  }
+
+  std::string_view line_content(it_line_begin, std::distance(it_line_begin, it_line_end));
+  return line_content;
+}
+
+zs::error_result jit_compiler::handle_error(
+    zs::error_code ec, std::string_view msg, const zb::source_location& loc) {
+  zs::line_info linfo = _lexer->get_last_line_info();
+  std::string_view line_content = get_line_content(_lexer->stream(), linfo);
+
+  _error_message += zs::strprint(_engine, "\nError: ", linfo, "\n'''", line_content, "\n",
+      zb::indent_t(linfo.column - 1), "^\n'''\n\nfrom function : '", loc.function_name(),
+      "'\n     file     : '", loc.file_name(), "'\n     line     : ", loc.line(), "\n\nMessage:\n", msg);
+
+  return ec;
 }
 
 zs::error_result jit_compiler::compile(std::string_view content, std::string_view filename, object& output,
@@ -330,56 +380,29 @@ zs::error_result jit_compiler::invoke_expr(zb::member_function_pointer<jit_compi
   return {};
 }
 
-zs::error_result jit_compiler::handle_error(
-    zs::error_code ec, std::string_view msg, const zb::source_location& loc) {
-  zs::line_info linfo = _lexer->get_last_line_info();
-
-  const auto& stream = _lexer->_stream;
-  const char* begin = &(*stream._data.begin());
-  const char* end = &(*stream._data.end());
-
-  const char* it_line_begin = stream.ptr() - 1;
-  while (it_line_begin > begin) {
-    if (*it_line_begin == '\n') {
-      ++it_line_begin;
-      break;
-    }
-
-    --it_line_begin;
-  }
-
-  const char* it_line_end = stream.ptr();
-  while (it_line_end < end) {
-    if (*it_line_end == '\n') {
-      break;
-    }
-
-    ++it_line_end;
-  }
-
-  std::string_view line_content(it_line_begin, std::distance(it_line_begin, it_line_end));
-
-  const int column = linfo.column ? (int)linfo.column - 1 : 0;
-
-  constexpr const char* new_line_padding = "\n       ";
-
-  std::string_view fname = loc.function_name();
-
-  if (fname.size() > 80) {
-    _error_message += zs::strprint<"">(_engine, "\nerror: ", linfo, new_line_padding, line_content,
-        new_line_padding, zb::indent_t(column, 1), "^", new_line_padding, "from '", fname.substr(0, 80),
-        "\n               ", fname.substr(80), "'", new_line_padding, "     in '", loc.file_name(), "'",
-        new_line_padding, "      at line ", loc.line(), "\n", new_line_padding, "*** ", msg);
-  }
-  else {
-    _error_message += zs::strprint<"">(_engine, "\nerror: ", linfo, new_line_padding, line_content,
-        new_line_padding, zb::indent_t(column, 1), "^", new_line_padding, "from '", loc.function_name(), "'",
-        new_line_padding, "      in '", loc.file_name(), "'", new_line_padding, "      at line ", loc.line(),
-        "\n", new_line_padding, "*** ", msg);
-  }
-
-  return ec;
-}
+// class tmp_string_view {
+// public:
+//   inline tmp_string_view(zs::engine* eng)
+//       : _buffer((zs::string_allocator(eng))) {}
+//
+//   inline tmp_string_view(zs::engine* eng, std::string_view s)
+//       : _buffer((zs::string_allocator(eng)))
+//       , _str(s) {}
+//
+//   zs::error_result assign(const object& obj) { return object_char_or_string_to_string(obj, _buffer, _str);
+//   }
+//
+//   inline bool empty() const noexcept { return _str.empty(); }
+//
+//   friend inline std::ostream& operator<<(std::ostream& stream, const tmp_string_view& s) {
+//     if (!s.empty()) {
+//       return stream << s._str;
+//     }
+//     return stream;
+//   }
+//   zs::string _buffer;
+//   std::string_view _str;
+// };
 
 zs::error_result jit_compiler::add_small_string_instruction(std::string_view s, int_t target_idx) {
   if (s.size() > zs::constants::k_small_string_max_size) {
@@ -387,14 +410,7 @@ zs::error_result jit_compiler::add_small_string_instruction(std::string_view s, 
         zs::error_code::invalid_token, "invalid string size in add_small_string_instruction.\n");
   }
 
-  //  struct uint64_t_pair {
-  //    uint64_t value_1 = 0;
-  //    uint64_t value_2 = 0;
-  //  } spair;
-  zs::small_string_instruction_data sdata{ 0, 0 };
-  ::memcpy(&sdata, s.data(), s.size());
-
-  add_instruction<op_load_small_string>(target_idx, sdata);
+  add_instruction<op_load_small_string>(target_idx, zs::small_string_instruction_data::create(s));
   return {};
 }
 
@@ -2582,11 +2598,10 @@ zs::error_result jit_compiler::parse<p_preprocessor>() {
     return parse<p_define>();
 
   default:
-    _error_message
-        += zs::strprint<"">(_engine, "invalid token ", zb::quoted<"'">(zs::token_to_string(_token)),
-            ", expected {'include', 'import', 'macro', 'define', 'if', 'elif', "
-            "'else'}",
-            _lexer->get_line_info());
+    _error_message += zs::strprint(_engine, "invalid token ", zb::quoted<"'">(zs::token_to_string(_token)),
+        ", expected {'include', 'import', 'macro', 'define', 'if', 'elif', "
+        "'else'}",
+        _lexer->get_line_info());
     return zs::error_code::invalid_token;
   }
 
@@ -2901,7 +2916,7 @@ zs::error_result jit_compiler::parse<p_for_auto>(std::span<zs::token_type> sp) {
 
   if (has_key) {
 
-    output_code = zs::strprint<"">(_engine, //
+    output_code = zs::strprint(_engine, //
         "var __private_array = ", array_code, //
         ", __private_array_end = __private_array.end()", //
         ", __private_iterator = __private_array.begin();", //
@@ -2914,7 +2929,7 @@ zs::error_result jit_compiler::parse<p_for_auto>(std::span<zs::token_type> sp) {
   }
   else {
 
-    output_code = zs::strprint<"">(_engine, //
+    output_code = zs::strprint(_engine, //
         "var __private_array = ", array_code, //
         ", __private_array_end = __private_array.end()", //
         ", __private_iterator = __private_array.begin();", //
@@ -3939,19 +3954,19 @@ ZS_JIT_COMPILER_PARSE_OP(p_include_or_import_statement, token_type tok) {
     file_name = _lexer->get_value();
     lex();
     if (_token != tok_gt) {
-      _error_message += zs::strprint(_engine, "parse include statement", linfo);
+      _error_message += zs::sstrprint(_engine, "parse include statement", linfo);
       return zs::error_code::invalid_include_syntax;
     }
   }
 
   if (!file_name.is_string()) {
-    _error_message += zs::strprint(_engine, "parse include statement", linfo);
+    _error_message += zs::sstrprint(_engine, "parse include statement", linfo);
     return zs::error_code::invalid_include_syntax;
   }
 
   object res_file_name;
   if (auto err = _engine->resolve_file_path(file_name.get_string_unchecked(), res_file_name)) {
-    _error_message += zs::strprint(_engine, "parse include statement", linfo);
+    _error_message += zs::sstrprint(_engine, "parse include statement", linfo);
     return zs::error_code::invalid_include_file;
   }
 
@@ -3972,7 +3987,7 @@ ZS_JIT_COMPILER_PARSE_OP(p_include_or_import_statement, token_type tok) {
   zbase_assert(!res_file_name.is_string_view(), "cannot be a string_view");
 
   if (auto err = loader.open(res_file_name.get_string_unchecked().data())) {
-    _error_message += zs::strprint(_engine, "parse include statement", linfo);
+    _error_message += zs::sstrprint(_engine, "parse include statement", linfo);
     return zs::error_code::open_file_error;
   }
 
@@ -4222,7 +4237,7 @@ zs::error_result jit_compiler::parse<p_factor_at>() {
   else {
 
     if (is_not(tok_lbracket)) {
-      _error_message += zs::strprint(_engine, "Trying to assign a global variable", _lexer->get_line_info());
+      _error_message += zs::sstrprint(_engine, "Trying to assign a global variable", _lexer->get_line_info());
       return zs::error_code::inaccessible;
     }
     // We are calling a function or an operator.

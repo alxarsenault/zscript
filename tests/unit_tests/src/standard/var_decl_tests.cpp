@@ -1,4 +1,4 @@
-#include "ztests.h"
+#include "unit_tests.h"
 #include "lex/ztoken.h"
 #include "lex/zlexer.h"
 #include "lang/jit/zjit_compiler.h"

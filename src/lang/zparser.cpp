@@ -7,7 +7,7 @@ ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wswitch")
 ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
 
 #define ZS_PARSER_HANDLE_ERROR_STREAM(err, ...) \
-  helper::handle_error(this, err, zs::strprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
+  helper::handle_error(this, err, zs::sstrprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
 
 #define ZS_PARSER_HANDLE_ERROR_STRING(err, msg) \
   helper::handle_error(this, err, msg, ZB_CURRENT_SOURCE_LOCATION())
@@ -125,17 +125,16 @@ struct parser::helper {
     std::string_view fname = loc.function_name();
 
     if (fname.size() > 80) {
-      comp->_error_message
-          += zs::strprint<"">(comp->_engine, "\nerror: ", linfo, new_line_padding, line_content,
-              new_line_padding, zb::indent_t(column, 1), "^", new_line_padding, "from '", fname.substr(0, 80),
-              "\n               ", fname.substr(80), "'", new_line_padding, "     in '", loc.file_name(), "'",
-              new_line_padding, "      at line ", loc.line(), "\n", new_line_padding, "*** ", msg);
+      comp->_error_message += zs::strprint(comp->_engine, "\nerror: ", linfo, new_line_padding, line_content,
+          new_line_padding, zb::indent_t(column, 1), "^", new_line_padding, "from '", fname.substr(0, 80),
+          "\n               ", fname.substr(80), "'", new_line_padding, "     in '", loc.file_name(), "'",
+          new_line_padding, "      at line ", loc.line(), "\n", new_line_padding, "*** ", msg);
     }
     else {
-      comp->_error_message += zs::strprint<"">(comp->_engine, "\nerror: ", linfo, new_line_padding,
-          line_content, new_line_padding, zb::indent_t(column, 1), "^", new_line_padding, "from '",
-          loc.function_name(), "'", new_line_padding, "      in '", loc.file_name(), "'", new_line_padding,
-          "      at line ", loc.line(), "\n", new_line_padding, "*** ", msg);
+      comp->_error_message += zs::strprint(comp->_engine, "\nerror: ", linfo, new_line_padding, line_content,
+          new_line_padding, zb::indent_t(column, 1), "^", new_line_padding, "from '", loc.function_name(),
+          "'", new_line_padding, "      in '", loc.file_name(), "'", new_line_padding, "      at line ",
+          loc.line(), "\n", new_line_padding, "*** ", msg);
     }
     return ec;
   }

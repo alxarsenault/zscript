@@ -19,6 +19,7 @@
 
 #include <zscript.h>
 #include "lang/jit/zclosure_compile_state.h"
+#include <zbase/container/byte.h>
 
 namespace zs {
 
@@ -31,7 +32,11 @@ public:
 
   virtual ~function_prototype_object() override = default;
 
-  zs::error_result serialize(zs::vector<uint8_t>& buffer);
+  ZS_CHECK zs::error_result serialize(zb::byte_vector& buffer);
+
+  ZS_CHECK zs::error_result serialize(zs::write_function_t write_func, void* udata);
+
+  ZS_CHECK zs::error_result deserialize(zb::byte_view buffer);
 
   zs::object find_function(std::string_view name) const;
 
@@ -44,7 +49,6 @@ public:
   zs::object _source_name;
   zs::object _name;
   zs::object _module_name;
-  //  zs::object _export_table;
   zs::int_t _stack_size;
 
   zs::vector<zs::local_var_info_t> _vlocals;

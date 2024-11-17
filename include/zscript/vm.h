@@ -147,18 +147,18 @@ public:
 
   template <class... Args>
   inline void set_error(Args&&... args) {
-    set_error(std::string_view(zs::strprint<"">(get_engine(), std::forward<Args>(args)...)));
+    set_error(std::string_view(zs::strprint(get_engine(), std::forward<Args>(args)...)));
   }
 
   template <class... Args>
   inline zs::error_code set_error(zs::error_code err, Args&&... args) {
-    set_error(std::string_view(zs::strprint<"">(get_engine(), std::forward<Args>(args)...)));
+    set_error(std::string_view(zs::strprint(get_engine(), std::forward<Args>(args)...)));
     return err;
   }
 
   template <class... Args>
   inline zs::error_code set_error(zs::error_result err, Args&&... args) {
-    set_error(std::string_view(zs::strprint<"">(get_engine(), std::forward<Args>(args)...)));
+    set_error(std::string_view(zs::strprint(get_engine(), std::forward<Args>(args)...)));
     return err.code;
   }
 

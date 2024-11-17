@@ -1,4 +1,4 @@
-#include "ztests.h"
+#include "unit_tests.h"
 
 ZS_CODE_TEST("graphics.color.01", R"""(
 var graphics = import("graphics");

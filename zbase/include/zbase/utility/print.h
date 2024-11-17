@@ -75,8 +75,9 @@ separator(const char (&str)[N], print_options opts = print_options::none) -> sep
 template <class _CharT = char, _CharT SpaceChar = ' '>
 struct indent_t {
 
-  inline constexpr indent_t(int indent, int spaces = 2) noexcept
-      : _indent(indent)
+  template<class Indent> requires std::is_integral_v<Indent>
+  inline constexpr indent_t(Indent indent, int spaces = 1) noexcept
+      : _indent(zb::maximum(static_cast<int>(indent), 0))
       , _spaces(spaces) {}
 
   int _indent;
@@ -468,7 +469,7 @@ inline auto stringifier(const T& t) {
 }
 
 namespace detail {
-template <class T, __zb::string_literal LQuote = "\"", __zb::string_literal RQuote = "\"">
+template <class T, __zb::string_literal Quote = "\"" >
 struct quoted_t {
   inline constexpr quoted_t(const T& t) noexcept
       : _value(t) {}
@@ -484,14 +485,23 @@ struct quoted_t {
   template <class _CharT>
   inline friend std::basic_ostream<_CharT>& operator<<(
       std::basic_ostream<_CharT>& stream, const quoted_t& v) {
-    stream << LQuote;
-    return __zb::detail::print_element(stream, v._value) << RQuote;
+    return __zb::detail::print_element(stream << Quote, v._value) << Quote;
   }
 };
 } // namespace detail.
 
-template <__zb::string_literal LQuote = "\"", __zb::string_literal RQuote = "\"", class T>
-inline detail::quoted_t<T, LQuote, RQuote> quoted(const T& t) {
-  return detail::quoted_t<T, LQuote, RQuote>(t);
+template <__zb::string_literal Quote = "\"",  class T>
+inline detail::quoted_t<T, Quote> quoted(const T& t) {
+  return detail::quoted_t<T, Quote>(t);
+}
+
+template <class T>
+inline detail::quoted_t<T, "\""> dquoted(const T& t) {
+  return detail::quoted_t<T, "\"">(t);
+}
+
+template <class T>
+inline detail::quoted_t<T, "'"> squoted(const T& t) {
+  return detail::quoted_t<T, "'">(t);
 }
 ZBASE_END_NAMESPACE

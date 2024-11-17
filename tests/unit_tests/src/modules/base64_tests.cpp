@@ -1,4 +1,4 @@
-#include "ztests.h"
+#include "unit_tests.h"
 
 ZS_CODE_TEST("base64.encode.01", R"""(
 var base64 = import("base64");

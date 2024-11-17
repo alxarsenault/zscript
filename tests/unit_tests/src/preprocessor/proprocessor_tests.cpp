@@ -1,4 +1,4 @@
-#include "ztests.h"
+#include "unit_tests.h"
 #include "lang/zpreprocessor.h"
 
 TEST_CASE("macro.01") {
@@ -29,18 +29,18 @@ return [v1, v2, v3, v4, v5, v6, v7];
   zs::preprocessor pp(vm.get_engine());
 
   zs::object obj;
-  if (auto err = pp.preprocess(code, ztest::s_current_test_name, obj)) {
+  if (auto err = pp.preprocess(code, utest::s_current_test_name, obj)) {
     zb::print(err, pp.get_error());
   }
 
   // zb::print(obj);
   REQUIRE(obj.is_string());
 
-//    zb::print(pp._macros);
+  //    zb::print(pp._macros);
 
   zs::object closure;
 
-  if (auto err = vm->compile_buffer(obj.get_string_unchecked(), ztest::s_current_test_name, closure)) {
+  if (auto err = vm->compile_buffer(obj.get_string_unchecked(), utest::s_current_test_name, closure)) {
     FAIL(vm.get_error());
   }
 

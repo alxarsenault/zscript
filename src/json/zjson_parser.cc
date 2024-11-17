@@ -3,7 +3,7 @@ ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wswitch")
 ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
 
 #define ZS_JSON_PARSER_HANDLE_ERROR_STREAM(err, ...) \
-  helper::handle_error(this, err, zs::strprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
+  helper::handle_error(this, err, zs::sstrprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
 
 #define ZS_JSON_PARSER_HANDLE_ERROR_STRING(err, msg) \
   helper::handle_error(this, err, msg, ZB_CURRENT_SOURCE_LOCATION())
@@ -48,13 +48,13 @@ struct json_parser::helper {
     std::string_view fname = loc.function_name();
 
     if (fname.size() > 80) {
-      p->_error_message += zs::strprint<"">(p->_engine, "\nerror: ", linfo, new_line_padding, line_content,
+      p->_error_message += zs::strprint(p->_engine, "\nerror: ", linfo, new_line_padding, line_content,
           new_line_padding, zb::indent_t(column, 1), "^", new_line_padding, "from '", fname.substr(0, 80),
           "\n               ", fname.substr(80), "'", new_line_padding, "     in '", loc.file_name(), "'",
           new_line_padding, "     at line ", loc.line(), "\n", new_line_padding, "*** ", msg);
     }
     else {
-      p->_error_message += zs::strprint<"">(p->_engine, "\nerror: ", linfo, new_line_padding, line_content,
+      p->_error_message += zs::strprint(p->_engine, "\nerror: ", linfo, new_line_padding, line_content,
           new_line_padding, zb::indent_t(column, 1), "^", new_line_padding, "from '", loc.function_name(),
           "'", new_line_padding, "      in '", loc.file_name(), "'", new_line_padding, "     at line ",
           loc.line(), "\n", new_line_padding, "*** ", msg);
@@ -300,7 +300,7 @@ zs::error_code json_parser::expect(json_token_type tok) noexcept {
 
   if (is_not(tok)) {
     _error_message
-        += zs::strprint<"">(_engine, "invalid token ", zb::quoted<"'">(zs::json_token_to_string(_token)),
+        += zs::strprint(_engine, "invalid token ", zb::quoted<"'">(zs::json_token_to_string(_token)),
             ", expected ", zb::quoted<"'">(zs::json_token_to_string(tok)), _lexer->get_line_info());
     return zs::error_code::invalid_token;
   }
@@ -314,7 +314,7 @@ zs::error_code json_parser::expect_get(json_token_type tok, object& ret) {
 
   if (is_not(tok)) {
     _error_message
-        += zs::strprint<"">(_engine, "invalid token ", zb::quoted<"'">(zs::json_token_to_string(_token)),
+        += zs::strprint(_engine, "invalid token ", zb::quoted<"'">(zs::json_token_to_string(_token)),
             ", expected ", zb::quoted<"'">(zs::json_token_to_string(tok)), _lexer->get_line_info(),
             ZB_CURRENT_SOURCE_LOCATION());
 

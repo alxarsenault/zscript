@@ -125,7 +125,7 @@ std::ostream& node_stream_internal(std::ostream& stream, const serializer& s) {
   const node_object& node = s.obj.as_node();
   int indent = s.indent;
 
-  stream << zb::indent_t(indent) << "<" << node.name().get_string_unchecked();
+  stream << zb::indent_t(indent, 2) << "<" << node.name().get_string_unchecked();
 
   if (const size_t sz = node.attributes().size()) {
     for (size_t i = 0; i < sz; i++) {
@@ -153,7 +153,7 @@ std::ostream& node_stream_internal(std::ostream& stream, const serializer& s) {
   if (!node.value().is_type(object_type::k_null, object_type::k_none)) {
 
     if (!is_one_liner) {
-      stream << "\n" << zb::indent_t(indent + 1);
+      stream << "\n" << zb::indent_t(indent + 1, 2);
     }
 
     if (node.value().is_string()) {
@@ -174,19 +174,19 @@ std::ostream& node_stream_internal(std::ostream& stream, const serializer& s) {
         stream << "\n";
       }
       else if (node.children()[i].is_string()) {
-        stream << zb::indent_t(indent + 1) << node.children()[i].get_string_unchecked() << "\n";
+        stream << zb::indent_t(indent + 1, 2) << node.children()[i].get_string_unchecked() << "\n";
       }
       else {
-        stream << zb::indent_t(indent + 1) << node.children()[i] << "\n";
+        stream << zb::indent_t(indent + 1, 2) << node.children()[i] << "\n";
       }
     }
 
-    stream << zb::indent_t(indent) << "</" << node.name().get_string_unchecked() << ">";
+    stream << zb::indent_t(indent, 2) << "</" << node.name().get_string_unchecked() << ">";
   }
   else {
 
     if (!is_one_liner) {
-      stream << "\n" << zb::indent_t(indent);
+      stream << "\n" << zb::indent_t(indent, 2);
     }
     stream << "</" << node.name().get_string_unchecked() << ">";
   }

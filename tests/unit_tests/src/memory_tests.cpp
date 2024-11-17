@@ -1,4 +1,4 @@
-#include "ztests.h"
+#include "unit_tests.h"
 #include <zscript/object_stack.h>
 
 #include "zvirtual_machine.h"

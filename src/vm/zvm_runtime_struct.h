@@ -11,14 +11,29 @@ struct internal::proxy<virtual_machine_struct_proxy_tag> {
     strct_obj->_initialized = initialized;
   }
 
-  inline static bool has_constructor(struct_object& strct_obj) {
-    return strct_obj._constructor.is_function();
+  inline static bool has_single_constructor(struct_object& strct_obj) {
+    return strct_obj._constructors.is_function();
+  }
+  
+  inline static bool has_multi_constructors(struct_object& strct_obj) {
+    return strct_obj._constructors.is_array();
   }
 
-  inline static const object& get_constructor(struct_object& strct_obj) { return strct_obj._constructor; }
+  inline static const object& get_constructors(struct_object& strct_obj) { return strct_obj._constructors; }
 
   inline static void set_constructor(struct_object& strct_obj, const object& constructor) {
-    strct_obj._constructor = constructor;
+    if(strct_obj._constructors.is_array()) {
+      strct_obj._constructors.as_array().push(constructor);
+    }
+    else if(strct_obj._constructors.is_function()) {
+      zs::object last_constructor = strct_obj._constructors;
+      strct_obj._constructors = zs::_a(strct_obj.get_engine(), 2);
+      strct_obj._constructors.as_array()[0] = std::move(last_constructor);
+      strct_obj._constructors.as_array()[1] = constructor;
+    }
+    else {
+      strct_obj._constructors = constructor;
+    }
   }
 };
 
@@ -113,11 +128,63 @@ ZS_DECL_RT_ACTION(struct_call_create, cobjref_t obj, int_t n_params, int_t stack
   new_obj._struct_instance = new_strct_obj;
   ret_value.get() = new_obj;
 
-  if (virtual_machine_struct_proxy::has_constructor(strct)) {
+  if (virtual_machine_struct_proxy::has_single_constructor(strct)) {
     zs::object tmp_ret;
     object sb = std::exchange(_stack.get_at(stack_base), new_obj);
 
-    if (auto err = call(virtual_machine_struct_proxy::get_constructor(strct), n_params, stack_base,
+    if (auto err = call(virtual_machine_struct_proxy::get_constructors(strct), n_params, stack_base,
+            ret_value.get(), false)) {
+      virtual_machine_struct_instance_proxy::set_initialized(new_strct_obj, true);
+      _stack.get_at(stack_base) = sb;
+      return err;
+    }
+    _stack.get_at(stack_base) = sb;
+  }
+  else   if (virtual_machine_struct_proxy::has_multi_constructors(strct)) {
+    zs::object tmp_ret;
+    object sb = std::exchange(_stack.get_at(stack_base), new_obj);
+
+    const zs::array_object& constructors =virtual_machine_struct_proxy::get_constructors(strct).as_array();
+
+//    size_t constructor_index = -1;
+    zs::small_vector<size_t, 8> constructor_indexes((zs::allocator<size_t>(_engine)));
+    
+    for(size_t i = 0; i < constructors.size(); i++) {
+      if(constructors[i].as_closure().get_proto()._parameter_names.size() == n_params ) {
+        constructor_indexes.push_back(i);
+      }
+    }
+
+    if(constructor_indexes.empty()) {
+      set_error("\nCould not find constructor for struct.\n");
+      return zs::error_code::invalid_operation;
+    }
+ 
+    zs::object constructor;
+    if(constructor_indexes.size() == 1) {
+      constructor = constructors[constructor_indexes[0]];
+    }
+    else {
+      zs::small_vector<size_t, 8> second_pass_constructor_indexes((zs::allocator<size_t>(_engine)));
+ 
+      for(size_t i = 0; i < constructor_indexes.size(); ) {
+        if(constructors[constructor_indexes[i]].as_closure().get_proto()._default_params.size() != 0 ) {
+          constructor_indexes.erase_at(i);
+        }
+        else {
+          ++i;
+        }
+      }
+       
+      if(constructor_indexes.size() == 1) {
+        constructor = constructors[constructor_indexes[0]];
+      }
+      else {
+        zb::print("DSLKDJSKJDKSKL");
+      }
+    }
+ 
+    if (auto err = call(constructor, n_params, stack_base,
             ret_value.get(), false)) {
       virtual_machine_struct_instance_proxy::set_initialized(new_strct_obj, true);
       _stack.get_at(stack_base) = sb;

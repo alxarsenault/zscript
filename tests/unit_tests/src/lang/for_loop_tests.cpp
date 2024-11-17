@@ -1,5 +1,5 @@
 
-#include "ztests.h"
+#include "unit_tests.h"
 
 ZS_CODE_TEST("for_01", R"""(
 var i = 0;

@@ -1,4 +1,4 @@
-#include "ztests.h"
+#include "unit_tests.h"
 
 ZS_CODE_TEST("enum_01", R"""(
 

@@ -305,10 +305,17 @@ ZS_INLINE std::ostream& print(const Args&... args) {
   return zb::print<Separator>(args...);
 }
 
-template <zb::separator Separator = " ", class... Args>
+template <zb::separator Separator = "", class... Args>
 ZB_INLINE zs::string strprint(zs::engine* eng, const Args&... args) {
   zs::ostringstream stream(zs::create_string_stream(eng));
   zb::stream_print<Separator>(stream, args...);
+  return zs::string(stream.str(), zs::string_allocator(eng));
+}
+
+template <class... Args>
+ZB_INLINE zs::string sstrprint(zs::engine* eng, const Args&... args) {
+  zs::ostringstream stream(zs::create_string_stream(eng));
+  zb::stream_print<" ">(stream, args...);
   return zs::string(stream.str(), zs::string_allocator(eng));
 }
 } // namespace zs.

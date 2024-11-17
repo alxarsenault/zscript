@@ -53,13 +53,13 @@ zs::error_result preprocessor::handle_error(
   std::string_view fname = loc.function_name();
 
   if (fname.size() > 80) {
-    _error_message += zs::strprint<"">(_engine, "\nerror: ", linfo, new_line_padding, line_content,
+    _error_message += zs::strprint(_engine, "\nerror: ", linfo, new_line_padding, line_content,
         new_line_padding, zb::indent_t(column, 1), "^", new_line_padding, "from '", fname.substr(0, 80),
         "\n               ", fname.substr(80), "'", new_line_padding, "     in '", loc.file_name(), "'",
         new_line_padding, "      at line ", loc.line(), "\n", new_line_padding, "*** ", msg);
   }
   else {
-    _error_message += zs::strprint<"">(_engine, "\nerror: ", linfo, new_line_padding, line_content,
+    _error_message += zs::strprint(_engine, "\nerror: ", linfo, new_line_padding, line_content,
         new_line_padding, zb::indent_t(column, 1), "^", new_line_padding, "from '", loc.function_name(), "'",
         new_line_padding, "      in '", loc.file_name(), "'", new_line_padding, "      at line ", loc.line(),
         "\n", new_line_padding, "*** ", msg);

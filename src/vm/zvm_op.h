@@ -501,7 +501,7 @@ zs::error_code virtual_machine::exec_op<opcode::op_check_type>(
     //    zb::print("ERROR wrong type", _stack[inst.idx].get_type(), "expected",
     //    inst.obj_type);
     _error_message
-        += zs::strprint(_engine, "wrong type", _stack[inst.idx].get_type(), "expected", inst.obj_type, "\n");
+        += zs::sstrprint(_engine, "wrong type", _stack[inst.idx].get_type(), "expected", inst.obj_type, "\n");
     //    helper::handle_error(this, op_data.fct, it,
     //    zs::error_code::invalid_value_type_assignment);
     return runtime_action<runtime_code::handle_error>(
@@ -522,7 +522,7 @@ zs::error_code virtual_machine::exec_op<opcode::op_check_type_mask>(
   if (!_stack[inst.idx].has_type_mask(inst.mask)) {
     //    zb::print("ERROR wrong type", _stack[inst.idx].get_type(), "expected
     //    mask", inst.mask);
-    _error_message += zs::strprint(_engine, "wrong type mask", _stack[inst.idx].get_type(), "expected",
+    _error_message += zs::sstrprint(_engine, "wrong type mask", _stack[inst.idx].get_type(), "expected",
         zs::object_type_mask_printer{ inst.mask }, "\n");
 
     return zs::error_code::invalid_type_assignment;
@@ -660,25 +660,38 @@ ZS_DECL_EXEC_OP(new_slot_ss_small_string) {
 // op_new_struct_slot.
 ZS_DECL_EXEC_OP(new_struct_slot) {
   ZS_INST(new_struct_slot);
-  object& table = _stack[inst.table_idx];
-  object& key = _stack[inst.key_idx];
+  object& strct = _stack[inst.struct_idx];
+  const object& key = _stack[inst.key_idx];
 
+  //  object value = inst.has_value ?
   if (inst.has_value) {
-    object value = _stack[inst.value_idx];
-    return runtime_action<runtime_code::struct_new_slot>(
-        zb::wref(table), zb::wcref(key), zb::wcref(value), inst.mask, inst.is_static, inst.is_const);
+    return strct.as_struct().new_slot(key, _stack[inst.value_idx], inst.mask, inst.is_static, inst.is_const);
   }
 
-  return runtime_action<runtime_code::struct_new_slot>(
-      zb::wref(table), zb::wcref(key), inst.mask, inst.is_static, inst.is_const);
+  return strct.as_struct().new_slot(key, inst.mask, inst.is_static, inst.is_const);
+}
+
+// op_new_struct_slot_ss.
+ZS_DECL_EXEC_OP(new_struct_slot_ss) {
+  ZS_INST(new_struct_slot_ss);
+  object& strct = _stack[inst.struct_idx];
+  ZS_ASSERT(strct.is_struct());
+
+  object key = inst.key.get_small_string();
+
+  if (inst.has_value) {
+    return strct.as_struct().new_slot(key, _stack[inst.value_idx], inst.mask, inst.is_static, inst.is_const);
+  }
+
+  return strct.as_struct().new_slot(key, inst.mask, inst.is_static, inst.is_const);
 }
 
 // op_new_struct_constructor.
 ZS_DECL_EXEC_OP(new_struct_constructor) {
   ZS_INST(new_struct_constructor);
-  object& table = _stack[inst.table_idx];
+  object& strct = _stack[inst.struct_idx];
   object value = _stack[inst.value_idx];
-  return runtime_action<runtime_code::struct_new_constructor>(zb::wref(table), zb::wcref(value));
+  return runtime_action<runtime_code::struct_new_constructor>(zb::wref(strct), zb::wcref(value));
 }
 
 // op_new_class_slot.

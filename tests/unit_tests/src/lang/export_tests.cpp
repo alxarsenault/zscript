@@ -1,4 +1,4 @@
-#include "ztests.h"
+#include "unit_tests.h"
 #include <tuple>
 using enum zs::error_code;
 
@@ -79,7 +79,7 @@ export var a = 33;
 )""";
   zs::vm vm;
   zs::object closure;
-  REQUIRE(vm->compile_buffer(code, ztest::s_current_test_name, closure) == already_exists);
+  REQUIRE(vm->compile_buffer(code, utest::s_current_test_name, closure) == already_exists);
 }
 
 TEST_CASE("module.05") {
@@ -89,7 +89,7 @@ a = 123;
 )""";
   zs::vm vm;
   zs::object closure;
-  REQUIRE(vm->compile_buffer(code, ztest::s_current_test_name, closure) == cant_modify_export_table);
+  REQUIRE(vm->compile_buffer(code, utest::s_current_test_name, closure) == cant_modify_export_table);
 }
 
 // TEST_CASE("export.01") {

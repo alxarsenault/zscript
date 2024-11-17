@@ -1,3 +1,4 @@
+var<JOhnson, JOhnson56> jkhj;
 int π = 35;
 float b = 51.5;
 var c = π + b;

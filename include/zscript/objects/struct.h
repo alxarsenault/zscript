@@ -130,7 +130,7 @@ public:
   zs::error_result set(const object& name, const object& obj) noexcept;
   zs::error_result set_static(const object& name, const object& obj) noexcept;
   zs::error_result new_slot(
-      const object& name, const object& obj, uint32_t mask, bool is_static, bool is_const) noexcept;
+      const object& name, const object& value, uint32_t mask, bool is_static, bool is_const) noexcept;
 
   zs::error_result new_slot(const object& name, uint32_t mask, bool is_static, bool is_const) noexcept;
 
@@ -147,7 +147,7 @@ private:
   struct_object(zs::engine* eng) noexcept;
 
   static_member_vector _statics;
-  zs::object _constructor;
+  zs::object _constructors;
   bool _initialized = false;
 };
 

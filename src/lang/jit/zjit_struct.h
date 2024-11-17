@@ -6,8 +6,6 @@
 namespace zs {
 
 ZS_JIT_COMPILER_PARSE_OP(p_struct_statement) {
-  using enum token_type;
-  using enum object_type;
 
   lex();
   expr_state es = _estate;
@@ -69,15 +67,20 @@ struct jit_compiler::struct_parser {
     names.push_back(name);
     return {};
   }
-
+  
+  inline zs::error_result add_constructor( const zs::function_prototype_object& fpo) {
+   
+    return {};
+  }
+   
   zs::small_vector<zs::object, 8> names;
 };
 
 ZS_JIT_COMPILER_PARSE_OP(p_struct) {
-  using enum token_type;
-  using enum object_type;
+  ZS_COMPILER_EXPECT_WITH_MESSAGE(tok_lcrlbracket,
+      "A struct expression cannot be named `var a = struct {...};`.\n"
+      "Only struct statement can be named `struct Name {};`.");
 
-  ZS_COMPILER_EXPECT(tok_lcrlbracket);
   add_new_target_instruction<op_new_obj>(k_struct);
 
   struct_parser sparser(_engine);
@@ -95,9 +98,6 @@ ZS_JIT_COMPILER_PARSE_OP(p_struct) {
 }
 
 ZS_JIT_COMPILER_PARSE_OP(p_struct_member_type, uint32_t* obj_type_mask, bool* is_static, bool* is_const) {
-  using enum token_type;
-
-  using enum object_type;
 
   if (is(tok_static)) {
     *is_static = true;
@@ -178,28 +178,25 @@ ZS_JIT_COMPILER_PARSE_OP(p_struct_member_type, uint32_t* obj_type_mask, bool* is
 }
 
 ZS_JIT_COMPILER_PARSE_OP(p_struct_content, struct_parser* sparser) {
-  using enum token_type;
-  using enum object_type;
-
   uint32_t obj_type_mask = 0;
-
   bool is_static = false;
   bool is_const = false;
-  ZS_RETURN_IF_ERROR(parse<p_struct_member_type>(&obj_type_mask, &is_static, &is_const));
 
-  const bool is_constructor = is(tok_constructor);
+  ZS_COMPILER_PARSE(p_struct_member_type, &obj_type_mask, &is_static, &is_const);
 
-  if (is_constructor) {
+  if (is(tok_constructor)) {
     lex();
 
     zs::object var_name = zs::_ss("constructor");
 
-    ZS_COMPILER_RETURN_IF_ERROR(sparser->add_member(var_name), "struct constructor() already exists.\n");
-
     ZS_COMPILER_EXPECT(tok_lbracket);
 
+    size_t findex = _ccs->_functions.size();
     int_t bound_target = 0xFF;
-    ZS_RETURN_IF_ERROR(parse<p_create_function>(CREF(var_name), bound_target, false));
+    ZS_COMPILER_PARSE(p_create_function, CREF(var_name), bound_target, false);
+
+     
+    ZS_COMPILER_RETURN_IF_ERROR(sparser->add_constructor(_ccs->_functions[findex].as_proto()), "struct constructor() already exists.\n");
 
     add_new_target_instruction<op_new_closure>(
         (uint32_t)(_ccs->_functions.size() - 1), (uint8_t)bound_target);
@@ -211,35 +208,45 @@ ZS_JIT_COMPILER_PARSE_OP(p_struct_content, struct_parser* sparser) {
     if (is(tok_semi_colon)) {
       lex();
     }
+
+    return {};
+  }
+
+  bool is_ss_id = false;
+  zs::object identifier;
+  ZS_COMPILER_EXPECT_GET(tok_identifier, identifier);
+
+  ZS_COMPILER_RETURN_IF_ERROR(
+      sparser->add_member(identifier), "struct member variable", identifier, "already exists.\n");
+
+  if (!(is_ss_id = is_small_string_identifier(identifier))) {
+    ZS_RETURN_IF_ERROR(add_string_instruction(identifier));
+  }
+
+  
+  uint8_t val = -1;
+  bool has_value = false;
+
+  // Default value?
+  if (is(tok_eq)) {
+    lex();
+    ZS_COMPILER_PARSE(p_expression);
+    val = _ccs->pop_target();
+    has_value = true;
+  }
+  else if (is_static) {
+    return ZS_COMPILER_ERROR(zs::error_code::invalid, "struct static variable requires a default value.\n");
+  }
+
+   
+  if (is_ss_id) {
+    zs::small_string_instruction_data key = zs::small_string_instruction_data::create(identifier);
+    add_top_target_instruction<op_new_struct_slot_ss>(  key,  val, obj_type_mask, is_static, has_value, is_const);
   }
   else {
-    zs::object identifier;
-    ZS_COMPILER_EXPECT_GET(tok_identifier, identifier);
-
-    ZS_COMPILER_RETURN_IF_ERROR(
-        sparser->add_member(identifier), "struct member variable", identifier, "already exists.\n");
-
-    ZS_RETURN_IF_ERROR(add_string_instruction(identifier));
-
-    int_t val = -1;
-
-    // Default value?
-    if (is(tok_eq)) {
-      lex();
-      ZS_RETURN_IF_ERROR(parse<p_expression>());
-      val = _ccs->pop_target();
-    }
-    else if (is_static) {
-      return ZS_COMPILER_ERROR(zs::error_code::invalid, "struct static variable requires a default value.\n");
-    }
-
-    int_t key = _ccs->pop_target();
-    int_t table = _ccs->top_target();
-    add_instruction<op_new_struct_slot>(
-        (uint8_t)table, (uint8_t)key, (uint8_t)val, obj_type_mask, is_static, val != -1, is_const);
-
-    ZS_COMPILER_EXPECT(tok_semi_colon);
+    add_top_target_instruction<op_new_struct_slot>(  _ccs->pop_target(), val, obj_type_mask, is_static, has_value, is_const);
   }
+  ZS_COMPILER_EXPECT(tok_semi_colon);
 
   return {};
 }
