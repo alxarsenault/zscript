@@ -146,12 +146,12 @@ inline static void include_test_lib(zs::virtual_machine& vm) {
           return 0;
         });
 
-  zs::table_object* tbl = vm.get_imported_module_cache()._table;
+  zs::table_object* tbl = vm.get_imported_modules()._table;
   tbl->set(zs::_ss("utest"), test_lib);
 }
 
 // inline zs::object get_utest_vals(zs::engine* eng) {
-//   return eng->get_imported_module_cache().as_table()["utest"].as_table()["vals"];
+//   return eng->get_imported_modules().as_table()["utest"].as_table()["vals"];
 // }
 
 struct z_file_test_fixture {
@@ -341,16 +341,14 @@ struct test_fixture {
       error = err;
 
       if (require_compile == ZGOOD) {
-        zb::print(vm.get_error());
-        REQUIRE(false);
+        FAIL(vm.get_error());
       }
 
       return;
     }
 
     if (require_compile == ZBAD) {
-      zb::print(vm.get_error());
-      REQUIRE(false);
+      FAIL(vm.get_error());
     }
 
     REQUIRE(closure.is_closure());
@@ -436,6 +434,5 @@ inline std::string generate_test_name() {
 #define ZCODE_TEST(...) ZBASE_DEFER(ZBASE_CONCAT(ZCODE_TEST_, ZBASE_NARG(__VA_ARGS__)), __VA_ARGS__)
 
 #define ZCODE_TEST_FAIL_COMPILE(title, code) ZCODE_TEST_3(title, code, ZBAD)
-
 
 } // namespace zcode.

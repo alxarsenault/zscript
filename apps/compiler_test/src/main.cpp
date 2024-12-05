@@ -262,7 +262,7 @@ void run(std::string_view code) {
       {
         const size_t sz = fct->_vlocals.size();
         for (size_t i = 0; i < sz; i++) {
-          zb::print(i, "pos:", fct->_vlocals[i]._pos, fct->_vlocals[i]._name.to_debug_string());
+          zb::print(i, "pos:", fct->_vlocals[i].pos, fct->_vlocals[i].name.to_debug_string());
         }
       }
 

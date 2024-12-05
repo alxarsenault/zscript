@@ -29,8 +29,6 @@ namespace detail {
     ZB_CK_INLINE_CXPR static const char* to_string(enum_type code) noexcept {
       return zs::error_code_to_string(code);
     }
-
-    ZBASE_ATTRIBUTE_NO_RETURN inline static void throw_error(enum_type code) { zs::throw_error(code); }
   };
 } // namespace detail.
 

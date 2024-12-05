@@ -20,7 +20,7 @@ var m = {};
 @doc
 
 ```
-table t = {
+var t = {
   a = a,
   "b": b,
   c = c,

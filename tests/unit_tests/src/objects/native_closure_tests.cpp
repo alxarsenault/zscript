@@ -46,19 +46,10 @@ TEST_CASE("zs::object_ptr::native_closure") {
 
   {
     zs::engine eng;
-    zs::object obj
-        = zs::object::create_native_closure(&eng, [](zs::virtual_machine* vm) -> zs::int_t { return 0; });
-
-    REQUIRE(obj.is_native_closure());
-    REQUIRE(native_closure_accessor::get_closure_type(obj) == native_closure_accessor::closure_type::c_func);
-  }
-
-  {
-    zs::engine eng;
     zs::object obj = zs::object::create_native_closure(&eng, [](zs::vm_ref vm) -> zs::int_t { return 0; });
 
     REQUIRE(obj.is_native_closure());
-    REQUIRE(native_closure_accessor::get_closure_type(obj) == native_closure_accessor::closure_type::c_func);
+    REQUIRE(native_closure_accessor::get_closure_type(obj) == native_closure_accessor::closure_type::fct);
   }
 
   {
@@ -99,8 +90,7 @@ TEST_CASE("zs::native_closure::release") {
       obj.set_closure_release_hook([](zs::engine* eng, zs::raw_pointer_t uptr) { (*(bool*)uptr) = true; });
 
       REQUIRE(obj.is_native_closure());
-      REQUIRE(
-          native_closure_accessor::get_closure_type(obj) == native_closure_accessor::closure_type::c_func);
+      REQUIRE(native_closure_accessor::get_closure_type(obj) == native_closure_accessor::closure_type::fct);
 
       obj._native_closure->call(vm);
     }
@@ -207,7 +197,7 @@ TEST_CASE("zs::native_closure::dsds") {
 //   //  );
 // }
 
-TEST_CASE("zs::object_ptr::native_function2.01") {
+TEST_CASE("zs::object_ptr::native_pfunction.01") {
   //  constexpr std::string_view code = R"""(
   // class a {
   // john = function() {
@@ -260,7 +250,7 @@ return 32;
   //  REQUIRE(inst.is_instance());
 }
 
-// TEST_CASE("zs::object_ptr::native_function2.01") {
+// TEST_CASE("zs::object_ptr::call_native_pfunction.01") {
 //   zs::object tt;
 //   zs::vm vm;
 //   zs::object obj = [](zs::vm_ref vm, zs::parameter_list params) -> zs::object { return params.size(); };
@@ -268,7 +258,7 @@ return 32;
 //
 //   tt = zs::_t(vm);
 //
-//   REQUIRE(obj._type == zs::object_type::k_native_function2);
+//   REQUIRE(obj._type == zs::object_type::call_native_pfunction);
 //   zs::object ret = (*(obj._fct))(vm, {});
 //   REQUIRE(ret == 0);
 //
@@ -281,22 +271,3 @@ return 32;
 //   ret = obj._cfct.call(vm, { vm->get_root(), 1, 2, 3 });
 //   REQUIRE(ret == 4);
 // }
-
-TEST_CASE("zs::object_ptr::native_function2.02") {
-  zs::vm vm;
-  zs::var obj = [](zs::vm_ref vm, zs::parameter_list params) { return zs::_ss("John"); };
-
-  REQUIRE(obj._cfct.call(vm, {}) == "John");
-}
-
-TEST_CASE("zs::object::native_function2::get_normal_arguments.02") {
-  zs::vm vm;
-  zs::var obj = [](zs::vm_ref vm, zs::parameter_list params) -> zs::var {
-    return params.get_normal_arguments().size();
-  };
-
-  REQUIRE(obj._type == zs::var_type::k_native_function2);
-
-  REQUIRE(obj._cfct.call(vm, { vm->get_root(), 1, 2, 3 }) == 3);
-  REQUIRE(obj._cfct.call(vm, { vm->get_root() }) == 0);
-}

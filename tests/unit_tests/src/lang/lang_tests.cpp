@@ -1,28 +1,28 @@
 #include "unit_tests.h"
 
-ZS_CODE_TEST("tostring_01", "return tostring(5);") { REQUIRE(vm.top() == "5"); }
-ZS_CODE_TEST("tostring_02", "return tostring(false);") { REQUIRE(vm.top() == "false"); }
-ZS_CODE_TEST("tostring_03", "return tostring(true);") { REQUIRE(vm.top() == "true"); }
-ZS_CODE_TEST("tostring_04", "return tostring(2.0);") { REQUIRE(vm.top() == "2.00"); }
-ZS_CODE_TEST("tostring_05", "return tostring(2.2);") { REQUIRE(vm.top() == "2.20"); }
-ZS_CODE_TEST("tostring_06", "return tostring('''john''');") { REQUIRE(vm.top() == "john"); }
+ZS_CODE_TEST("tostring_01", "return zs::to_string(5);") { REQUIRE(vm.top() == "5"); }
+ZS_CODE_TEST("tostring_02", "return zs::to_string(false);") { REQUIRE(vm.top() == "false"); }
+ZS_CODE_TEST("tostring_03", "return zs::to_string(true);") { REQUIRE(vm.top() == "true"); }
+ZS_CODE_TEST("tostring_04", "return zs::to_string(2.0);") { REQUIRE(vm.top() == "2.00"); }
+ZS_CODE_TEST("tostring_05", "return zs::to_string(2.2);") { REQUIRE(vm.top() == "2.20"); }
+ZS_CODE_TEST("tostring_06", "return zs::to_string('''john''');") { REQUIRE(vm.top() == "john"); }
 
-ZS_CODE_TEST("tostring_07", "return tostring({a = 32});") {
+ZS_CODE_TEST("tostring_07", "return zs::to_string({a = 32});") {
   REQUIRE(vm.top().get_string_unchecked().starts_with("0x"));
 }
 
-ZS_CODE_TEST("tostring_08", "return tostring([1, 2, 3]);") {
+ZS_CODE_TEST("tostring_08", "return zs::to_string([1, 2, 3]);") {
   REQUIRE(vm.top().get_string_unchecked().starts_with("0x"));
 }
 
-ZS_CODE_TEST("toint_01", "return toint(1);") { REQUIRE(vm.top() == 1); }
-ZS_CODE_TEST("toint_02", "return toint(5.0);") { REQUIRE(vm.top() == 5); }
-ZS_CODE_TEST("toint_03", "return toint(5.1);") { REQUIRE(vm.top() == 5); }
-ZS_CODE_TEST("toint_04", "return toint(true);") { REQUIRE(vm.top() == 1); }
-ZS_CODE_TEST("toint_05", "return toint('''32''');") { REQUIRE(vm.top() == 32); }
-ZS_CODE_TEST("toint_06", "return toint('''32.2''');") { REQUIRE(vm.top() == 32); }
+ZS_CODE_TEST("toint_01", "return zs::to_int(1);") { REQUIRE(vm.top() == 1); }
+ZS_CODE_TEST("toint_02", "return zs::to_int(5.0);") { REQUIRE(vm.top() == 5); }
+ZS_CODE_TEST("toint_03", "return zs::to_int(5.1);") { REQUIRE(vm.top() == 5); }
+ZS_CODE_TEST("toint_04", "return zs::to_int(true);") { REQUIRE(vm.top() == 1); }
+ZS_CODE_TEST("toint_05", "return zs::to_int('''32''');") { REQUIRE(vm.top() == 32); }
+ZS_CODE_TEST("toint_06", "return zs::to_int('''32.2''');") { REQUIRE(vm.top() == 32); }
 
-ZS_CODE_TEST("tofloat_01", "return tofloat('''32.2''');") { REQUIRE(vm.top() == 32.2); }
+ZS_CODE_TEST("tofloat_01", "return zs::to_float('''32.2''');") { REQUIRE(vm.top() == 32.2); }
 
 ZS_CODE_TEST("compare_01", R"""(
 var i = 1;
@@ -716,22 +716,22 @@ return false;
 //     letter++, 2, 3, 1, 1, [](int i) { return i > 2; });
 // }
 
-// ZS_CODE_TEST("apply.01", R"""(
-// var a = [10, 20];
-//
-// function my_func(a, b) {
-//   return a + b;
-// }
-//
-// var r1 = my_func(10, 20);
-// var r2 = apply(my_func, this, a);
-//
-// return [r1, r2];
-//)""") {
-//   REQUIRE(value.is_array());
-//
-//   const zs::array_object& arr = value.as_array();
-//
-//   REQUIRE(arr[0] == 30);
-//   REQUIRE(arr[1] == 30);
-// }
+ZS_CODE_TEST("apply.01", R"""(
+ var a = [10, 20];
+
+ function my_func(a, b) {
+   return a + b;
+ }
+
+ var r1 = my_func(10, 20);
+ var r2 = zs::apply(my_func, __this__, a);
+
+ return [r1, r2];
+)""") {
+  REQUIRE(value.is_array());
+
+  const zs::array_object& arr = value.as_array();
+
+  REQUIRE(arr[0] == 30);
+  REQUIRE(arr[1] == 30);
+}

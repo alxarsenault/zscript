@@ -118,7 +118,7 @@ public:
   template <opcode Op>
   [[nodiscard]] inline instruction_t<Op>* get(size_t index) noexcept {
     instruction_t<Op>* inst = (instruction_t<Op>*)(_data.data() + index);
-    zbase_assert(inst->op == Op, "zs::instruction_vector::raw_get - invalid opcode '", opcode_to_string(Op),
+    zbase_assert(inst->op == Op, "zs::instruction_vector::get - invalid opcode '", opcode_to_string(Op),
         "' expected '", opcode_to_string(inst->op), "'");
     return inst;
   }
@@ -126,7 +126,7 @@ public:
   template <opcode Op>
   [[nodiscard]] inline instruction_t<Op>& get_ref(size_t index) noexcept {
     instruction_t<Op>* inst = (instruction_t<Op>*)(_data.data() + index);
-    zbase_assert(inst->op == Op, "zs::instruction_vector::raw_get - invalid opcode '", opcode_to_string(Op),
+    zbase_assert(inst->op == Op, "zs::instruction_vector::get_ref - invalid opcode '", opcode_to_string(Op),
         "' expected '", opcode_to_string(inst->op), "'");
     return *inst;
   }

@@ -16,6 +16,7 @@ ZS_DECL_TOKEN(false) // false
 ZS_DECL_TOKEN(return) // return
 ZS_DECL_TOKEN(extend) // extend
 ZS_DECL_TOKEN(struct) // struct.
+ZS_DECL_TOKEN(number) // number.
 
 ZS_DECL_TOKEN(and) // &&
 ZS_DECL_TOKEN(or) // ||
@@ -37,25 +38,35 @@ ZS_DECL_TOKEN(this) // this
 ZS_DECL_TOKEN(base) // base
 ZS_DECL_TOKEN(class) // class
 ZS_DECL_TOKEN(namespace) // namespace
+ZS_DECL_TOKEN(use) // use
 ZS_DECL_TOKEN(global) // global
 ZS_DECL_TOKEN(const) // const
 ZS_DECL_TOKEN(static) // static
+ZS_DECL_TOKEN(private) // private
 ZS_DECL_TOKEN(export) // export
 ZS_DECL_TOKEN(function) // function
 ZS_DECL_TOKEN(typeof) // typeof
 ZS_DECL_TOKEN(typeid) // typeid
 ZS_DECL_TOKEN(constructor) // constructor
 ZS_DECL_TOKEN(destructor) // destructor
+ZS_DECL_TOKEN(mutable) // mutable
 ZS_DECL_TOKEN(in) // in
 ZS_DECL_TOKEN(enum) // enum
 ZS_DECL_TOKEN(not ) // !
 ZS_DECL_TOKEN(xor) // xor
 ZS_DECL_TOKEN(include) // include or #include
 ZS_DECL_TOKEN(import) // import or #import
+ZS_DECL_TOKEN(expr) // @expr
 ZS_DECL_TOKEN(module) // @module
+ZS_DECL_TOKEN(author) // @author
+ZS_DECL_TOKEN(brief) // @brief
+ZS_DECL_TOKEN(version) // @version
+ZS_DECL_TOKEN(date) // @date
+ZS_DECL_TOKEN(copyright) // @copyright
 ZS_DECL_TOKEN(counter) // @counter
 ZS_DECL_TOKEN(uuid) // @uuid
 ZS_DECL_TOKEN(stringify) // @str
+ZS_DECL_TOKEN(keyword) // @keyword
 
 //
 ZS_DECL_TOKEN(last_named_token)
@@ -80,6 +91,8 @@ ZS_DECL_TOKEN(semi_colon) // ;
 ZS_DECL_TOKEN(colon) // :
 ZS_DECL_TOKEN(double_colon) // ::
 ZS_DECL_TOKEN(question_mark) // ?
+ZS_DECL_TOKEN(double_question_mark) // ??
+ZS_DECL_TOKEN(triple_question_mark) // ???
 ZS_DECL_TOKEN(lbracket) // (
 ZS_DECL_TOKEN(rbracket) // )
 ZS_DECL_TOKEN(lsqrbracket) // [
@@ -122,6 +135,7 @@ ZS_DECL_TOKEN(at) // @
 ZS_DECL_TOKEN(double_at) // @@
 ZS_DECL_TOKEN(dollar) // $
 ZS_DECL_TOKEN(double_dollar) // $$
+ZS_DECL_TOKEN(right_arrow) // =>
 ZS_DECL_TOKEN(double_arrow) // <-->
 ZS_DECL_TOKEN(double_arrow_eq) // <==>
 ZS_DECL_TOKEN(attribute_begin) // </

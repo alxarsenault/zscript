@@ -81,7 +81,7 @@ TEST_CASE("lexer_02") {
   {
     zs::lexer lexer(&eng, code);
 
-    REQUIRE(!lexer.lex_compare(
+    REQUIRE(lexer.lex_compare(
         { ZS_TOK(lcrlbracket, identifier, eq, integer_value, comma, identifier, eq, integer_value) }));
     REQUIRE(lexer.lex() == tok_rcrlbracket);
   }

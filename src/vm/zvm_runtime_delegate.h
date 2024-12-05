@@ -140,6 +140,7 @@ ZS_DECL_RT_ACTION(delegate_set, objref_t obj, objref_t delegate_obj, cobjref_t k
     push(key);
     push(value);
     push(delegate_obj);
+
     if (auto err = call(meta_set, 4, stack_size() - 4, ret)) {
       pop(4);
       return err;

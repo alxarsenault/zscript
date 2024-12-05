@@ -22,24 +22,15 @@
 
 namespace zs {
 class preprocessor;
-
-///
 class stringify_parser : public zs::engine_holder, zs::lexer_ref {
 public:
   stringify_parser(zs::preprocessor* pp);
 
-  zs::error_result parse(std::string_view content, std::string_view filename, object& output,
-      bool& did_include, zs::virtual_machine* vm = nullptr);
-
-  ZS_CK_INLINE const zs::string& get_error() const noexcept { return _error_message; }
+  zs::error_result parse(std::string_view input_code, zs::string& output_code, bool& did_replace,
+      zs::virtual_machine* vm = nullptr);
 
 private:
   zs::preprocessor* _preprocessor;
-  zs::string _error_message;
-  zs::error_result handle_error(zs::error_code ec, std::string_view msg, const zb::source_location& loc);
-
-  ZS_CHECK zs::error_code expect(token_type tok) noexcept;
-  ZS_CHECK zs::error_code expect_get(token_type tok, object& ret);
 };
 
 } // namespace zs.

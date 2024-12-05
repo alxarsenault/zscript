@@ -6,8 +6,13 @@ namespace zs::path_library {
 
 inline constexpr std::string_view k_path_uid = "fs.path";
 inline constexpr std::string_view k_path_delegate_name = "__fs_path_delegate";
-
+zs::object create_path_delegate(zs::vm_ref vm);
 zs::object create_path(zs::vm_ref vm, std::string_view str_path);
+zs::object create_path(zs::vm_ref vm, zs::string&& str_path);
+
+ZS_CK_INLINE zs::object create_path(zs::vm_ref vm, const char* str_path) {
+  return create_path(vm, std::string_view(str_path));
+}
 
 zs::string* get_path(zs::vm_ref vm);
 zs::string* get_path(zs::vm_ref vm, int_t idx);
@@ -185,6 +190,8 @@ zs::error_result path_rmtree(const zs::string& path);
 ///
 /// @param[in] newname The new name of the file.
 zs::error_result path_rename(const zs::string& path, const zs::string& new_path);
+
+zs::error_result path_copy(const zs::string& path, const zs::string& new_path);
 
 zs::error_result path_remove(const zs::string& path);
 

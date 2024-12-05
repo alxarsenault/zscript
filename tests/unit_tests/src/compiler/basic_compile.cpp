@@ -33,7 +33,7 @@ TEST_CASE("proto-serialize") {
     REQUIRE(fpo.is_function_prototype());
     //    fpo.as_proto().debug_print();
 
-    if (auto err = fpo.as_proto().serialize(data_buffer)) {
+    if (auto err = fpo.as_proto().save(data_buffer)) {
       FAIL(err.message());
     }
 
@@ -51,7 +51,7 @@ TEST_CASE("proto-serialize") {
     REQUIRE(!file.open(ZSCRIPT_TESTS_OUTPUT_DIRECTORY "/compiler_03.zsc"));
 
     zs::function_prototype_object* fpo_ptr = zs::function_prototype_object::create(eng);
-    if (auto err = fpo_ptr->deserialize(file.content())) {
+    if (auto err = fpo_ptr->load(file.content())) {
       FAIL(err.message());
     }
 
@@ -98,7 +98,7 @@ TEST_CASE("proto-serialize2") {
       return {};
     };
 
-    if (auto err = fpo.as_proto().serialize(write_func, &data_buffer)) {
+    if (auto err = fpo.as_proto().save(write_func, &data_buffer)) {
       FAIL(err.message());
     }
 
@@ -116,7 +116,7 @@ TEST_CASE("proto-serialize2") {
     REQUIRE(!file.open(ZSCRIPT_TESTS_OUTPUT_DIRECTORY "/compiler_04.zsc"));
 
     zs::function_prototype_object* fpo_ptr = zs::function_prototype_object::create(eng);
-    if (auto err = fpo_ptr->deserialize(file.content())) {
+    if (auto err = fpo_ptr->load(file.content())) {
       FAIL(err.message());
     }
 

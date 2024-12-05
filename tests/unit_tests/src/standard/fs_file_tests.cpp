@@ -21,59 +21,59 @@ static inline void fs_path_test_function(zs::virtual_machine& vm) {
 #define ZS_FS_FILE_TEST(...) ZS_CODE_TEST(__VA_ARGS__, fs_path_test_function)
 
 // TEST_FILE_PATH doesn't exists, it should not be opened if we try to open it
-// with `fs.mode.read | fs.mode.write`.
-ZS_FS_FILE_TEST("fs.file.create_01", R"""(
-var fs = import("fs")
-var file = fs.file(TEST_FILE_PATH);
+// with `fs::mode.read | fs::mode.write`.
+ZS_FS_FILE_TEST("fs::file.create_01", R"""(
+
+var file = fs::file(TEST_FILE_PATH);
 return file.is_open();
 )""") {
   REQUIRE(vm.top() == false);
 }
 
 // TEST_FILE_PATH doesn't exists, it should not be opened if we try to open it
-// with `fs.mode.read`.
-ZS_FS_FILE_TEST("fs.file.create_02", R"""(
-var fs = import("fs")
-var file = fs.file(TEST_FILE_PATH, fs.mode.read);
+// with `fs::mode.read`.
+ZS_FS_FILE_TEST("fs::file.create_02", R"""(
+
+var file = fs::file(TEST_FILE_PATH, fs::mode.read);
 return file.is_open();
 )""") {
   REQUIRE(vm.top() == false);
 }
 
 // TEST_FILE_PATH doesn't exists, it should not be opened if we try to open it
-// with `fs.mode.create`.
-ZS_FS_FILE_TEST("fs.file.create_03", R"""(
-var fs = import("fs")
-var file = fs.file(TEST_FILE_PATH, fs.mode.create);
+// with `fs::mode.create`.
+ZS_FS_FILE_TEST("fs::file.create_03", R"""(
+
+var file = fs::file(TEST_FILE_PATH, fs::mode.create);
 return file.is_open();
 )""") {
   REQUIRE(vm.top() == false);
 }
 
 // TEST_FILE_PATH doesn't exists, it should not be opened if we try to open it
-// with `fs.mode.create | fs.mode.read`.
-ZS_FS_FILE_TEST("fs.file.create_04", R"""(
-var fs = import("fs")
-var file = fs.file(TEST_FILE_PATH, fs.mode.create | fs.mode.read);
+// with `fs::mode.create | fs::mode.read`.
+ZS_FS_FILE_TEST("fs::file.create_04", R"""(
+
+var file = fs::file(TEST_FILE_PATH, fs::mode.create | fs::mode.read);
 return file.is_open();
 )""") {
   REQUIRE(vm.top() == false);
 }
 
 // TEST_FILE_PATH doesn't exists, it should be opened if we open it
-// with `fs.mode.write`.
-ZS_FS_FILE_TEST("fs.file.create_05", R"""(
-var fs = import("fs")
-var file = fs.file(TEST_FILE_PATH, fs.mode.write);
+// with `fs::mode.write`.
+ZS_FS_FILE_TEST("fs::file.create_05", R"""(
+
+var file = fs::file(TEST_FILE_PATH, fs::mode.write);
 return file.is_open();
 )""") {
   REQUIRE(vm.top() == true);
 }
 
 // We write "file-test" to the file.
-ZS_FS_FILE_TEST("fs.file.create_06", R"""(
-var fs = import("fs")
-var file = fs.file(TEST_FILE_PATH, fs.mode.write);
+ZS_FS_FILE_TEST("fs::file.create_06", R"""(
+
+var file = fs::file(TEST_FILE_PATH, fs::mode.write);
 file.write("file-test");
 file.close();
 )""") {
@@ -83,13 +83,13 @@ file.close();
   REQUIRE(fv.str() == "file-test");
 }
 
-ZS_FS_FILE_TEST("fs.file.create_07", R"""(
-var fs = import("fs")
-var file = fs.file(TEST_FILE_PATH, fs.mode.write);
+ZS_FS_FILE_TEST("fs::file.create_07", R"""(
+
+var file = fs::file(TEST_FILE_PATH, fs::mode.write);
 file.write("file-test");
 file.close();
 
-file = fs.file(TEST_FILE_PATH);
+file = fs::file(TEST_FILE_PATH);
 var value = file.read();
 file.close();
 return value;
@@ -97,13 +97,13 @@ return value;
   REQUIRE(vm.top() == "file-test");
 }
 
-ZS_FS_FILE_TEST("fs.file.create_08", R"""(
-var fs = import("fs")
-var file = fs.file(TEST_FILE_PATH, fs.mode.w);
+ZS_FS_FILE_TEST("fs::file.create_08", R"""(
+
+var file = fs::file(TEST_FILE_PATH, fs::mode.w);
 file.write("file-test");
 file.close();
 
-file = fs.file(TEST_FILE_PATH, fs.mode.w | fs.mode.a);
+file = fs::file(TEST_FILE_PATH, fs::mode.w | fs::mode.a);
 file.write(" bingo");
 file.close();
 )""") {
@@ -113,14 +113,14 @@ file.close();
   REQUIRE(fv.str() == "file-test bingo");
 }
 
-ZS_FS_FILE_TEST("fs.file.get_path_01", R"""(
-var fs = import("fs")
+ZS_FS_FILE_TEST("fs::file.get_path_01", R"""(
 
-// Create an fs.path object.
-var path = fs.path(TEST_FILE_PATH);
 
-// Create an empty file with the fs.path object.
-var file = fs.file(path, fs.mode.w);
+// Create an fs::path object.
+var path = fs::path(TEST_FILE_PATH);
+
+// Create an empty file with the fs::path object.
+var file = fs::file(path, fs::mode.w);
 
 // Get the path of the file.
 var fpath = file.path;
@@ -140,14 +140,14 @@ return [fpath, removed];
   REQUIRE(!std::filesystem::exists(k_fs_test_filepath));
 }
 
-ZS_FS_FILE_TEST("fs.file.get_path_02", R"""(
-var fs = import("fs")
+ZS_FS_FILE_TEST("fs::file.get_path_02", R"""(
 
-// Create an fs.path object.
-var path = fs.path(TEST_FILE_PATH);
 
-// Create an empty file with the fs.path object.
-var file = fs.file(path, fs.mode.w);
+// Create an fs::path object.
+var path = fs::path(TEST_FILE_PATH);
+
+// Create an empty file with the fs::path object.
+var file = fs::file(path, fs::mode.w);
 
 // Get the path of the file.
 var fpath = file.get_path();
@@ -168,33 +168,33 @@ return [fpath, removed];
 }
 
 //
-// ZS_FS_FILE_TEST("fs.file.get_path_01", R"""(
-// var fs = import("fs")
-// var p = fs.file(filepath);
+// ZS_FS_FILE_TEST("fs::file.get_path_01", R"""(
+//
+// var p = fs::file(filepath);
 // return p.get_path();
 //)""") {
 //   REQUIRE(vm.top() == k_fs_filepath);
 // }
 
-// ZS_FS_FILE_TEST("fs.file.path_01", R"""(
-// var fs = import("fs")
-// var p = fs.file(filepath);
+// ZS_FS_FILE_TEST("fs::file.path_01", R"""(
+//
+// var p = fs::file(filepath);
 // return p.path;
 //)""") {
 //   REQUIRE(vm.top() == k_fs_filepath);
 // }
 
-// ZS_FS_FILE_TEST("fs.file.open_01", R"""(
-// var fs = import("fs")
-// var f = fs.file(filepath);
+// ZS_FS_FILE_TEST("fs::file.open_01", R"""(
+//
+// var f = fs::file(filepath);
 // return f.open();
 //)""") {
 //   REQUIRE(vm.top() == true);
 // }
 
-// ZS_FS_FILE_TEST("fs.file.open_02", R"""(
-// var fs = import("fs")
-// var f = fs.file(filepath);
+// ZS_FS_FILE_TEST("fs::file.open_02", R"""(
+//
+// var f = fs::file(filepath);
 // var is_open = f.open();
 // f.close();
 // return is_open;
@@ -202,16 +202,16 @@ return [fpath, removed];
 //   REQUIRE(vm.top() == true);
 // }
 
-// ZS_FS_FILE_TEST("fs.file.write_01", R"""(
-// var fs = import("fs")
-// var f = fs.file(newpath);
+// ZS_FS_FILE_TEST("fs::file.write_01", R"""(
+//
+// var f = fs::file(newpath);
 // if(f.open() == false) {
 //   return false;
 // }
 //
 // f.write("Banana", " ", 32);
 //
-// return fs.openmode.append | fs.openmode.read;
+// return fs::openmode.append | fs::openmode.read;
 //)""") {
 //   REQUIRE(vm.top() == (std::ios::app | std::ios::in));
 // }

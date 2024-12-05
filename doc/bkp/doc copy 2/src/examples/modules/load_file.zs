@@ -1,1 +1,0 @@
-const content = zs.load_file("dummy");

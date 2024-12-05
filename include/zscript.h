@@ -29,7 +29,9 @@
 #include <zscript/object.h>
 #include <zscript/engine.h>
 #include <zscript/vm.h>
+#include <zscript/object_function_wrapper.h>
 
+#include <zbase/container/byte.h>
 #include <zbase/sys/file_view.h>
 #include <zbase/strings/string_view.h>
 #include <zbase/utility/print.h>
@@ -43,11 +45,108 @@
 
 namespace zs {
 
-zs::object closure_object_t::call(zs::vm_ref vm, zb::span<const object> params) { return (*fct)(vm, params); }
+#define ZS_DEVELOPER_SOURCE_LOCATION(...) \
+  zs::developer_source_location { __FILE__, __PRETTY_FUNCTION__, __LINE__, ZBASE_STRINGIFY(__VA_ARGS__) }
 
-zs::object closure_object_t::call(zs::vm_ref vm, std::initializer_list<const object> params) {
-  return (*fct)(vm, zb::span<const object>(params));
-}
+struct developer_source_location {
+  std::string_view _filename;
+  std::string_view _function_name;
+  std::uint_least32_t _line;
+  std::string_view _line_content;
+
+  ZB_CK_INLINE std::string_view file_name() const noexcept { return _filename; }
+
+  ZB_CK_INLINE std::string_view function_name() const noexcept { return _function_name; }
+
+  ZB_CK_INLINE std::uint_least32_t line() const noexcept { return _line; }
+
+  ZS_CK_INLINE std::string_view line_content() const noexcept { return _line_content; }
+
+  inline friend std::ostream& operator<<(std::ostream& stream, const developer_source_location& loc) {
+
+    stream << "\ndeveloper:\nfile: '" << loc.file_name() << "'\nfunction: '" << loc.function_name()
+           << "'\nline: " << loc.line() << "\n";
+
+    if (!loc.line_content().empty()) {
+      stream << "content: '" << loc.line_content() << "'\n";
+    }
+
+    return stream;
+  }
+};
+enum class error_source { compiler, virtual_machine };
+struct error_message {
+
+  template <class Message, class Filename, class Code>
+  inline error_message(zs::engine* eng, error_source esrc, zs::error_code ec, Message&& message,
+      Filename&& filename, Code&& code, zs::line_info line, const zs::developer_source_location& loc)
+      : ec(ec)
+      , err_source(esrc)
+      , message(std::forward<Message>(message), eng)
+      , filename(std::forward<Filename>(filename), eng)
+      , code(std::forward<Code>(code), eng)
+      , line(line)
+      , loc(loc) {}
+
+  inline std::ostream& print(std::ostream& stream) const {
+
+    stream << "error: " << message;
+
+    if (!message.ends_with('\n')) {
+      stream << "\n";
+    }
+
+    zb::stream_print(stream, "error-source: ", err_source, "\n");
+
+    if (filename.empty()) {
+      stream << "file: unknown\n";
+    }
+    else {
+      stream << "file: " << filename << "\n";
+    }
+
+    if (line.line != -1) {
+      stream << "line: " << line.line << ":" << line.column << "\n\n";
+    }
+    else {
+      stream << "line: unknown\n\n";
+    }
+
+    if (!code.empty()) {
+      stream << "'''" << code << "\n\n'''\n";
+    }
+
+    stream << "\ndeveloper:\nfile: '" << loc.file_name() << "'\nfunction: '" << loc.function_name()
+           << "'\nline: " << loc.line() << "\n";
+
+    if (!loc.line_content().empty()) {
+      stream << "content: '" << loc.line_content() << "'\n";
+    }
+
+    return stream;
+  }
+
+  zs::error_code ec;
+  zs::error_source err_source;
+  zs::string message;
+  zs::string filename;
+  zs::string code;
+  zs::line_info line;
+  zs::developer_source_location loc;
+};
+
+struct error_stack : zs::vector<error_message> {
+  error_stack(zs::engine* eng)
+      : zs::vector<error_message>((zs::allocator<error_message>(eng))) {}
+
+  inline std::ostream& print(std::ostream& stream) const {
+    for (const auto& e : *this) {
+      e.print(stream);
+    }
+
+    return stream;
+  }
+};
 
 template <class T>
 ZS_CHECK inline constexpr T* allocator<T>::allocate(size_t n) {
@@ -83,21 +182,12 @@ bool object_table_equal_to::operator()(const object_base& lhs, const object_base
   return lhs.strict_equal(rhs);
 }
 
-ZS_CXPR object object::create_native_function(zs::native_cpp_closure_t fct) noexcept { return object(fct); }
+bool object_table_equal_to::operator()(const object_base& lhs, std::string_view rhs) const noexcept {
+  return this->operator()(lhs, zs::_sv(rhs));
+}
 
-template <class Fct>
-object object::create_native_closure_function(zs::engine* eng, Fct&& fct) {
-  if constexpr (zb::is_function_pointer_v<Fct>) {
-    using fct_ptr_type = zb::function_pointer_type_t<Fct>;
-    return create_native_closure_function(eng, (fct_ptr_type)fct);
-  }
-  else {
-    using traits = zb::function_traits<Fct>;
-    using R = typename traits::result_type;
-    using class_type = typename traits::class_type;
-    using args_list = typename traits::args_list;
-    return create_native_closure_function<class_type, R>(eng, std::forward<Fct>(fct), args_list{});
-  }
+bool object_table_equal_to::operator()(std::string_view lhs, const object_base& rhs) const noexcept {
+  return this->operator()(zs::_sv(lhs), rhs);
 }
 
 template <class T>
@@ -364,7 +454,7 @@ namespace constants {
 inline constexpr size_t default_stack_size = 1024;
 
 namespace constants {
-  inline constexpr bool k_is_object_stack_resizable = true;
+  inline constexpr bool k_is_object_stack_resizable = false;
   //  inline constexpr size_t default_stack_size = 1024;
 } // namespace constants.
 
@@ -379,6 +469,8 @@ public:
 
   ZS_CHECK zs::error_result open(std::string_view filepath) noexcept;
 
+  ZS_CHECK zs::error_result open(const object& filepath) noexcept;
+
   template <class _Allocator>
   ZS_CK_INLINE zs::error_result open(
       const std::basic_string<char, std::char_traits<char>, _Allocator>& filepath) noexcept {
@@ -388,6 +480,8 @@ public:
   ZS_CK_INLINE std::string_view content() const noexcept { return _fv.str(); }
 
   ZS_CK_INLINE size_t size() const noexcept { return _fv.size(); }
+
+  ZS_CK_INLINE zb::byte_view data() const noexcept { return _fv.content(); }
 
 private:
   zb::file_view _fv;
@@ -500,11 +594,13 @@ ZS_CK_INLINE bool operator>=(const std::string& lhs, const zs::string& rhs) noex
 template <class Fct>
 object object::create_native_closure(zs::engine* eng, Fct&& fct) {
 
-  if constexpr (std::is_convertible_v<Fct, zs::native_cclosure_t>) {
-    return create_native_closure(eng, (zs::native_cclosure_t)fct);
+  if constexpr (std::is_convertible_v<Fct, int_t (*)(virtual_machine*)>
+      or std::is_convertible_v<Fct, int_t (*)(const virtual_machine*)>) {
+    zb_static_error("Invalid native closure function");
+    return 0;
   }
-  else if constexpr (std::is_convertible_v<Fct, zs::native_cpp_closure_t>) {
-    return create_native_closure(eng, (zs::native_cpp_closure_t)fct);
+  else if constexpr (std::is_convertible_v<Fct, zs::function_t>) {
+    return create_native_closure(eng, (zs::function_t)fct);
   }
   else {
     struct closure_type : native_closure {
@@ -515,12 +611,9 @@ object object::create_native_closure(zs::engine* eng, Fct&& fct) {
 
       virtual ~closure_type() override = default;
 
-      virtual int_t call(virtual_machine* v) override {
+      virtual int_t call(zs::vm_ref vm) override {
         if constexpr (std::is_invocable_v<Fct, vm_ref>) {
-          return _fct(vm_ref(v));
-        }
-        else if constexpr (std::is_invocable_v<Fct, virtual_machine*>) {
-          return _fct(v);
+          return _fct(vm);
         }
         else if constexpr (std::is_invocable_v<Fct>) {
           return _fct();
@@ -540,454 +633,6 @@ object object::create_native_closure(zs::engine* eng, Fct&& fct) {
   }
 }
 
-template <size_t I = 0, bool StartsWithVm = false, class... Args>
-inline zs::error_result fill_function_arg_tuple(vm_ref vm, std::tuple<Args...>& tup) {
-  using args_list = zb::type_list<Args...>;
-
-  if constexpr (I >= sizeof...(Args)) {
-    return {};
-  }
-  else {
-
-    using vtype = typename args_list::template type_at_index<I>;
-    vtype v;
-
-    if (auto err = vm[I + 1].get_value<vtype>(v)) {
-      zbase_error("Got ", zb::quoted(zs::get_object_type_name(vm[I + 1].get_type())), " expected ",
-          zb::quoted(zs::var::get_value_conv_obj_name<vtype>()), " aka : ", zb::quoted(typeid(vtype).name()));
-      return err;
-    }
-
-    std::get<I>(tup) = std::move(v);
-    if constexpr (I + 1 < sizeof...(Args)) {
-      return fill_function_arg_tuple<I + 1, StartsWithVm>(vm, tup);
-    }
-    else {
-      return {};
-    }
-  }
-}
-
-template <class... Args>
-inline static constexpr bool function_pointer_starts_with_vm_ref() noexcept {
-  if constexpr (sizeof...(Args) == 0) {
-    return false;
-  }
-  else {
-    using args_list = zb::type_list<Args...>;
-    return std::is_same_v<typename args_list::template type_at_index<0>, zs::vm_ref>;
-  }
-}
-
-template <class... Args>
-inline static constexpr bool function_pointer_starts_with_virtual_machine_ptr() noexcept {
-  if constexpr (sizeof...(Args) == 0) {
-    return false;
-  }
-  else {
-    using args_list = zb::type_list<Args...>;
-    return std::is_same_v<typename args_list::template type_at_index<0>, zs::virtual_machine*>;
-  }
-}
-
-namespace object_func_detail {
-  template <class F, class VM, class Tuple, std::size_t... I>
-  constexpr decltype(auto) apply_impl(F&& f, VM vm, Tuple&& t, std::index_sequence<I...>) {
-    return std::invoke(std::forward<F>(f), vm, std::get<I>(std::forward<Tuple>(t))...);
-  }
-
-  template <class F, class Tuple, std::size_t... I>
-  constexpr decltype(auto) apply_impl(F&& f, Tuple&& t, std::index_sequence<I...>) {
-    return std::invoke(std::forward<F>(f), std::get<I>(std::forward<Tuple>(t))...);
-  }
-
-  template <class F, class Tuple>
-  constexpr decltype(auto) apply(F&& f, Tuple&& t) {
-    return apply_impl(std::forward<F>(f), std::forward<Tuple>(t),
-        std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>{});
-  }
-
-  template <class F, class VM, class Tuple>
-  constexpr decltype(auto) apply(F&& f, VM vm, Tuple&& t) {
-    return apply_impl(std::forward<F>(f), vm, std::forward<Tuple>(t),
-        std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>{});
-  }
-
-  template <class ClassType, class F, class VM, class Tuple, std::size_t... I>
-  constexpr decltype(auto) apply_member_impl(
-      ClassType* obj, F&& f, VM vm, Tuple&& t, std::index_sequence<I...>) {
-    return std::invoke(std::forward<F>(f), obj, vm, std::get<I>(std::forward<Tuple>(t))...);
-  }
-
-  template <class ClassType, class F, class Tuple, std::size_t... I>
-  constexpr decltype(auto) apply_member_impl(ClassType* obj, F&& f, Tuple&& t, std::index_sequence<I...>) {
-    return std::invoke(std::forward<F>(f), obj, std::get<I>(std::forward<Tuple>(t))...);
-  }
-
-  template <class F, class ClassType, class Tuple>
-  constexpr decltype(auto) apply_member_fct(F&& f, ClassType* obj, Tuple&& t) {
-    return apply_member_impl(obj, std::forward<F>(f), std::forward<Tuple>(t),
-        std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>{});
-  }
-
-  template <class F, class ClassType, class VM, class Tuple>
-  constexpr decltype(auto) apply_member_fct(F&& f, ClassType* obj, VM vm, Tuple&& t) {
-    return apply_member_impl(obj, std::forward<F>(f), vm, std::forward<Tuple>(t),
-        std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>{});
-  }
-} // namespace object_func_detail
-
-// Function pointer.
-template <class R, class... Args>
-object object::create_native_closure_function(zs::engine* eng, zb::function_pointer<R, Args...> fct) {
-
-  using args_list = zb::type_list<Args...>;
-  constexpr size_t n_fct_pointer_args = args_list::size();
-  constexpr bool starts_with_vm_ref = function_pointer_starts_with_vm_ref<Args...>();
-  constexpr bool starts_with_virtual_machine_ptr
-      = function_pointer_starts_with_virtual_machine_ptr<Args...>();
-
-  // If the function pointer starts with a vm_ref, we shift everything by one.
-  if constexpr (starts_with_vm_ref || starts_with_virtual_machine_ptr) {
-
-    return create_native_closure(eng, [f = fct](vm_ref vm) mutable -> zs::int_t {
-      // Number of arguments required by the function pointer (excluding vm_ref).
-      constexpr size_t n_args = n_fct_pointer_args - 1;
-      using params_list = typename args_list::template n_last_list<n_args>;
-
-      // Make sure there is enough args on the stack.
-      // We ignore the first 'this' arg.
-      if (vm.stack_size() - 1 != (zs::int_t)n_args) {
-        zb::print("Invalid native function call args size", vm.stack_size() - 1, n_args);
-        return -1;
-      }
-
-      using tuple_type = typename params_list::tuple_type_no_ref;
-      tuple_type tup;
-      if (auto err = fill_function_arg_tuple(vm, tup)) {
-        zb::print("Invalid native function call type");
-        return -1;
-      }
-
-      // Call function - No return type.
-      if constexpr (std::is_same_v<R, void>) {
-
-        if constexpr (starts_with_vm_ref) {
-          object_func_detail::apply(f, vm, std::move(tup));
-        }
-        else {
-          object_func_detail::apply(f, vm.get_virtual_machine(), std::move(tup));
-        }
-
-        return 0;
-      }
-
-      // Call function - With return type.
-      else {
-        if constexpr (starts_with_vm_ref) {
-          auto ret = zs::var(vm.get_engine(), object_func_detail::apply(f, vm, std::move(tup)));
-          vm.push(ret);
-        }
-        else {
-          auto ret = zs::var(
-              vm.get_engine(), object_func_detail::apply(f, vm.get_virtual_machine(), std::move(tup)));
-          vm.push(ret);
-        }
-
-        return 1;
-      }
-    });
-  }
-  else {
-    return create_native_closure(eng, [f = fct](vm_ref vm) mutable -> zs::int_t {
-      // Number of arguments required by the function pointer (excluding vm_ref).
-      constexpr size_t n_args = n_fct_pointer_args;
-      using params_list = args_list;
-
-      // Make sure there is enough args on the stack.
-      // We ignore the first 'this' arg.
-      if (vm.stack_size() <= (zs::int_t)n_args) {
-        zb::print("Invalid native function call args size");
-        return -1;
-      }
-
-      using tuple_type = typename params_list::tuple_type_no_ref;
-      tuple_type tup;
-      if (auto err = fill_function_arg_tuple(vm, tup)) {
-
-        zb::print("Invalid native function call type");
-        return -1;
-      }
-
-      // Call function - No return type.
-      if constexpr (std::is_same_v<R, void>) {
-        object_func_detail::apply(f, std::move(tup));
-        return 0;
-      }
-
-      // Call function - With return type.
-      else {
-        auto ret = zs::var(vm.get_engine(), object_func_detail::apply(f, std::move(tup)));
-        vm.push(ret);
-        return 1;
-      }
-    });
-  }
-}
-
-// Any member function pointer.
-template <class Fct, class ClassType, class R, class... Args>
-object object::create_native_closure_function(zs::engine* eng,
-    zb::member_function_pointer_wrapper<Fct, ClassType, R, Args...> fct, const zs::object& uid) {
-
-  using args_list = zb::type_list<Args...>;
-  constexpr size_t n_fct_pointer_args = args_list::size();
-  constexpr bool starts_with_vm_ref = function_pointer_starts_with_vm_ref<Args...>();
-  constexpr bool starts_with_virtual_machine_ptr
-      = function_pointer_starts_with_virtual_machine_ptr<Args...>();
-
-  // If the function pointer starts with a vm_ref, we shift everything by one.
-  if constexpr (starts_with_vm_ref || starts_with_virtual_machine_ptr) {
-
-    return create_native_closure(eng, [f = fct.fct, u = uid](vm_ref vm) mutable -> zs::int_t {
-      if (vm.stack_size() < 1) {
-        zb::print("Invalid native function call args size");
-        return -1;
-      }
-
-      if (!vm[0].is_user_data()) {
-        zb::print("Invalid data type in function call, expected user data");
-        return -1;
-      }
-
-      if (!u.is_null() && !vm[0].has_user_data_uid(u)) {
-        zb::print("Invalid uid type in function call");
-        return -1;
-      }
-
-      ClassType* udata = (ClassType*)vm[0].get_user_data_data();
-
-      // Number of arguments required by the function pointer (excluding
-      // vm_ref).
-      constexpr size_t n_args = n_fct_pointer_args - 1;
-      using params_list = typename args_list::template n_last_list<n_args>;
-
-      // Make sure there is enough args on the stack.
-      // We ignore the first 'this' arg.
-      if (vm.stack_size() - 1 != (zs::int_t)n_args) {
-        zb::print("Invalid native function call args size", vm.stack_size() - 1, n_args);
-        return -1;
-      }
-
-      using tuple_type = typename params_list::tuple_type_no_ref;
-      tuple_type tup;
-      if (auto err = fill_function_arg_tuple(vm, tup)) {
-        zb::print("Invalid native function call type");
-        return -1;
-      }
-
-      // Call function - No return type.
-      if constexpr (std::is_same_v<R, void>) {
-        if constexpr (starts_with_vm_ref) {
-          object_func_detail::apply_member_fct(f, udata, vm, std::move(tup));
-        }
-        else {
-          object_func_detail::apply_member_fct(f, udata, vm.get_virtual_machine(), std::move(tup));
-        }
-        return 0;
-      }
-
-      // Call function - With return type.
-      else {
-        if constexpr (starts_with_vm_ref) {
-          auto ret
-              = zs::var(vm.get_engine(), object_func_detail::apply_member_fct(f, udata, vm, std::move(tup)));
-          vm.push(ret);
-        }
-        else {
-          auto ret = zs::var(vm.get_engine(),
-              object_func_detail::apply_member_fct(f, udata, vm.get_virtual_machine(), std::move(tup)));
-          vm.push(ret);
-        }
-
-        return 1;
-      }
-    });
-  }
-
-  else {
-    return create_native_closure(eng, [f = fct.fct, u = uid](vm_ref vm) mutable -> zs::int_t {
-      if (vm.stack_size() < 1) {
-        zb::print("Invalid native function call args size");
-        return -1;
-      }
-
-      if (!vm[0].is_user_data()) {
-        zb::print("Invalid data type in function call, expected user data");
-        return -1;
-      }
-
-      if (!u.is_null() && !vm[0].has_user_data_uid(u)) {
-        zb::print("Invalid uid type in function call");
-        return -1;
-      }
-
-      ClassType* udata = (ClassType*)vm[0].get_user_data_data();
-
-      // Number of arguments required by the function pointer (excluding vm_ref).
-      constexpr size_t n_args = n_fct_pointer_args;
-      using params_list = args_list;
-
-      // Make sure there is enough args on the stack.
-      // We ignore the first 'this' arg.
-      if (vm.stack_size() <= (zs::int_t)n_args) {
-        zb::print("Invalid native function call args size");
-        return -1;
-      }
-
-      using tuple_type = typename params_list::tuple_type_no_ref;
-      tuple_type tup;
-      if (auto err = fill_function_arg_tuple(vm, tup)) {
-        zb::print("Invalid native function call type");
-        return -1;
-      }
-
-      // Call function - No return type.
-      if constexpr (std::is_same_v<R, void>) {
-        object_func_detail::apply_member_fct(f, udata, std::move(tup));
-        return 0;
-      }
-
-      // Call function - With return type.
-      else {
-        auto ret = zs::var(vm.get_engine(), object_func_detail::apply_member_fct(f, udata, std::move(tup)));
-        vm.push(ret);
-        return 1;
-      }
-    });
-  }
-}
-
-// Member function.
-template <class ClassType, class R, class... Args>
-object object::create_native_closure_function(
-    zs::engine* eng, zb::member_function_pointer<ClassType, R, Args...> fct, const zs::object& uid) {
-  return zs::object::create_native_closure_function(eng,
-      zb::member_function_pointer_wrapper<zb::member_function_pointer<ClassType, R, Args...>, ClassType, R,
-          Args...>{ fct },
-      uid);
-}
-
-// Const member function.
-template <class ClassType, class R, class... Args>
-object object::create_native_closure_function(
-    zs::engine* eng, zb::const_member_function_pointer<ClassType, R, Args...> fct, const zs::object& uid) {
-  return zs::object::create_native_closure_function(eng,
-      zb::member_function_pointer_wrapper<zb::const_member_function_pointer<ClassType, R, Args...>, ClassType,
-          R, Args...>{ fct },
-      uid);
-}
-
-// Lamda function.
-template <typename ClassType, typename ReturnType, class Fct, typename... Args>
-object object::create_native_closure_function(zs::engine* eng, Fct&& fct, zb::type_list<Args...>) {
-
-  using args_list = zb::type_list<Args...>;
-  constexpr size_t n_fct_pointer_args = args_list::size();
-  constexpr bool starts_with_vm_ref = function_pointer_starts_with_vm_ref<Args...>();
-  constexpr bool starts_with_virtual_machine_ptr
-      = function_pointer_starts_with_virtual_machine_ptr<Args...>();
-
-  // If the function pointer starts with a vm_ref, we shift everything by one.
-  if constexpr (starts_with_vm_ref || starts_with_virtual_machine_ptr) {
-
-    return create_native_closure(eng, [f = std::forward<Fct>(fct)](vm_ref vm) mutable -> zs::int_t {
-      // Number of arguments required by the function pointer (excluding vm_ref).
-      constexpr size_t n_args = n_fct_pointer_args - 1;
-      using params_list = typename args_list::template n_last_list<n_args>;
-
-      // Make sure there is enough args on the stack.
-      // We ignore the first 'this' arg.
-      if (vm.stack_size() - 1 != (zs::int_t)n_args) {
-        zb::print("Invalid native function call args size", vm.stack_size() - 1, n_args);
-        return -1;
-      }
-
-      using tuple_type = typename params_list::tuple_type_no_ref;
-      tuple_type tup;
-      if (auto err = fill_function_arg_tuple(vm, tup)) {
-        zb::print("Invalid native function call type");
-        return -1;
-      }
-
-      // Call function - No return type.
-      if constexpr (std::is_same_v<ReturnType, void>) {
-        if constexpr (starts_with_vm_ref) {
-          object_func_detail::apply(std::move(f), vm, std::move(tup));
-        }
-        else {
-          object_func_detail::apply(std::move(f), vm.get_virtual_machine(), std::move(tup));
-        }
-        return 0;
-      }
-
-      // Call function - With return type.
-      else {
-        if constexpr (starts_with_vm_ref) {
-          auto ret = zs::var(vm.get_engine(), object_func_detail::apply(std::move(f), vm, std::move(tup)));
-          vm.push(ret);
-        }
-        else {
-          auto ret = zs::var(vm.get_engine(),
-              object_func_detail::apply(std::move(f), vm.get_virtual_machine(), std::move(tup)));
-          vm.push(ret);
-        }
-        return 1;
-      }
-    });
-  }
-
-  else {
-    return create_native_closure(eng, [f = std::forward<Fct>(fct)](vm_ref vm) mutable -> zs::int_t {
-      // Number of arguments required by the function pointer (excluding vm_ref).
-      constexpr size_t n_args = n_fct_pointer_args;
-      using params_list = args_list;
-
-      // Make sure there is enough args on the stack.
-      // We ignore the first 'this' arg.
-      if (vm.stack_size() <= (zs::int_t)n_args) {
-        zb::print("Invalid native function call args size");
-        return -1;
-      }
-
-      using tuple_type = typename params_list::tuple_type_no_ref;
-      tuple_type tup;
-      if (auto err = fill_function_arg_tuple(vm, tup)) {
-
-        zb::print("Invalid native function call type");
-        return -1;
-      }
-
-      // Call function - No return type.
-      if constexpr (std::is_same_v<ReturnType, void>) {
-        object_func_detail::apply(f, std::move(tup));
-        return 0;
-      }
-
-      // Call function - With return type.
-      else {
-        auto ret = zs::var(vm.get_engine(), object_func_detail::apply(f, std::move(tup)));
-        vm.push(ret);
-        return 1;
-      }
-    });
-  }
-}
-//
-//
-//
-//
-
 template <class Fct>
 zs::error_result vm_ref::new_closure(Fct&& fct) {
 
@@ -999,9 +644,9 @@ zs::error_result vm_ref::new_closure(Fct&& fct) {
 
     virtual ~closure_type() override = default;
 
-    virtual int_t call(virtual_machine* v) override {
+    virtual int_t call(zs::vm_ref vm) override {
       if constexpr (std::is_invocable_v<Fct, vm_ref>) {
-        return _fct(vm_ref(v));
+        return _fct(vm);
       }
       else if constexpr (std::is_invocable_v<Fct>) {
         return _fct();
@@ -1041,6 +686,5 @@ template <size_t N>
 object& object_unordered_map<T>::operator[](const char (&s)[N]) noexcept {
   return base_type::operator[](zs::_ss(s));
 }
-
 
 } // namespace zs.

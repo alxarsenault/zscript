@@ -289,22 +289,22 @@ TEST_CASE("zs::get_type_mask") {
 TEST_CASE("zs::is_ref_counted") {
   using enum zs::object_type;
 
-  //  REQUIRE_FALSE(zs::is_object_type_ref_counted(k_small_string));
-  //  REQUIRE_FALSE(zs::is_object_type_ref_counted(k_null));
-  //  REQUIRE_FALSE(zs::is_object_type_ref_counted(k_bool));
-  //  REQUIRE_FALSE(zs::is_object_type_ref_counted(k_integer));
-  //  REQUIRE_FALSE(zs::is_object_type_ref_counted(k_float));
-  //  REQUIRE_FALSE(zs::is_object_type_ref_counted(k_raw_pointer));
-  //  REQUIRE(zs::is_object_type_ref_counted(k_long_string));
-  //  REQUIRE(zs::is_object_type_ref_counted(k_table));
-  //  REQUIRE(zs::is_object_type_ref_counted(k_array));
-  //  REQUIRE(zs::is_object_type_ref_counted(k_closure));
-  //  REQUIRE(zs::is_object_type_ref_counted(k_native_closure));
-  //  REQUIRE(zs::is_object_type_ref_counted(k_user_data));
-  //  REQUIRE(zs::is_object_type_ref_counted(k_class));
-  //  REQUIRE(zs::is_object_type_ref_counted(k_instance));
-  //  REQUIRE(zs::is_object_type_ref_counted(k_weak_ref));
-  //  REQUIRE(zs::is_object_type_ref_counted(k_function_prototype));
+  REQUIRE_FALSE(zs::is_object_type_ref_counted(k_small_string));
+  REQUIRE_FALSE(zs::is_object_type_ref_counted(k_null));
+  REQUIRE_FALSE(zs::is_object_type_ref_counted(k_bool));
+  REQUIRE_FALSE(zs::is_object_type_ref_counted(k_integer));
+  REQUIRE_FALSE(zs::is_object_type_ref_counted(k_float));
+  REQUIRE_FALSE(zs::is_object_type_ref_counted(k_raw_pointer));
+  REQUIRE(zs::is_object_type_ref_counted(k_long_string));
+  REQUIRE(zs::is_object_type_ref_counted(k_table));
+  REQUIRE(zs::is_object_type_ref_counted(k_array));
+  REQUIRE(zs::is_object_type_ref_counted(k_closure));
+  REQUIRE(zs::is_object_type_ref_counted(k_native_closure));
+  REQUIRE(zs::is_object_type_ref_counted(k_user_data));
+  REQUIRE(zs::is_object_type_ref_counted(k_class));
+  REQUIRE(zs::is_object_type_ref_counted(k_instance));
+  REQUIRE(zs::is_object_type_ref_counted(k_weak_ref));
+  REQUIRE(zs::is_object_type_ref_counted(k_function_prototype));
 }
 
 TEST_CASE("zs::object") {
@@ -779,235 +779,5 @@ TEST_CASE("native_array") {
 
     vec[0] = 2.2f;
     vec[1] = 2.3f;
-  }
-}
-
-TEST_CASE("LLLLLLLL") {
-
-  zs::engine eng;
-  {
-    zs::vm vm(&eng);
-    zs::var d = zs::var::create_native_closure_function(
-        &eng, +[](zs::vm_ref vm, zs::int_t p1, float k, std::string_view s) {
-          REQUIRE(p1 == 55);
-          REQUIRE(k == 89.56f);
-          REQUIRE(s == "john");
-          return s;
-        });
-
-    zs::int_t np = vm.stack_size();
-    vm.push_root();
-    vm.push_integer(55);
-    vm.push_float(89.56);
-    vm.push_string("john");
-    zs::int_t n_params = vm.stack_size() - np;
-    zs::var rval;
-    REQUIRE(!vm->call(d, n_params, vm.stack_size() - n_params, rval));
-
-    REQUIRE(rval == "john");
-  }
-}
-
-TEST_CASE("KKLKKK") {
-
-  zs::engine eng;
-  {
-
-    {
-
-      {
-        zs::vm vm(&eng);
-
-        int ksd = 3333;
-        zs::var fct = zs::var::create_native_closure_function(
-            &eng, [&](zs::virtual_machine* vm, zs::int_t val, const std::string& s) {
-              REQUIRE(val == 123);
-              REQUIRE(s == "bacon");
-              return 32 + ksd;
-            });
-
-        vm.push_root();
-        vm.push_integer(123);
-        vm.push_string("bacon");
-
-        zs::var rval;
-        REQUIRE(!vm->call(fct, 3, vm.stack_size() - 3, rval));
-
-        REQUIRE(rval == ksd + 32);
-      }
-
-      {
-        zs::vm vm(&eng);
-
-        int ksd = 3333;
-
-        zs::var fct = zs::var::create_native_closure_function(
-            &eng, [&](zs::virtual_machine* vm, zs::int_t val, const std::string& s) {
-              REQUIRE(val == 123);
-              REQUIRE(s == "bacon");
-              return 32 + ksd;
-            });
-
-        vm.push_root();
-        vm.push_integer(123);
-        vm.push_string("bacon");
-
-        zs::var rval;
-        REQUIRE(!vm->call(fct, 3, vm.stack_size() - 3, rval));
-
-        REQUIRE(rval == ksd + 32);
-      }
-
-      {
-        zs::vm vm(&eng);
-
-        int ksd = 3333;
-
-        zs::var fct = zs::var::create_native_closure_function(&eng,
-            std::function<zs::int_t(zs::int_t, const std::string&)>([=](zs::int_t val, const std::string& s) {
-              REQUIRE(val == 123);
-              REQUIRE(s == "bacon");
-              return 32 + ksd;
-            }));
-
-        vm.push_root();
-        vm.push_integer(123);
-        vm.push_string("bacon");
-
-        {
-          REQUIRE(vm[-1].is_string());
-          zs::string s((zs::allocator<char>(&eng)));
-          REQUIRE(!vm[-1].convert_to_string(s));
-          REQUIRE(s == "bacon");
-        }
-
-        {
-          REQUIRE(vm[-1].is_string());
-          std::string s;
-          REQUIRE(!vm[-1].convert_to_string(s));
-          REQUIRE(s == "bacon");
-        }
-
-        zs::var rval;
-        REQUIRE(!vm->call(fct, 3, vm.stack_size() - 3, rval));
-
-        REQUIRE(rval == ksd + 32);
-      }
-    }
-
-    zs::var a = zs::var::create_native_closure_function(
-        &eng, +[](zs::vm_ref vm, zs::int_t val, zs::float_t fval, const zs::var& obj) {
-          //          zb::print(__FUNCTION__, val, fval, obj.get_type());
-          return 89;
-        });
-
-    {
-      zs::vm vm(&eng);
-      vm.push_root();
-      vm.push_integer(33);
-      vm.push_float(12.12);
-
-      zs::var obj = zs::var::create_array(&eng, 5);
-      vm.push(obj);
-
-      zs::var rval;
-      REQUIRE(!vm->call(a, 4, vm.stack_size() - 4, rval));
-
-      REQUIRE(rval == 89);
-    }
-
-    {
-      zs::vm vm(&eng);
-
-      zs::var b = zs::var::create_native_closure_function(
-          &eng, +[](zs::vm_ref vm) {
-            //            zb::print(__FUNCTION__, "B");
-            return 11;
-          });
-
-      vm.push_root();
-
-      zs::var rval;
-      REQUIRE(!vm->call(b, 1, vm.stack_size() - 1, rval));
-
-      REQUIRE(rval == 11);
-    }
-
-    {
-      zs::vm vm(&eng);
-
-      zs::var c = zs::var::create_native_closure_function(
-          &eng, +[]() {
-            //            zb::print(__FUNCTION__, "C");
-            return 11;
-          });
-
-      vm.push_root();
-
-      zs::var rval;
-      REQUIRE(!vm->call(c, 1, vm.stack_size() - 1, rval));
-
-      REQUIRE(rval == 11);
-    }
-
-    {
-      zs::vm vm(&eng);
-
-      zs::var d = zs::var::create_native_closure_function(
-          &eng,
-          +[](zs::vm_ref vm, zs::int_t p1, std::vector<std::string> vec, std::string s,
-               std::map<std::string, zs::var> m, std::map<std::string, zs::var> m2) {
-            //            zb::print("D", "p1", p1, "\nvec.size", vec.size(),
-            //            "\nVEC", vec, "\nS", s, "\nmap", m, m2);
-
-            return p1;
-          });
-
-      zs::int_t np = vm.stack_size();
-      vm.push_root();
-      vm.push_integer(55);
-      zs::var obj = zs::_a(&eng, 3);
-      auto& vec = *obj.get_array_internal_vector();
-      vec[0] = 88;
-      vec[1] = 89.21;
-      vec[2] = zs::_ss("kl");
-      vm.push(obj);
-
-      vm.push_string("john");
-      //      vm.push_integer(55);
-
-      zs::var tbl = zs::_o(&eng, //
-          std::initializer_list<std::pair<zs::object, zs::object>>{
-              { zs::_ss("john2"), 89 }, //
-              { zs::_ss("john9"), 989 }, //
-              { zs::_ss("joh"), zs::_ss("pljkl") }, //
-              { zs::_ss("A"), obj } //
-          });
-
-      ;
-
-      std::array<char, 3> arr = { 1, 2, 3 };
-
-      zs::var tbl2 = zs::var(&eng, //
-          std::map<std::string, zs::var>{
-              { "john", 21 }, //
-              { "johnll", zs::_a(&eng, arr) }, //
-              { "peter", obj } //
-          });
-      //
-      //      zb::print("--------------------------",tbl);
-      //      zb::print("--------------------------",tbl2);
-
-      vm.push(tbl);
-      vm.push(tbl2);
-      //      vm.push_integer(11);
-      zs::int_t n_params = vm.stack_size() - np;
-      //      zb::print("LLLLL", n_params);
-      zs::var rval;
-      REQUIRE(!vm->call(d, n_params, vm.stack_size() - n_params, rval));
-
-      //      zb::print(rval.to_debug_string());
-      REQUIRE(rval == 55);
-    }
   }
 }

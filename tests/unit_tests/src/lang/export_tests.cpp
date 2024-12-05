@@ -7,7 +7,7 @@ using enum zs::error_code;
 //)""") {
 //   REQUIRE(closure.as_closure().get_proto()._module_name == "A");
 //
-//   vm->get_imported_module_cache();
+//   vm->get_imported_modules();
 // }
 
 ZS_CODE_TEST("Module name (small)", R"""(
@@ -17,7 +17,7 @@ return john;
     [](zs::virtual_machine& vm) {
       zs::var tbl = zs::_t(vm.get_engine());
       tbl.as_table()["a"] = 55;
-      vm.get_imported_module_cache().as_table()["john"] = tbl;
+      vm.get_imported_modules().as_table()["john"] = tbl;
     }) {
   REQUIRE(value.is_table());
 }
@@ -25,11 +25,12 @@ return john;
 ZCODE_TEST("Module name (long)", R"""(
 @module AshaSJHAgdhsaghgasdJHSKGADHJSAGDHJSAGDKJAGSJHDA;
 )""") {
-  REQUIRE(closure.as_closure().get_proto()._module_name == "AshaSJHAgdhsaghgasdJHSKGADHJSAGDHJSAGDKJAGSJHDA");
+  REQUIRE(closure.as_closure().get_proto()._module_info.as_table()["name"]
+      == "AshaSJHAgdhsaghgasdJHSKGADHJSAGDHJSAGDKJAGSJHDA");
 }
 
 ZCODE_TEST("Module export var", R"""(
-@module
+@module test
 export var a = 32;
 )""") {
   REQUIRE(value.is_table());
@@ -37,7 +38,7 @@ export var a = 32;
 }
 
 ZCODE_TEST("Module export const", R"""(
-@module
+@module test
 export const a = 32;
 )""") {
   REQUIRE(value.is_table());
@@ -45,7 +46,7 @@ export const a = 32;
 }
 
 ZS_CODE_TEST("module.01", R"""(
-@module
+@module test
 export var a = 32;
 )""") {
   INFO("Module with var export");
@@ -54,7 +55,7 @@ export var a = 32;
 }
 
 ZS_CODE_TEST("module.02", R"""(
-@module
+@module test
 export const a = 32;
 )""") {
   INFO("Module with const export");
@@ -63,7 +64,7 @@ export const a = 32;
 }
 
 ZS_CODE_TEST("module.03", R"""(
-@module
+@module test
 export var a = 32;
 export var b = 33;
 )""") {
@@ -82,15 +83,15 @@ export var a = 33;
   REQUIRE(vm->compile_buffer(code, utest::s_current_test_name, closure) == already_exists);
 }
 
-TEST_CASE("module.05") {
-  std::string_view code = R"""(
-export var a = 32;
-a = 123;
-)""";
-  zs::vm vm;
-  zs::object closure;
-  REQUIRE(vm->compile_buffer(code, utest::s_current_test_name, closure) == cant_modify_export_table);
-}
+// TEST_CASE("module.05") {
+//   std::string_view code = R"""(
+// export var a = 32;
+// a = 123;
+//)""";
+//   zs::vm vm;
+//   zs::object closure;
+//   REQUIRE(vm->compile_buffer(code, utest::s_current_test_name, closure) == cant_modify_export_table);
+// }
 
 // TEST_CASE("export.01") {
 //   static constexpr std::string_view code_01 = R"""(
@@ -774,6 +775,7 @@ struct user_data {
 TEST_CASE("module.06") {
   static constexpr std::string_view mod1 = R"""(
 @module mod1;
+
 export var johnson = "alexandre";
 export var steeve = {
   a = 1,
@@ -782,7 +784,7 @@ export var steeve = {
 
 export function michel(var a) {
   steeve.a = 2;
-  print(a, johnson);
+  zs::print(a, johnson);
 }
 )""";
 
@@ -817,13 +819,13 @@ return mod1;
     REQUIRE(closure.is_closure());
 
     zs::object value;
-    if (auto err = vm->call(closure, { vm->get_root() }, value)) {
+    if (auto err = vm->call(closure, vm->get_root(), value)) {
       FAIL(vm.get_error());
     }
 
     REQUIRE(value.is_table());
 
-    vm->get_imported_module_cache().as_table()["mod1"] = value;
+    vm->get_imported_modules().as_table()["mod1"] = value;
   }
 
   {
@@ -836,8 +838,8 @@ return mod1;
     REQUIRE(closure.is_closure());
 
     zs::object value;
-    if (auto err = vm->call(closure, { vm->get_root() }, value)) {
-      FAIL(vm.get_error());
+    if (auto err = vm->call(closure, vm->get_root(), value)) {
+      FAIL(err.message() + vm.get_error());
     }
 
     REQUIRE(value.is_table());

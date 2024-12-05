@@ -40,7 +40,7 @@ ZS_CODE_TEST("delegates::get_01", R"""(
   };
 
   // Set 'my_delegate' as delegate.
-  set_delegate(my_table, my_delegate);
+  zs::set_metadata(my_table, my_delegate);
 
   check(true);
 

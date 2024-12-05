@@ -21,7 +21,7 @@ var t = {
   d = π + 2,
 
   g = function() {
-    print("DSLDJSKJDLKSDS");
+    // print("DSLDJSKJDLKSDS");
     return 55;
   },
 
@@ -29,7 +29,7 @@ var t = {
 
 
   function john_doe[t1](arg) {
-    print("BANANA", arg, this);
+    // print("BANANA", arg, this);
   }
 
 

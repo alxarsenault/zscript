@@ -1,5 +1,4 @@
 namespace zs {
-namespace {} // namespace
 
 zs::object create_color_default_delegate(zs::engine* eng) {
   object obj = object::create_table(eng);

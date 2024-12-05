@@ -27,14 +27,42 @@ struct_instance_object* struct_instance_object::create(zs::engine* eng, int_t sz
   return sobj;
 }
 
-zs::error_result struct_instance_object::get(const object& name, object& dst) const noexcept {
+zs::error_result struct_instance_object::get(
+    const object& name, object& dst, bool can_access_private) const noexcept {
 
   const zs::struct_object& s = _base.as_struct();
+
+  if (s.get_name() == name) {
+    dst = _base;
+    return {};
+  }
+
   const size_t sz = s.size();
+
+  if (name.is_integer()) {
+
+    int_t ivalue = name._int;
+
+    if (ivalue < 0 or ivalue >= sz) {
+      return zs::errc::out_of_bounds;
+    }
+
+    if (!s[ivalue].is_private or can_access_private) {
+      dst = data()[ivalue];
+      return {};
+    }
+
+    return zs::errc::inaccessible_private;
+  }
+
   for (size_t i = 0; i < sz; i++) {
     if (s[i].key == name) {
-      dst = get_span()[i];
-      return {};
+      if (!s[i].is_private or can_access_private) {
+        dst = data()[i];
+        return {};
+      }
+
+      return zs::errc::inaccessible_private;
     }
   }
 
@@ -46,25 +74,42 @@ zs::error_result struct_instance_object::get(const object& name, object& dst) co
     }
   }
 
-  return zs::error_code::not_found;
+  const zs::struct_object::method_vector& methods = _base.as_struct().get_methods();
+  for (const auto& n : methods) {
+    if (n.name == name) {
+
+      if (!n.is_private or can_access_private) {
+        dst = n.closure;
+        return {};
+      }
+
+      return zs::errc::inaccessible_private;
+    }
+  }
+
+  return zs::errc::not_found;
 }
 
-zs::error_result struct_instance_object::set(const object& name, const object& obj) noexcept {
+zs::error_result struct_instance_object::set(
+    const object& name, const object& obj, bool can_access_private) noexcept {
   const zs::struct_object& s = _base.as_struct();
   const size_t sz = s.size();
   for (size_t i = 0; i < sz; i++) {
     if (s[i].key == name) {
 
-      if (s[i].is_const and _initialized) {
-        return zs::error_code::cant_modify_const_member;
+      if (!s[i].is_private or can_access_private) {
+        data()[i] = obj;
+        return {};
       }
 
-      if (s[i].mask and !obj.has_type_mask(s[i].mask)) {
-        return zs::error_code::invalid_type_assignment;
-      }
-
-      data()[i] = obj;
-      return {};
+      //      if (s[i].is_const and _initialized) {
+      //        return zs::error_code::cant_modify_const_member;
+      //      }
+      //
+      //      if (s[i].mask and !obj.has_type_mask(s[i].mask)) {
+      //        return zs::error_code::invalid_type_assignment;
+      //      }
+      return zs::errc::inaccessible_private;
     }
   }
 

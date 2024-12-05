@@ -18,6 +18,7 @@
 #include <fstream>
 #include <iomanip>
 #include <random>
+#include <charconv>
 
 #if !defined(ZS_UNIX) \
     && (defined(unix) || defined(__unix__) || defined(__unix) || defined(__APPLE__) || defined(BSD))
@@ -26,9 +27,18 @@
 #deine ZS_UNIX 0
 #endif
 
+//
+// #include <unistd.h>
+//
+
+//
+//
+
 #if ZS_UNIX
 #include <unistd.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
+#include <pthread.h>
 #include <limits.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -49,6 +59,7 @@
 #ifdef __APPLE__
 #define ZS_APPLE 1
 #include <mach-o/dyld.h>
+#include <libkern/OSCacheControl.h>
 #else
 #define ZS_APPLE 0
 #endif
@@ -81,6 +92,7 @@
 #include "lib/zmath.h"
 #include "lib/zlang.h"
 #include "lib/zslib.h"
+#include "lib/zsys.h"
 #include "lib/zsbase64.h"
 #include "lib/zgraphics.h"
 #include "lib/delegate/zarray_delegate.h"
@@ -89,6 +101,10 @@
 #include "lib/delegate/zstring_delegate.h"
 #include "lib/delegate/zcolor_delegate.h"
 #include "lib/delegate/zstruct_delegate.h"
+
+#include "vm_utils/zvm_module.h"
+
+#include "zparameter_stream.h"
 
 namespace zs {
 static_assert(sizeof(object_base) == constants::k_object_size, "sizeof(object) != k_object_size");
@@ -102,6 +118,16 @@ zs::error_result default_file_loader::open(const char* filepath) noexcept {
   }
 
   return {};
+}
+
+zs::error_result default_file_loader::open(const object& filepath) noexcept {
+  ZS_ASSERT(filepath.is_string(), "Invalid filepath string object in default_file_loader::open().");
+
+  if (filepath.is_cstring()) {
+    return open(filepath.get_cstring_unchecked());
+  }
+
+  return open(filepath.get_string_unchecked());
 }
 
 zs::error_result default_file_loader::open(std::string_view filepath) noexcept {
@@ -669,6 +695,10 @@ namespace {
       return stream << obj._float;
     }
 
+    case object_type::k_error: {
+      return stream << zs::error_code_to_string(obj._error);
+    }
+
     case object_type::k_long_string:
     case object_type::k_small_string:
     case object_type::k_string_view:
@@ -693,7 +723,8 @@ namespace {
     }
 
     default:
-      return stream << zs::get_exposed_object_type_name(obj.get_type()) << " " << int_to_hex(obj._value);
+      return stream << get_object_type_name(obj.get_type()) << " "
+                    << zs::get_exposed_object_type_name(obj.get_type()) << " " << int_to_hex(obj._value);
     }
     return stream;
   }
@@ -747,6 +778,12 @@ std::string object_base::to_json() const {
   return ss.str();
 }
 
+zs::error_result object_base::to_json(zs::string& output) const {
+  zs::ostringstream ss(zs::create_string_stream(output.get_allocator().get_engine()));
+  stream_to_json(ss);
+  output = ss.str();
+  return {};
+}
 std::ostream& object_base::stream_to_json(std::ostream& ss) const {
   streamer_common::last_char = last_char_t::first;
   return ss << object_stream_proxy::object_streamer<object_base::serializer_type::json>(*this);
@@ -887,6 +924,86 @@ zs::error_result object_base::convert_to_string(std::string& s) const {
     std::ostringstream stream;
     int_to_hex(stream, _value);
     s = stream.str();
+  }
+  }
+
+  return {};
+}
+
+zs::error_result object_base::convert_to_string_object(zs::engine* eng, zs::object& s) const {
+  const object_type type = get_type();
+
+  switch (type) {
+  case object_type::k_null:
+    s = zs::_ss("null");
+    return {};
+
+  case object_type::k_none:
+    s = zs::_ss("none");
+    return {};
+
+  case object_type::k_bool:
+    s = _bool ? zs::_ss("true") : zs::_ss("false");
+    return {};
+
+  case object_type::k_integer: {
+    char buffer[128] = {};
+
+    if (zb::optional_result<size_t> res = zb::to_chars(buffer, 128, _int)) {
+      s = zs::_s(eng, std::string_view(buffer, res.value()));
+      return {};
+    }
+
+    //    zs::ostringstream stream(zs::create_string_stream(s.get_allocator().get_engine()));
+    //    stream << _int;
+    //    s = stream.str();
+    //    return {};
+
+    //    std::array<char, 128> buffer = {};
+    //    std::to_chars_result res = std::to_chars(buffer.data(), buffer.data() + buffer.size(), _int);
+    //    if(res.ec != std::errc()) {
+    //      return zs::error_code::conversion_error;
+    //    }
+    //
+    //
+    //    s = zs::_s ( eng, std::string_view(buffer.data(), std::distance(buffer.data(), res.ptr)));
+
+    return zs::error_code::conversion_error;
+    //    if (zb::optional_result<size_t> res = zb::to_chars(buffer, 128, _float)) {
+    //      //      stream << buffer;
+    //      //      zb::print("DSLKDSKDLSD", res.value());
+    //      s = std::string_view(buffer, res.value());
+    //      return {};
+    //    }
+    //    zb::print("FDLKFJDKFJDLKFDJLKF", stream.width(), _float);
+    //    stream << std::setprecision(6) <<std::fixed<< _float;
+    //    s = stream.str();
+  }
+
+  case object_type::k_float: {
+    char buffer[128] = {};
+
+    if (zb::optional_result<size_t> res = zb::to_chars(buffer, 128, _float)) {
+      s = zs::_s(eng, std::string_view(buffer, res.value()));
+      return {};
+    }
+    //    zb::print("FDLKFJDKFJDLKFDJLKF", stream.width(), _float);
+    //    stream << std::setprecision(6) <<std::fixed<< _float;
+    //    s = stream.str();
+    return zs::error_code::conversion_error;
+  }
+
+  case object_type::k_long_string:
+  case object_type::k_mutable_string:
+  case object_type::k_small_string:
+  case object_type::k_string_view:
+    s = zs::object(*this, true);
+    return {};
+
+  default: {
+    zs::ostringstream stream(zs::create_string_stream(eng));
+    int_to_hex(stream, _value);
+    s = zs::_s(eng, stream.str());
   }
   }
 

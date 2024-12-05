@@ -83,13 +83,18 @@ public:
   ZS_CHECK object& get_registry_table() noexcept;
   ZS_CHECK const object& get_registry_table() const noexcept;
 
+  ZS_CHECK table_object& get_registry_table_object() noexcept;
+
+  ZS_CHECK object get_registry_object(const zs::object& name) const noexcept;
+  ZS_CHECK object get_registry_object(std::string_view name) const noexcept;
+
 private:
   allocate_t _allocator;
   raw_pointer_t _user_pointer;
   raw_pointer_release_hook_t _user_pointer_release;
   stream_getter_t _stream_getter;
   engine_initializer_t _initializer;
-  std::array<uint8_t, 4 * constants::k_object_size> _objects;
+  std::array<uint8_t, 2 * constants::k_object_size> _objects;
 
   friend class engine_rc_proxy;
   friend class zs::garbage_collector;

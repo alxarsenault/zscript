@@ -50,10 +50,10 @@ static inline bool has_special_chars(std::string_view s) {
 static inline bool has_triple_quote(std::string_view s) { return s.find("\"\"\"") != std::string_view::npos; }
 
 static inline auto triple_quote(const std::string_view& s) {
-  return zb::quoted<"R\"\"\"\"\"(", ")\"\"\"\"\"">(s);
+  return zb::double_quoted<"R\"\"\"\"\"(", ")\"\"\"\"\"">(s);
 }
 
-static inline auto triple_apostrophe(const std::string_view& s) { return zb::quoted<"'''", "'''">(s); }
+static inline auto triple_apostrophe(const std::string_view& s) { return zb::double_quoted<"'''", "'''">(s); }
 
 using enum ast_node_type;
 

@@ -16,10 +16,10 @@ namespace {
       path_view = str_path.get_string_unchecked();
     }
 
-    // Create from fs.path.
-    else if (str_path.is_user_data() and str_path._udata->get_uid() == path_library::k_path_uid) {
-      path_view = str_path._udata->data_ref<zs::string>();
-    }
+    // Create from fs::path.
+    //    else if (str_path.is_user_data() and str_path._udata->get_uid() == path_library::k_path_uid) {
+    //      path_view = str_path._udata->data_ref<zs::string>();
+    //    }
     else {
       return -1;
     }
@@ -28,12 +28,12 @@ namespace {
     return 1;
   }
 
-  /// fs.file(filepath, openmode = fs.openmode.read | fs.openmode.write);
+  /// fs::file(filepath, openmode = fs::openmode.read | fs::openmode.write);
   int_t zfs_create_file(zs::vm_ref vm) {
     const int_t nargs = vm.stack_size();
 
     if (nargs < 2) {
-      vm.set_error("Invalid number of arguments in fs.file(filepath, openmode)");
+      vm.set_error("Invalid number of arguments in fs::file(filepath, openmode)");
       return -1;
     }
 
@@ -46,12 +46,12 @@ namespace {
       path_view = filepath.get_string_unchecked();
     }
 
-    // Create from fs.path.
-    else if (filepath.is_user_data() and filepath._udata->get_uid() == path_library::k_path_uid) {
-      path_view = filepath._udata->data_ref<zs::string>();
-    }
+    // Create from fs::path.
+    //    else if (filepath.is_user_data() and filepath._udata->get_uid() == path_library::k_path_uid) {
+    //      path_view = filepath._udata->data_ref<zs::string>();
+    //    }
     else {
-      vm.set_error("Invalid path argument in fs.file(filepath, openmode)");
+      vm.set_error("Invalid path argument in fs::file(filepath, openmode)");
       return -1;
     }
 
@@ -60,7 +60,7 @@ namespace {
       const zs::object& openmode_obj = vm[2];
 
       if (!openmode_obj.is_integer()) {
-        vm.set_error("Invalid openmode argument in fs.file(filepath, openmode)");
+        vm.set_error("Invalid openmode argument in fs::file(filepath, openmode)");
         return -1;
       }
 
@@ -206,9 +206,6 @@ namespace {
     if (path.is_string()) {
       path_str = path.get_string_unchecked();
     }
-    else if (path.is_user_data() and path._udata->get_uid() == path_library::k_path_uid) {
-      path_str = path._udata->data<zs::string>()->c_str();
-    }
     else {
       return -1;
     }
@@ -248,9 +245,6 @@ namespace {
     if (path.is_string()) {
       path_str = path.get_string_unchecked();
     }
-    else if (path.is_user_data() and path._udata->get_uid() == path_library::k_path_uid) {
-      path_str = path._udata->data<zs::string>()->c_str();
-    }
     else {
       return -1;
     }
@@ -269,6 +263,140 @@ namespace {
 
     return -1;
   }
+
+  int_t zfs_load_value_file(zs::vm_ref vm) {
+    const int_t nargs = vm.stack_size();
+    if (nargs != 2) {
+      return -1;
+    }
+
+    const object& path = vm[1];
+
+    if (path.is_cstring()) {
+      const char* cstr_path = path.get_cstring_unchecked();
+
+      object output;
+      if (auto err = vm->load_file_as_value(cstr_path, "none", output)) {
+        return -1;
+      }
+      return vm.push(output);
+    }
+
+    if (path.is_string()) {
+      std::filesystem::path path_str = path.get_string_unchecked();
+      object output;
+      if (auto err = vm->load_file_as_value(path_str, "none", output)) {
+        return -1;
+      }
+      return vm.push(output);
+    }
+
+    return -1;
+  }
+
+  int_t zfs_join_impl(zs::vm_ref vm) {
+
+    zs::parameter_stream ps(vm);
+
+    ++ps;
+
+    std::string_view base_path;
+    if (auto err = ps.require<string_parameter>(base_path)) {
+      return -1;
+    }
+
+    zs::mutable_string_object* sobj = zs::mutable_string_object::create(vm.get_engine(), base_path);
+
+    while (ps) {
+      std::string_view path_str;
+      if (auto err = ps.require<string_parameter>(path_str)) {
+        return -1;
+      }
+
+      bool current_ends_with_dash = sobj->ends_with('/');
+      bool next_starts_with_dash = path_str.starts_with('/');
+      if (current_ends_with_dash and next_starts_with_dash) {
+        sobj->append(path_str.substr(1));
+      }
+      else if (current_ends_with_dash) {
+        sobj->append(path_str);
+      }
+      else if (next_starts_with_dash) {
+        sobj->append(path_str);
+      }
+      else {
+        sobj->push_back('/');
+        sobj->append(path_str);
+      }
+    }
+
+    sobj->set_delegate(path_library::create_path_delegate(vm));
+    return vm.push(object(sobj, false));
+  }
+
+  static int_t zfs_ls_impl(zs::vm_ref vm) {
+    const int_t nargs = vm.stack_size();
+
+    if (!zb::is_one_of(nargs, 2, 3)) {
+      vm->set_error("Invalid number of parameter in fs::ls(path, (extension, [\"extensions\"]))");
+      return -1;
+    }
+
+    const zs::object& path_obj = vm[1];
+    if (!path_obj.is_string()) {
+      vm->set_error("Invalid path parameter in fs::ls(path, (extension, [\"extensions\"]))");
+      return -1;
+    }
+
+    std::string_view path = path_obj.get_string_unchecked();
+
+    zs::object arr_obj = zs::_a(vm.get_engine(), 0);
+    zs::array_object& arr = arr_obj.as_array();
+    zb::span<const object> extensions;
+
+    if (nargs == 3) {
+      const object& second_arg = vm[2];
+      if (second_arg.is_array() and !second_arg.as_array().empty()) {
+        if (!second_arg.as_array().is_string_array()) {
+          vm->set_error("Invalid extension parameter in fs::ls(path, (extension, [\"extensions\"]))");
+          return -1;
+        }
+
+        extensions = zb::span<const object>(second_arg.as_array());
+      }
+      else if (second_arg.is_string()) {
+        extensions = zb::span<const object>(&second_arg, 1);
+      }
+      else {
+        vm->set_error("Invalid extension parameter in fs::ls(path, (extension, [\"extensions\"]))");
+        return -1;
+      }
+    }
+
+    namespace fs = std::filesystem;
+    fs::path filepath(path);
+
+    if (extensions.empty()) {
+      for (const fs::directory_entry& dir_entry :
+          fs::directory_iterator{ filepath, fs::directory_options::skip_permission_denied }) {
+        arr.push_back(zs::path_library::create_path(vm, dir_entry.path().c_str()));
+      }
+
+      return vm.push(arr_obj);
+    }
+
+    for (const fs::directory_entry& dir_entry :
+        fs::directory_iterator{ filepath, fs::directory_options::skip_permission_denied }) {
+      const std::filesystem::path& p = dir_entry.path();
+      if (zb::string_view ext = p.extension().c_str(); !ext.empty()
+          and extensions.pfind_if(
+              [&, sext = ext.substr(1)](const object& obj) { return zb::is_one_of(obj, ext, sext); })) {
+        arr.push_back(zs::path_library::create_path(vm, p.c_str()));
+      }
+    }
+
+    return vm.push(arr_obj);
+  }
 } // namespace.
 
 zs::object create_fs_lib(zs::virtual_machine* vm) {
@@ -280,7 +408,7 @@ zs::object create_fs_lib(zs::virtual_machine* vm) {
   zs::object_unordered_map<object>& fs_map = fs_module._table->get_map();
   fs_map.reserve(20);
 
-  // fs.openmode.
+  // fs::openmode.
   fs_map["mode"_ss] = zs::object::create_table(vm->get_engine(),
       {
           { "append"_ss, file_library::open_mode_append }, //
@@ -301,9 +429,12 @@ zs::object create_fs_lib(zs::virtual_machine* vm) {
   fs_map["pwd"_ss] = zs::_nc(eng, zfs_pwd);
   fs_map["exe_path"_ss] = zs::_nc(eng, zfs_exe_path);
   fs_map["home"_ss] = zs::_nc(eng, zfs_home_path);
+  fs_map.emplace("join"_ss, zfs_join_impl);
+  fs_map.emplace("ls"_ss, zfs_ls_impl);
 
   fs_map["json_file"] = zs::_nf(zfs_load_json_file);
   fs_map["string_file"] = zs::_nf(zfs_load_string_file);
+  fs_map["value_file"] = zs::_nf(zfs_load_value_file);
   return fs_module;
 }
 } // namespace zs.

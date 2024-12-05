@@ -6,6 +6,8 @@
 namespace zs {
 enum class serializer_type { plain, quoted, json, json_compact, plain_compact };
 
+zs::error_result serialize_to_json(zs::engine* eng, std::ostream& stream, const object_base& o, int idt = 0);
+
 struct serializer {
   inline serializer(serializer_type type, const object_base& o, int idt = 0)
       : obj(o)
@@ -52,17 +54,10 @@ struct native_closure : reference_counted {
   ZS_INLINE native_closure(zs::engine* eng) noexcept
       : reference_counted(eng) {}
 
-  virtual int_t call(virtual_machine*) = 0;
+  virtual int_t call(zs::vm_ref vm) = 0;
 
 protected:
   virtual ~native_closure() override = default;
-};
-
-class closure_object_t {
-public:
-  inline zs::object call(zs::vm_ref vm, zb::span<const object> params);
-  inline zs::object call(zs::vm_ref vm, std::initializer_list<const object> params);
-  closure_t fct;
 };
 
 /// Object.
@@ -93,9 +88,11 @@ struct object_base {
     zs::weak_ref_object* _weak_ref;
     zs::delegate_object* _odelegate;
     zs::node_object* _node;
-    zs::native_cpp_closure_t _nfct;
-    zs::closure_t _fct;
-    zs::closure_object_t _cfct;
+    zs::capture_object* _capture;
+
+    zs::function_t _nfct;
+    zs::parameter_list_function_t _npfct;
+
     void* _pointer;
     const char* _sview;
     int_t _int;
@@ -122,12 +119,6 @@ struct object_base {
       /// Extra part 2 (2 bytes).
       union {
         uint16_t _reserved_u16;
-
-        /// Native function extra.
-        struct {
-          bool _nf_is_ref_counted;
-          uint8_t _nf_reserved;
-        };
 
         /// Native array extra.
         struct {
@@ -158,6 +149,7 @@ struct object_base {
   }
 
   ZB_CK_INLINE zs::array_object& as_array() const noexcept { return *_array; }
+  ZB_CK_INLINE zs::capture_object& as_capture() const noexcept { return *_capture; }
   ZB_CK_INLINE zs::struct_object& as_struct() const noexcept { return *_struct; }
   ZB_CK_INLINE zs::struct_instance_object& as_struct_instance() const noexcept { return *_struct_instance; }
   ZB_CK_INLINE zs::table_object& as_table() const noexcept { return *_table; }
@@ -176,6 +168,8 @@ struct object_base {
     return *_native_array_interface;
   }
 
+  ZB_CK_INLINE const zs::parameter_list_function_t& as_native_pfunction() const noexcept { return _npfct; }
+
   template <class T>
   ZB_CK_INLINE zs::native_array_object<T>& as_native_array() const noexcept {
     constexpr native_array_type native_type = to_native_array_type<T>();
@@ -191,6 +185,7 @@ struct object_base {
   }
 
   static constexpr const uint32_t k_string_mask = zs::constants::k_string_mask;
+  static constexpr const uint32_t k_cstring_mask = zs::constants::k_cstring_mask;
   static constexpr const uint32_t k_number_mask = zs::constants::k_number_mask;
   static constexpr const uint32_t k_number_or_bool_mask = zs::constants::k_number_or_bool_mask;
   static constexpr const uint32_t k_function_mask = zs::constants::k_function_mask;
@@ -201,8 +196,11 @@ struct object_base {
 
   ZS_CK_INLINE_CXPR object_type get_type() const noexcept;
   ZS_CK_INLINE_CXPR bool is_type(object_type t) const noexcept;
+
   ZS_CK_INLINE_CXPR bool is_null() const noexcept;
   ZS_CK_INLINE_CXPR bool is_none() const noexcept;
+  ZS_CK_INLINE_CXPR bool is_null_or_none() const noexcept;
+
   ZS_CK_INLINE_CXPR bool is_integer() const noexcept;
   ZS_CK_INLINE_CXPR bool is_float() const noexcept;
   ZS_CK_INLINE_CXPR bool is_bool() const noexcept;
@@ -223,10 +221,13 @@ struct object_base {
   ZS_CK_INLINE_CXPR bool is_mutable_string() const noexcept;
   ZS_CK_INLINE_CXPR bool is_native_closure() const noexcept;
   ZS_CK_INLINE_CXPR bool is_native_function() const noexcept;
+  ZS_CK_INLINE_CXPR bool is_native_pfunction() const noexcept;
   ZS_CK_INLINE_CXPR bool is_raw_pointer() const noexcept;
   ZS_CK_INLINE_CXPR bool is_node() const noexcept;
   ZS_CK_INLINE_CXPR bool is_function_prototype() const noexcept;
+  ZS_CK_INLINE_CXPR bool is_capture() const noexcept;
   ZS_CK_INLINE_CXPR bool is_string() const noexcept;
+  ZS_CK_INLINE_CXPR bool is_cstring() const noexcept;
   ZS_CK_INLINE_CXPR bool is_number() const noexcept;
   ZS_CK_INLINE_CXPR bool is_number_or_bool() const noexcept;
   ZS_CK_INLINE_CXPR bool is_function() const noexcept;
@@ -248,6 +249,11 @@ struct object_base {
 
   template <class T, class... Args>
   ZS_CK_INLINE_CXPR bool is_type(T t, Args... args) const noexcept;
+
+  template <class T, class... Args>
+  ZS_CK_INLINE_CXPR bool is_not_type(T t, Args... args) const noexcept {
+    return !is_type(t, args...);
+  }
 
   ZS_CK_INLINE_CXPR bool is_bool_convertible() const noexcept;
   ZS_CK_INLINE_CXPR bool is_integer_convertible() const noexcept;
@@ -283,11 +289,16 @@ struct object_base {
 
   ZS_CHECK std::string_view get_long_string_unchecked() const noexcept;
   ZS_CHECK std::string_view get_string_view_unchecked() const noexcept;
-  ZS_CHECK std::string_view get_string_unchecked() const noexcept;
   ZS_CHECK std::string_view get_mutable_string_unchecked() const noexcept;
+
+  ZS_CHECK std::string_view get_string_unchecked() const noexcept;
+  ZS_CHECK const char* get_cstring_unchecked() const noexcept;
 
   template <object_type ObjType>
   ZS_CHECK inline std::string_view get_string_unchecked() const noexcept;
+
+  template <object_type ObjType>
+  ZS_CHECK inline const char* get_cstring_unchecked() const noexcept;
 
   /// @{
   ///
@@ -297,6 +308,7 @@ struct object_base {
   ZS_CHECK zs::error_result convert_to_float(float_t& v) const noexcept;
   ZS_CHECK zs::error_result convert_to_string(zs::string& s) const;
   ZS_CHECK zs::error_result convert_to_string(std::string& s) const;
+  ZS_CHECK zs::error_result convert_to_string_object(zs::engine* eng, zs::object& s) const;
 
   //
   // MARK: Stream.
@@ -320,6 +332,8 @@ private:
 public:
   ZS_CHECK std::string to_json() const;
   ZS_CHECK std::string convert_to_string() const;
+
+  ZS_CHECK zs::error_result to_json(zs::string& output) const;
 
   std::ostream& stream_to_json(std::ostream& s) const;
   std::ostream& stream_to_json_compact(std::ostream& s) const;
@@ -454,6 +468,7 @@ ZS_CXPR object_type object_base::get_type() const noexcept { return _type; }
 ZS_CXPR bool object_base::is_type(object_type t) const noexcept { return _type == t; }
 ZS_CXPR bool object_base::is_null() const noexcept { return _type == k_null; }
 ZS_CXPR bool object_base::is_none() const noexcept { return _type == k_none; }
+ZS_CXPR bool object_base::is_null_or_none() const noexcept { return _type == k_null or _type == k_none; }
 ZS_CXPR bool object_base::is_integer() const noexcept { return _type == k_integer; }
 ZS_CXPR bool object_base::is_float() const noexcept { return _type == k_float; }
 ZS_CXPR bool object_base::is_bool() const noexcept { return _type == k_bool; }
@@ -474,19 +489,21 @@ ZS_CXPR bool object_base::is_weak_ref() const noexcept { return _type == k_weak_
 ZS_CXPR bool object_base::is_long_string() const noexcept { return _type == k_long_string; }
 ZS_CXPR bool object_base::is_small_string() const noexcept { return _type == k_small_string; }
 ZS_CXPR bool object_base::is_string_view() const noexcept { return _type == k_string_view; }
-
 ZS_CXPR bool object_base::is_mutable_string() const noexcept { return _type == k_mutable_string; }
-
 ZS_CXPR bool object_base::is_native_closure() const noexcept { return _type == k_native_closure; }
 ZS_CXPR bool object_base::is_native_function() const noexcept { return _type == k_native_function; }
+ZS_CXPR bool object_base::is_native_pfunction() const noexcept { return _type == k_native_pfunction; }
 ZS_CXPR bool object_base::is_node() const noexcept { return _type == k_node; }
-
 ZS_CXPR bool object_base::is_raw_pointer() const noexcept { return _type == k_raw_pointer; }
-
 ZS_CXPR bool object_base::is_function_prototype() const noexcept { return _type == k_function_prototype; }
+ZS_CXPR bool object_base::is_capture() const noexcept { return _type == k_capture; }
 
 ZS_CXPR bool object_base::is_string() const noexcept {
   return zs::get_object_type_mask(get_type()) & k_string_mask;
+}
+
+ZS_CXPR bool object_base::is_cstring() const noexcept {
+  return zs::get_object_type_mask(get_type()) & k_cstring_mask;
 }
 
 ZS_CXPR bool object_base::is_number() const noexcept {
@@ -501,9 +518,7 @@ ZS_CXPR bool object_base::is_function() const noexcept {
   return zs::get_object_type_mask(get_type()) & k_function_mask;
 }
 
-ZS_CXPR bool object_base::is_ref_counted() const noexcept {
-  return _type >= k_long_string or (_type == object_type::k_native_function2 and _nf_is_ref_counted);
-}
+ZS_CXPR bool object_base::is_ref_counted() const noexcept { return _type >= k_long_string; }
 
 ZS_CXPR bool object_base::is_delegable() const noexcept { return zs::is_object_type_delegable(get_type()); }
 
@@ -516,6 +531,7 @@ ZS_CXPR bool object_base::is_color() const noexcept {
 ZS_CXPR bool object_base::is_array_iterator() const noexcept {
   return is_extension() and _ext_type == extension_type::kext_array_iterator;
 }
+
 ZS_CXPR bool object_base::is_table_iterator() const noexcept {
   return is_extension() and _ext_type == extension_type::kext_table_iterator;
 }
@@ -584,6 +600,23 @@ ZS_CHECK inline std::string_view object_base::get_string_unchecked() const noexc
   else {
     zb_static_error("not a string type");
     return {};
+  }
+}
+
+template <object_type ObjType>
+ZS_CHECK inline const char* object_base::get_cstring_unchecked() const noexcept {
+  if constexpr (ObjType == k_small_string) {
+    return get_small_string_unchecked().data();
+  }
+  else if constexpr (ObjType == k_long_string) {
+    return get_long_string_unchecked().data();
+  }
+  else if constexpr (ObjType == k_mutable_string) {
+    return get_mutable_string_unchecked().data();
+  }
+  else {
+    zb_static_error("not a valid string type");
+    return nullptr;
   }
 }
 } // namespace zs.

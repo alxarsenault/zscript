@@ -14,6 +14,7 @@ set(ZSCRIPT_DOC_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/doc")
 set(ZSCRIPT_TOOLS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tools")
 set(ZSCRIPT_CMAKE_TOOLS_DIRECTORY "${ZSCRIPT_TOOLS_DIRECTORY}/cmake")
 set(ZSCRIPT_SAMPLES_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/samples")
+set(ZSCRIPT_MODULES_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/modules")
 set(ZSCRIPT_EXAMPLES_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/examples")
 set(ZSCRIPT_INCLUDE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set(ZSCRIPT_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -53,16 +54,21 @@ endif()
 
 add_sub_directories(${CMAKE_CURRENT_SOURCE_DIR}/libs/*)
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/zbase)
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/zbase)
 
-
+set_target_properties(zbase PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY "${ZSCRIPT_BIN_DIRECTORY}"
+  ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${ZSCRIPT_BIN_DIRECTORY}"
+  ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${ZSCRIPT_BIN_DIRECTORY}"
+  OUTPUT_NAME "zbase"
+)
 
 
 
 set(ZSCRIPT_STATIC_LIB_NAME zscript)
 
 file(GLOB_RECURSE ZSCRIPT_HEADER_FILES
-  "${ZSCRIPT_INCLUDE_DIRECTORY}/zscript/*.h")
+  "${ZSCRIPT_INCLUDE_DIRECTORY}/*.h")
 
 file(GLOB_RECURSE ZSCRIPT_SOURCE_FILES
   "${ZSCRIPT_SOURCE_DIRECTORY}/*.cpp"
@@ -73,7 +79,7 @@ file(GLOB_RECURSE ZSCRIPT_SOURCE_FILES
 file(GLOB_RECURSE ZSCRIPT_SOURCE_CC_FILES
   "${ZSCRIPT_SOURCE_DIRECTORY}/*.cc")
 
-source_group(TREE "${ZSCRIPT_INCLUDE_DIRECTORY}/zscript"
+source_group(TREE "${ZSCRIPT_INCLUDE_DIRECTORY}"
   PREFIX include
   FILES ${ZSCRIPT_HEADER_FILES})
 
@@ -136,7 +142,19 @@ target_link_libraries(${ZSCRIPT_STATIC_LIB_NAME} PUBLIC
 
 target_link_libraries(${ZSCRIPT_STATIC_LIB_NAME} PRIVATE
   bitsery
+  uv_a
+  "-framework CoreFoundation"
+  "-framework CoreGraphics"
+  "-framework ImageIO"
 )
+
+set_target_properties(${ZSCRIPT_STATIC_LIB_NAME} PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY "${ZSCRIPT_BIN_DIRECTORY}"
+  ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${ZSCRIPT_BIN_DIRECTORY}"
+  ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${ZSCRIPT_BIN_DIRECTORY}"
+  OUTPUT_NAME "zscript"
+)
+
 
 # add_custom_command(
 # OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/std/z_std.h"
@@ -159,3 +177,18 @@ add_sub_directories(${CMAKE_CURRENT_SOURCE_DIR}/tests/*)
 
 add_sub_directories(${CMAKE_CURRENT_SOURCE_DIR}/apps/*)
 
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/zapplib)
+
+install(TARGETS zscript-app RUNTIME DESTINATION "/usr/local/bin")
+
+# add_custom_target(
+#     main ALL
+#   COMMAND "cp '${ZSCRIPT_BIN_DIRECTORY}/zscript' '/usr/local/bin/'"
+# )
+
+# add_custom_command(
+    # OUTPUT "/usr/local/bin/zscript"
+    # COMMAND "cp ${ZSCRIPT_BIN_DIRECTORY}/zscript /usr/local/bin/zscript"
+# )
+
+# install(FILES ${CMAKE_CURRENT_BINARY_DIR}/program DESTINATION /usr/local/lib/)

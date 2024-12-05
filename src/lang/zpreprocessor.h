@@ -36,6 +36,7 @@ public:
   struct helper;
 
   // private:
+  zs::virtual_machine* _vm = nullptr;
   zs::vector<zs::macro> _macros;
   zs::object_unordered_set _imported_files_set;
   zs::object _uuid_map;
@@ -52,7 +53,7 @@ public:
   template <class ParserType>
   zs::error_result parse(zs::string& input_code, zs::string& output_code, bool& found_any) {
     ParserType parser(this);
-    if (auto err = parser.parse(input_code, output_code, found_any)) {
+    if (auto err = parser.parse(input_code, output_code, found_any, _vm)) {
       return err;
     }
 

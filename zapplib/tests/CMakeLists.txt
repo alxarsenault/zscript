@@ -1,0 +1,34 @@
+
+set(TEST_NAME zapplib-tests)
+set(ZBASE_TESTS_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+file(GLOB_RECURSE ZBASE_TESTS_SOURCE_FILES
+  "${ZBASE_TESTS_SOURCE_DIRECTORY}/*.h"
+  "${ZBASE_TESTS_SOURCE_DIRECTORY}/*.cpp"
+)
+
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
+  FILES
+  ${ZBASE_TESTS_SOURCE_FILES})
+
+add_executable(${TEST_NAME} ${ZBASE_TESTS_SOURCE_FILES})
+
+# wp_add_test(${TEST_NAME})
+target_link_libraries(${TEST_NAME} PUBLIC catch2)
+
+set_target_properties(${TEST_NAME} PROPERTIES
+  FOLDER tests
+  XCODE_GENERATE_SCHEME YES)
+
+target_include_directories(${TEST_NAME}
+  PUBLIC
+  ${ZBASE_TESTS_SOURCE_DIRECTORY})
+
+target_link_libraries(${TEST_NAME} PUBLIC zapplib)
+
+set_source_files_properties(${ZBASE_TESTS_SPEC_SOURCE_FILES}
+  PROPERTIES HEADER_FILE_ONLY TRUE)
+
+target_compile_definitions(${TEST_NAME}
+  PUBLIC
+  -DZBASE_TESTS_RESOURCES_DIRECTORY="${CMAKE_CURRENT_SOURCE_DIR}/resources")

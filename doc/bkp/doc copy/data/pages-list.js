@@ -1,1 +1,0 @@
-const pages_list = ["index","import"]

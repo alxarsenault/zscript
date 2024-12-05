@@ -430,21 +430,7 @@ var a = #as_string("/Users/alexarse/Develop/zscript/tests/unit_tests/resources/d
 var a = #as_table("/Users/alexarse/Develop/zscript/tests/unit_tests/resources/data/obj_01.json");
 ```
 
-#### 4.10.7 define  <sub><sup>[var-decl-042]</sup></sub>
-
-```zscript
-#define k_my_value = 54;
-var a = @@k_my_value;
-```
-
-#### 4.10.8 define  <sub><sup>[var-decl-043]</sup></sub>
-
-```zscript
-#define k_my_value = 54;
-var a = @@k_my_value;
-```
-
-#### 4.10.9 blabalbal  <sub><sup>[var-decl-044]</sup></sub>
+#### 4.10.7 blabalbal  <sub><sup>[var-decl-042]</sup></sub>
 
 ```zscript
 var a = #load_json_file("/Users/alexarse/Develop/zscript/tests/unit_tests/resources/data/obj_01.json");

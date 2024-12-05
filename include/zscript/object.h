@@ -188,7 +188,7 @@ public:
         ._reserved_u16 = 0,
         ._type = zs::object_type::k_small_string,
         ._flags = zs::object_flags_t::f_none } {
-    zbase_assert(s.size() <= constants::k_small_string_max_size, "invalid small_string size");
+    ZS_ASSERT(s.size() <= constants::k_small_string_max_size, "invalid small_string size");
     zb::memcpy(_sbuffer, s.data(), zb::minimum(s.size(), constants::k_small_string_max_size));
   }
 
@@ -230,7 +230,7 @@ public:
         ._type = zs::object_type::k_string_view,
         ._flags = zs::object_flags_t::f_none } {
 
-    zbase_assert(s.size() <= (std::numeric_limits<uint32_t>::max)(), "wrong size");
+    ZS_ASSERT(s.size() <= (std::numeric_limits<uint32_t>::max)(), "wrong size");
   }
 
   ZS_CK_INLINE_CXPR static object create_string_view(std::string_view s) {
@@ -243,7 +243,13 @@ public:
 
   ZS_CHECK static object create_string(zs::engine* eng, std::string_view s);
   ZS_CHECK static object create_long_string(zs::engine* eng, std::string_view s);
+
   ZS_CHECK static object create_mutable_string(zs::engine* eng, std::string_view s);
+  ZS_CHECK static object create_mutable_string(zs::engine* eng, zs::string&& s);
+
+  ZS_CK_INLINE static object create_mutable_string(zs::engine* eng, const char* s) {
+    return create_mutable_string(eng, std::string_view(s));
+  }
 
   ZS_CHECK static object create_concat_string(zs::engine* eng, std::string_view s1, std::string_view s2);
   ZS_CHECK static object create_concat_string(
@@ -309,60 +315,37 @@ public:
 
   ZS_INLINE_CXPR object(native_array_type na_type) noexcept;
 
-  ZS_CK_INLINE_CXPR static object create_native_function(zs::native_cpp_closure_t fct) noexcept;
+  //
+  // MARK: Native functions.
+  //
+
+  /// Create a native_function.
+  ZS_INLINE_CXPR object(zs::function_t fct) noexcept;
+
+  ZS_CK_INLINE_CXPR static object create_native_function(zs::function_t fct) noexcept { return object(fct); }
+
+  //
+  // MARK: Native pfunctions.
+  //
+
+  /// Create a native_pfunction.
+  ZS_INLINE_CXPR object(zs::parameter_list_function_t pfct) noexcept;
+
+  ZS_CK_INLINE_CXPR static object create_native_pfunction(zs::parameter_list_function_t pfct) noexcept {
+    return object(pfct);
+  }
 
   //
   // MARK: Native Closure.
   //
 
-  explicit object(native_closure_object* obj, bool should_retain) noexcept;
+  //  explicit object(native_closure_object* obj, bool should_retain) noexcept;
 
-  ZS_CHECK static object create_native_closure(zs::engine* eng, zs::native_cclosure_t nc);
-  ZS_CHECK static object create_native_closure(zs::engine* eng, zs::native_cpp_closure_t nc);
+  ZS_CHECK static object create_native_closure(zs::engine* eng, zs::function_t nc);
   ZS_CHECK static object create_native_closure(zs::engine* eng, zs::native_closure* nc);
 
   template <class Fct>
   ZS_CHECK inline static object create_native_closure(zs::engine* eng, Fct&& fct);
-
-  // TODO: Change this name.
-
-  template <class Fct>
-  ZS_CHECK inline static object create_native_closure_function(zs::engine* eng, Fct&& fct);
-
-  template <class R, class... Args>
-  ZS_CHECK inline static object create_native_closure_function(
-      zs::engine* eng, zb::function_pointer<R, Args...> fct);
-
-  template <class ClassType, class R, class... Args>
-  ZS_CHECK inline static object create_native_closure_function(
-      zs::engine* eng, zb::member_function_pointer<ClassType, R, Args...> fct, const zs::object& uid = {});
-
-  template <class ClassType, class R, class... Args>
-  ZS_CHECK inline static object create_native_closure_function(zs::engine* eng,
-      zb::const_member_function_pointer<ClassType, R, Args...> fct, const zs::object& uid = {});
-
-  //
-  //
-  //
-
-  ZS_INLINE_CXPR object(zs::native_cpp_closure_t fct) noexcept;
-
-  ZS_INLINE_CXPR object(zs::closure_t fct) noexcept;
-
-  template <class T>
-    requires(!std::is_same_v<T, zs::closure_t>) and std::is_convertible_v<T, zs::closure_t>
-  ZS_INLINE_CXPR object(T fct) noexcept;
-
-  template <class T>
-    requires std::is_same_v<T, zs::closure_t> or std::is_convertible_v<T, zs::closure_t>
-  inline object& operator=(T fct) noexcept {
-    *this = object(zs::closure_t(fct));
-    return *this;
-  }
-
-  //
-  // MARK: Create object
-  //
 
   //
   // Create array.
@@ -378,6 +361,7 @@ public:
   //
 
   ZS_CHECK static object create_closure(zs::engine* eng, const object& fct_prototype, const object& root);
+  ZS_CHECK static object create_closure(zs::engine* eng, object&& fct_prototype, const object& root);
 
   //
   // MARK: User Data.
@@ -468,6 +452,7 @@ public:
 
   bool is_if_true() const noexcept;
   bool is_false() const noexcept;
+  bool is_double_question_mark_true() const noexcept;
 
   inline explicit operator bool() const noexcept { return !is_false(); }
 
@@ -532,7 +517,8 @@ public:
   //
 
   zs::error_result set_delegate(object delegate) noexcept;
-  zs::table_object* get_delegate() const noexcept;
+  zs::error_result get_delegate(object& delegate) const noexcept;
+  zs::object get_delegate() const noexcept;
 
   bool has_delegate() const noexcept;
 
@@ -574,54 +560,54 @@ public:
     template <class T>
       requires std::is_integral_v<T>
     ZS_INLINE operator T() const noexcept {
-      zbase_assert(obj.is_integer_convertible(), "Not integer convertible object");
+      ZS_ASSERT(obj.is_integer_convertible(), "Not integer convertible object");
       return (T)obj.convert_to_integer_unchecked();
     }
 
     template <class T>
       requires std::is_floating_point_v<T>
     ZS_INLINE operator T() const noexcept {
-      zbase_assert(obj.is_float_convertible(), "Not float convertible object");
+      ZS_ASSERT(obj.is_float_convertible(), "Not float convertible object");
       return (T)obj.convert_to_float_unchecked();
     }
 
     ZS_INLINE operator node_object&() const noexcept {
-      zbase_assert(obj.is_node(), "Not a node object");
+      ZS_ASSERT(obj.is_node(), "Not a node object");
       return obj.as_node();
     }
 
     ZS_INLINE operator array_object&() const noexcept {
-      zbase_assert(obj.is_array(), "Not an array object");
+      ZS_ASSERT(obj.is_array(), "Not an array object");
       return obj.as_array();
     }
 
     ZS_INLINE operator table_object&() const noexcept {
-      zbase_assert(obj.is_table(), "Not a table object");
+      ZS_ASSERT(obj.is_table(), "Not a table object");
       return obj.as_table();
     }
 
     ZS_INLINE operator string_object&() const noexcept {
-      zbase_assert(obj.is_long_string(), "Not a long string object");
+      ZS_ASSERT(obj.is_long_string(), "Not a long string object");
       return obj.as_string();
     }
 
     ZS_INLINE operator user_data_object&() const noexcept {
-      zbase_assert(obj.is_user_data(), "Not a user data object");
+      ZS_ASSERT(obj.is_user_data(), "Not a user data object");
       return obj.as_udata();
     }
 
     ZS_INLINE operator reference_counted_object&() const noexcept {
-      zbase_assert(obj.is_ref_counted(), "Not a reference counted object");
+      ZS_ASSERT(obj.is_ref_counted(), "Not a reference counted object");
       return obj.as_ref_counted();
     }
 
     ZS_INLINE operator delegate_object&() const noexcept {
-      zbase_assert(obj.is_delegable(), "Not a delegable object");
+      ZS_ASSERT(obj.is_delegable(), "Not a delegable object");
       return obj.as_delegate();
     }
 
     ZS_INLINE operator std::string_view() const noexcept {
-      zbase_assert(obj.is_string(), "Not a string object");
+      ZS_ASSERT(obj.is_string(), "Not a string object");
       return obj.get_string_unchecked();
     }
   };
@@ -631,17 +617,14 @@ public:
 private:
   struct helper;
 
-  template <class Fct, class ClassType, class R, class... Args>
-  ZS_CHECK inline static object create_native_closure_function(zs::engine* eng,
-      zb::member_function_pointer_wrapper<Fct, ClassType, R, Args...> fct, const zs::object& uid = {});
-
-  template <typename ClassType, typename ReturnType, class Fct, typename... Args>
-  inline static object create_native_closure_function(zs::engine* eng, Fct&& fct, zb::type_list<Args...>);
+  struct check_null_tag {};
+  ZS_INLINE_CXPR object(check_null_tag, object_base&& obase, bool _is_null) noexcept;
 };
 
 //
+// MARK: Implementation.
 //
-//
+
 struct parameter_info {
   inline parameter_info(zs::object _name, bool opt = false, uint32_t _mask = -1)
       : name(_name)
@@ -683,28 +666,37 @@ public:
   using span::size;
   using span::operator[];
 
-  ZB_INLINE parameter_list(const span& s) noexcept
+  ZS_INLINE_CXPR parameter_list(const span& s) noexcept
       : span(s) {}
 
-  ZB_INLINE parameter_list(const std::span<object>& s) noexcept
+  ZS_INLINE_CXPR parameter_list(const zb::span<object>& s) noexcept
       : span(s) {}
 
-  ZB_INLINE parameter_list(const zb::span<object>& s) noexcept
+  ZS_INLINE_CXPR parameter_list(const std::span<const object>& s) noexcept
       : span(s) {}
 
-  ZB_INLINE parameter_list(const parameter_list&) noexcept = default;
-  ZB_INLINE parameter_list(parameter_list&&) noexcept = default;
+  ZS_INLINE_CXPR parameter_list(const std::span<object>& s) noexcept
+      : span(s) {}
 
-  ZB_INLINE parameter_list& operator=(const parameter_list&) noexcept = default;
-  ZB_INLINE parameter_list& operator=(parameter_list&&) noexcept = default;
+  ZS_INLINE_CXPR parameter_list(const std::initializer_list<const object>& s) noexcept
+      : span(s) {}
 
-  ZB_CHECK ZB_INLINE reference operator()(difference_type n) const noexcept {
+  ZS_INLINE_CXPR parameter_list(const std::initializer_list<object>& s) noexcept
+      : span(s) {}
+
+  ZS_INLINE_CXPR parameter_list(const parameter_list&) noexcept = default;
+  ZS_INLINE_CXPR parameter_list(parameter_list&&) noexcept = default;
+
+  ZS_INLINE_CXPR parameter_list& operator=(const parameter_list&) noexcept = default;
+  ZS_INLINE_CXPR parameter_list& operator=(parameter_list&&) noexcept = default;
+
+  ZS_CK_INLINE_CXPR reference operator()(difference_type n) const noexcept {
     const size_t sz = size();
-    zbase_assert(sz, "call operator[] in an empty vector");
+    ZS_ASSERT(sz, "call operator[] in an empty vector");
     return span::operator[]((n + sz) % sz);
   }
 
-  ZB_CHECK ZB_INLINE object opt_get(difference_type n) const noexcept {
+  ZS_CK_INLINE_CXPR object opt_get(difference_type n) const noexcept {
     const size_t sz = size();
     n = (n + sz) % sz;
     if (n >= sz) {
@@ -713,7 +705,7 @@ public:
     return span::operator[](n);
   }
 
-  ZB_CHECK ZB_INLINE object opt_get(difference_type n, const object& obj) const noexcept {
+  ZS_CK_INLINE_CXPR object opt_get(difference_type n, const object& obj) const noexcept {
     const size_t sz = size();
     n = (n + sz) % sz;
     if (n >= sz) {
@@ -722,30 +714,30 @@ public:
     return span::operator[](n);
   }
 
-  ZB_CHECK ZB_INLINE pointer data(size_type index) const noexcept { return data() + index; }
+  ZS_CK_INLINE_CXPR pointer data(size_type index) const noexcept { return data() + index; }
 
-  ZB_CHECK ZB_INLINE reference get_self() const noexcept {
-    zbase_assert(!empty(), "No self argument");
+  ZS_CK_INLINE_CXPR reference get_self() const noexcept {
+    ZS_ASSERT(!empty(), "No self argument");
     return span::operator[](0);
   }
 
-  ZB_CHECK ZB_INLINE bool has_arguments() const noexcept { return size() > 1; }
+  ZS_CK_INLINE_CXPR bool has_arguments() const noexcept { return size() > 1; }
 
-  ZB_CHECK ZB_INLINE bool has_meta_arguments() const noexcept {
+  ZS_CK_INLINE_CXPR bool has_meta_arguments() const noexcept {
     return size() > 1 and span::operator[](1).is_meta_argument();
   }
 
-  ZB_CHECK ZB_INLINE bool has_normal_arguments() const noexcept {
+  ZS_CK_INLINE_CXPR bool has_normal_arguments() const noexcept {
     const size_t sz = size();
     return sz > 2 or (sz > 1 and !span::operator[](1).is_meta_argument());
   }
 
-  ZB_CHECK ZB_INLINE reference get_meta_argument_object() const noexcept {
-    zbase_assert(has_meta_arguments(), "No meta arguments");
+  ZS_CK_INLINE_CXPR reference get_meta_argument_object() const noexcept {
+    ZS_ASSERT(has_meta_arguments(), "No meta arguments");
     return span::operator[](1);
   }
 
-  ZB_CHECK ZB_INLINE span get_normal_arguments() const noexcept {
+  ZS_CK_INLINE_CXPR span get_normal_arguments() const noexcept {
     const size_t sz = size();
     if (sz <= 1) {
       return {};
@@ -758,7 +750,7 @@ public:
     return span::subspan(1);
   }
 
-  ZB_CHECK ZB_INLINE span get_meta_arguments() const noexcept;
+  ZS_CHECK inline span get_meta_arguments() const noexcept;
 };
 
 //
@@ -778,9 +770,6 @@ ZS_CK_INLINE object _ss(std::string_view s) noexcept {
   return object::create_small_string(s);
 }
 
-/// Create a small_string object.
-ZS_CK_INLINE object _ss(const char* s) noexcept { return _ss(std::string_view(s)); }
-
 /// Create a string object.
 template <class EngineAccess>
 ZS_CK_INLINE object _s(EngineAccess&& a_eng, std::string_view s) noexcept {
@@ -793,6 +782,13 @@ ZS_CK_INLINE_CXPR object _sv(std::string_view s) {
   // clang-format off
   return object{{{._sview=s.data()}, {{{._sview_size=(uint32_t)s.size()}, {0}, k_string_view, f_none}}}, false};
   // clang-format on
+}
+
+/// Create a closure object.
+template <class EngineAccess, class FpoObj>
+  requires std::is_same_v<object, std::remove_cvref_t<FpoObj>>
+ZS_CK_INLINE object _c(EngineAccess&& a_eng, FpoObj&& fct_prototype, const object& root) noexcept {
+  return object::create_closure(zs::get_engine(a_eng), std::forward<FpoObj>(fct_prototype), root);
 }
 
 /// Create a native_closure object.
@@ -840,7 +836,10 @@ ZS_CK_INLINE object _u(zs::engine* eng, Args&&... args) {
   return zs::object::create_user_data<T>(eng, std::forward<Args>(args)...);
 }
 
-ZS_CK_INLINE object _nf(zs::native_cpp_closure_t fct) noexcept { return object::create_native_function(fct); }
+// ZS_CK_INLINE object _nf(zs::function_t fct) noexcept { return object::create_native_function(fct); }
+
+ZS_CK_INLINE object _nf(zs::function_t fct) noexcept { return object(fct); }
+ZS_CK_INLINE object _npf(zs::parameter_list_function_t pfct) noexcept { return object(pfct); }
 
 namespace literals {
   inline constexpr zs::object operator""_ss(const char* str, size_t) noexcept { return zs::_ss(str); }
@@ -866,6 +865,7 @@ namespace literals {
 #include <zscript/objects/native_closure.h>
 #include <zscript/objects/typed_array.h>
 #include <zscript/objects/closure.h>
+#include <zscript/objects/capture.h>
 #undef ZS_SCRIPT_INCLUDE_OBJECTS
 
 //
@@ -990,9 +990,9 @@ ZS_CXPR object::object(zs::engine*, float v) noexcept
 ZS_CXPR object::object(zs::error_code err) noexcept
     : object_base{ ZS_OBJECT_INITIALIZER(_error, err, k_error) } {
 
-  if (err == zs::error_code::success) {
-    *this = nullptr;
-  }
+  //  if (err == zs::error_code::success) {
+  //    *this = nullptr;
+  //  }
 }
 
 ZS_CXPR object::object(zs::error_result err) noexcept
@@ -1052,16 +1052,13 @@ object::object(zs::engine* eng, std::span<const zs::object> list)
 ZS_CXPR object::object(native_array_type na_type) noexcept
     : object_base{ ZS_OBJECT_INITIALIZER(_int, (int_t)na_type, k_integer, object_flags_t::f_array_type) } {}
 
-ZS_CXPR object::object(zs::native_cpp_closure_t fct) noexcept
-    : object_base{ ZS_OBJECT_INITIALIZER(_nfct, fct, k_native_function) } {}
+ZS_CXPR object::object(zs::function_t fct) noexcept
+    : object(check_null_tag{}, object_base{ ZS_OBJECT_INITIALIZER(_nfct, fct, k_native_function) },
+          fct == nullptr) {}
 
-ZS_CXPR object::object(zs::closure_t fct) noexcept
-    : object_base{ ZS_OBJECT_INITIALIZER(_fct, fct, k_native_function2) } {}
-
-template <class T>
-  requires(!std::is_same_v<T, zs::closure_t>) and std::is_convertible_v<T, zs::closure_t>
-ZS_INLINE_CXPR object::object(T fct) noexcept
-    : object_base{ ZS_OBJECT_INITIALIZER(_fct, (zs::closure_t)fct, k_native_function2) } {}
+ZS_CXPR object::object(zs::parameter_list_function_t pfct) noexcept
+    : object(check_null_tag{}, object_base{ ZS_OBJECT_INITIALIZER(_npfct, pfct, k_native_pfunction) },
+          pfct == nullptr) {}
 
 object object::create_table(zs::engine* eng, std::initializer_list<std::pair<zs::object, zs::object>> list) {
 
@@ -1282,8 +1279,11 @@ object object::create_table_iterator(zs::object_unordered_map<object>::iterator 
   return obj;
 }
 
-ZB_CHECK ZB_INLINE parameter_list::span parameter_list::get_meta_arguments() const noexcept {
-  zbase_assert(has_meta_arguments(), "No meta arguments");
+ZS_INLINE_CXPR object::object(object::check_null_tag, object_base&& obase, bool _is_null) noexcept
+    : object_base(_is_null ? object_base{ ZS_OBJECT_INITIALIZER(_value, 0, k_null) } : obase) {}
+
+parameter_list::span parameter_list::get_meta_arguments() const noexcept {
+  ZS_ASSERT(has_meta_arguments(), "No meta arguments");
   const object& meta = span::operator[](1);
 
   if (meta.is_array()) {

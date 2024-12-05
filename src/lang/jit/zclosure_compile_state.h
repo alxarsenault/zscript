@@ -23,19 +23,36 @@
 
 namespace zs {
 
+using target_t = uint8_t;
+
+inline constexpr const target_t k_invalid_target = -1;
+
+inline constexpr const size_t k_maximum_target_index = (std::numeric_limits<uint8_t>::max)() - 1;
+
 // The custom type_mask value is a uint64_t.
 inline constexpr size_t k_max_restricted_type_check = 64;
 
+inline constexpr uint_t k_captured_end_op = (std::numeric_limits<uint_t>::max)();
+
 class function_prototype_object;
+
+struct scoped_local_var_info_t;
+struct local_var_info_t;
 
 struct variable_type_info_t {
   inline variable_type_info_t() noexcept = default;
 
-  inline variable_type_info_t(int_t idx, uint32_t _mask = 0, uint64_t _custom_mask = 0, bool isconst = false)
-      : index(idx)
-      , mask{ _mask }
-      , custom_mask(_custom_mask)
-      , is_const(isconst) {}
+  inline variable_type_info_t(int_t index, uint32_t mask = 0, uint64_t custom_mask = 0, bool is_const = false)
+      : index(index)
+      , mask(mask)
+      , custom_mask(custom_mask)
+      , is_const(is_const) {}
+
+  inline variable_type_info_t(const scoped_local_var_info_t& lvar);
+  inline variable_type_info_t(const local_var_info_t& lvar);
+
+  inline bool has_mask() const noexcept { return mask != 0 or custom_mask != 0; }
+  inline bool has_custom_mask() const noexcept { return custom_mask != 0; }
 
   int_t index;
   uint32_t mask = 0;
@@ -55,22 +72,103 @@ struct line_info_op_t {
   }
 };
 
+struct scoped_local_var_info_t {
+  inline scoped_local_var_info_t() = default;
+
+  inline scoped_local_var_info_t(const object& name, int_t scope_id, uint_t start_op, uint_t end_op,
+      uint_t pos, uint32_t mask, uint64_t custom_mask, bool is_const)
+      : name(name)
+      , scope_id(scope_id)
+      , start_op(start_op)
+      , end_op(end_op)
+      , pos(pos)
+      , mask(mask)
+      , custom_mask(custom_mask)
+      , is_const(is_const) {}
+
+  ZS_CK_INLINE bool is_named() const noexcept { return name.is_string(); }
+
+  ZS_CK_INLINE bool is_named(const object& rhs_name) const noexcept {
+    return name.is_string() and name.get_string_unchecked() == rhs_name.get_string_unchecked();
+  }
+
+  object name;
+  int_t scope_id = 0;
+  uint_t start_op = 0;
+  uint_t end_op = 0;
+  uint_t pos = 0;
+  uint32_t mask = 0;
+  uint64_t custom_mask = 0;
+  bool is_const = false;
+};
+
+inline std::ostream& operator<<(std::ostream& s, const scoped_local_var_info_t& vinfo) {
+  s << vinfo.name.convert_to_string();
+  return s;
+}
+
 struct local_var_info_t {
   inline local_var_info_t() = default;
 
-  object _name;
-  uint_t _start_op = 0;
-  uint_t _end_op = 0;
-  uint_t _pos = 0;
-  uint32_t _mask = 0;
-  uint64_t _custom_mask = 0;
-  bool _is_const = false;
+  inline local_var_info_t(const object& name, uint_t start_op, uint_t end_op, uint_t pos, uint32_t mask,
+      uint64_t custom_mask, bool is_const)
+      : name(name)
+      , start_op(start_op)
+      , end_op(end_op)
+      , pos(pos)
+      , mask(mask)
+      , custom_mask(custom_mask)
+      , is_const(is_const) {}
+
+  inline local_var_info_t(const scoped_local_var_info_t& lvi)
+      : name(lvi.name)
+      , start_op(lvi.start_op)
+      , end_op(lvi.end_op)
+      , pos(lvi.pos)
+      , mask(lvi.mask)
+      , custom_mask(lvi.custom_mask)
+      , is_const(lvi.is_const) {}
+
+  inline local_var_info_t(scoped_local_var_info_t&& lvi)
+      : name(std::move(lvi.name))
+      , start_op(lvi.start_op)
+      , end_op(lvi.end_op)
+      , pos(lvi.pos)
+      , mask(lvi.mask)
+      , custom_mask(lvi.custom_mask)
+      , is_const(lvi.is_const) {}
+
+  ZS_CK_INLINE bool is_named() const noexcept { return name.is_string(); }
+
+  ZS_CK_INLINE bool is_named(const object& rhs_name) const noexcept {
+    return name.is_string() and name.get_string_unchecked() == rhs_name.get_string_unchecked();
+  }
+
+  object name;
+  uint_t start_op = 0;
+  uint_t end_op = 0;
+  uint_t pos = 0;
+  uint32_t mask = 0;
+  uint64_t custom_mask = 0;
+  bool is_const = false;
 };
 
 inline std::ostream& operator<<(std::ostream& s, const local_var_info_t& vinfo) {
-  s << vinfo._name.convert_to_string();
+  s << vinfo.name.convert_to_string();
   return s;
 }
+
+variable_type_info_t::variable_type_info_t(const scoped_local_var_info_t& lvar)
+    : index(lvar.pos)
+    , mask{ lvar.mask }
+    , custom_mask(lvar.custom_mask)
+    , is_const(lvar.is_const) {}
+
+variable_type_info_t::variable_type_info_t(const local_var_info_t& lvar)
+    : index(lvar.pos)
+    , mask{ lvar.mask }
+    , custom_mask(lvar.custom_mask)
+    , is_const(lvar.is_const) {}
 
 struct captured_variable {
   enum class type_t : uint8_t { local, outer };
@@ -109,6 +207,46 @@ namespace jit {
         , _exported_names(zs::allocator<object>(eng))
         , _imported_files_set(zs::allocator<object>(eng)) {}
 
+    inline zs::error_result add_module_author(const object& author) {
+      ZS_ASSERT(_module_info.is_table());
+
+      object& authors = _module_info.as_table()["authors"];
+
+      if (authors.is_array()) {
+        authors.as_array().push(author);
+      }
+      else {
+        authors = zs::_a(_engine, { author });
+      }
+
+      return {};
+    }
+
+    inline zs::error_result add_module_name(const object& name) {
+      ZS_ASSERT(_module_info.is_table());
+      return _module_info.as_table().set_no_replace(zs::_ss("name"), name);
+    }
+
+    inline zs::error_result add_module_brief(const object& brief) {
+      ZS_ASSERT(_module_info.is_table());
+      return _module_info.as_table().set_no_replace(zs::_ss("brief"), brief);
+    }
+
+    inline zs::error_result add_module_version(const object& version) {
+      ZS_ASSERT(_module_info.is_table());
+      return _module_info.as_table().set_no_replace(zs::_ss("version"), version);
+    }
+
+    inline zs::error_result add_module_date(const object& date) {
+      ZS_ASSERT(_module_info.is_table());
+      return _module_info.as_table().set_no_replace(zs::_ss("date"), date);
+    }
+
+    inline zs::error_result add_module_copyright(const object& copyright) {
+      ZS_ASSERT(_module_info.is_table());
+      return _module_info.as_table().set_no_replace(zs::_ss("copyright"), copyright);
+    }
+
     /// Type list.
     zs::small_vector<zs::object, 8> _restricted_types;
 
@@ -118,8 +256,10 @@ namespace jit {
     /// The name or the path of the source file.
     zs::object _source_name;
 
-    zs::object _module_name;
+    /// Module name.
+    zs::object _module_info;
 
+    /// Exported names.
     zs::object_unordered_set _exported_names;
 
     bool _is_module = false;
@@ -146,17 +286,19 @@ namespace jit {
     shared_state_data& _sdata;
   };
 
+  class closure_compile_state_ref;
 } // namespace jit.
-
-class closure_compile_state;
 
 /// Used by the compiler when parsing/compiling a function.
 /// The end result is a `function_prototype_object` that can be created by
 /// calling `build_function_prototype()`.
 class closure_compile_state : public jit::shared_state_data_ref {
 public:
+  ZS_CLASS_COMMON;
+
   closure_compile_state(zs::engine* eng, jit::shared_state_data& sdata);
   closure_compile_state(zs::engine* eng, closure_compile_state& parent);
+  closure_compile_state(zs::engine* eng, closure_compile_state& parent, const object& sname);
 
   ~closure_compile_state();
 
@@ -186,8 +328,18 @@ public:
     _last_instruction_index = _instructions._data.size();
     _instructions.push(inst);
   }
-  /// @}
 
+  template <opcode Op, class... Args>
+  ZB_INLINE void replace_last_instruction(Args... args) {
+    _instructions._data.resize(_last_instruction_index);
+    _last_instruction_index = _instructions._data.size();
+    _instructions.push<Op>(std::forward<Args>(args)...);
+  }
+
+  /// @}
+  
+
+  
   /// Since `new_target()` and `push_target()` throws an exception when the
   /// maximum target stack size is exceeded, this should be called before
   /// calling any of these functions.
@@ -202,25 +354,19 @@ public:
   /// @returns true if `n` new target can be pushed (i.e. the target stack size
   /// limit won't be reached).
   ZB_CHECK ZB_INLINE bool can_push_n_target(size_t n) const noexcept {
-    return _vlocals.size() + 1 + n < k_max_func_stack_size;
+    return _vlocals.size() + n < k_max_func_stack_size;
   }
   /// @}
 
   /// Create a new target.
-  /// This is the same as calling `push_target(-1)`.
-  ///
-  /// @note Avoid calling `push_target(-1)` when creating a new target,
-  ///       use `new_target()` for performance reason.
-  ZB_CHECK uint8_t new_target();
+  ZB_CHECK target_t new_target();
 
   /// Create a new target.
-  ZB_CHECK uint8_t new_target(uint32_t mask, uint64_t custom_mask, bool is_const = false);
+  ZB_CHECK target_t new_target(uint32_t mask, uint64_t custom_mask, bool is_const = false);
 
   /// Repush the target at the given index.
-  ///
-  /// @note Avoid calling `push_target(-1)` when creating a new target,
-  ///       use `new_target()` for performance reason.
-  int_t push_target(int_t n);
+  //  target_t push_target(target_t n);
+  target_t push_var_target(target_t n);
 
   int_t push_export_target();
 
@@ -245,7 +391,7 @@ public:
   /// Removes the top target from the target stack.
   /// This will also pop it from the `_vlocals` if it was an stack variable
   /// (unnamed).
-  uint8_t pop_target();
+  target_t pop_target();
 
   /// Get the last instruction index.
   /// Since the instructions have variable lengths, the last instruction cannot
@@ -267,13 +413,13 @@ public:
 
   /// Add a new named local variable.
   /// @{
-  ZB_CHECK zs::error_result push_local_variable(const object& name, int_t* ret_pos = nullptr,
+  ZB_CHECK zs::error_result push_local_variable(const object& name, int_t scope_id, int_t* ret_pos = nullptr,
       uint32_t mask = 0, uint64_t custom_mask = 0, bool is_const = false);
 
-  ZB_CHECK ZB_INLINE zs::error_result push_local_variable(
-      const object& name, int_t* ret_pos, const variable_type_info_t& type_info) {
-    return push_local_variable(name, ret_pos, type_info.mask, type_info.custom_mask, type_info.is_const);
-  }
+  //  ZB_CHECK ZB_INLINE zs::error_result push_local_variable(
+  //      const object& name, int_t* ret_pos, const variable_type_info_t& type_info) {
+  //    return push_local_variable(name, ret_pos, type_info.mask, type_info.custom_mask, type_info.is_const);
+  //  }
   /// @}
 
   /// Looks for a literal with the given name or create a new one if it doesn't
@@ -283,11 +429,14 @@ public:
 
   /// Looks for a capture variable with the given named.
   /// @returns the index of the variable in `_captures` or `-1` if not found.
-  ZB_CHECK int_t get_capture(const object& name);
+  ZB_CHECK zs::optional_result<int_t> get_capture(const object& name);
 
   /// Looks for a local variable with the given named.
   /// @returns the index of the variable in `_vlocals` or `-1` if not found.
-  ZB_CHECK int_t find_local_variable(const object& name) const;
+  ZB_CHECK zs::optional_result<int_t> find_local_variable(const object& name) const;
+  ZB_CHECK const zs::scoped_local_var_info_t* find_local_variable_ptr(const object& name) const noexcept;
+
+  ZB_CHECK zs::error_result find_local_variable(const object& name, int_t& pos) const;
 
   ZB_CHECK bool is_exported_name(const object& name) const;
 
@@ -329,21 +478,22 @@ public:
 
   ZB_CHECK ZB_INLINE jit::shared_state_data& state_data() noexcept { return _sdata; }
 
-  ZB_CHECK zs::closure_compile_state* push_child_state();
-  void pop_child_state();
+  ZS_CK_INLINE size_t get_current_capture_count() const noexcept { return _n_capture; }
 
 private:
   friend class jit_compiler;
   friend class parser;
+  friend class jit::closure_compile_state_ref;
+
+  struct private_constructor_tag {};
+  closure_compile_state(
+      private_constructor_tag, zs::engine* eng, jit::shared_state_data& sdata, closure_compile_state* parent);
 
   /// Parent closure state.
   zs::closure_compile_state* _parent = nullptr;
 
   /// Parameter names.
   zs::small_vector<zs::object, 8> _parameter_names;
-
-  /// Child closure state.
-  zs::vector<zs::unique_ptr<closure_compile_state>> _children;
 
   /// Instruction vector.
   zs::instruction_vector _instructions;
@@ -359,7 +509,7 @@ private:
   /// These can be named or not (when zs::local_var_info_t::_name is not a
   /// string i.e. null). An unnamed variable is a stack value. A named one, is
   /// an actual declared local variable.
-  zs::vector<zs::local_var_info_t> _vlocals;
+  zs::vector<zs::scoped_local_var_info_t> _vlocals;
 
   /// Only these will be exported to the function prototype.
   zs::vector<zs::local_var_info_t> _local_var_infos;
@@ -371,6 +521,12 @@ private:
   zs::vector<zs::object> _functions;
 
   zs::vector<int_t> _default_params;
+
+  zs::vector<size_t> _breaks;
+  zs::vector<size_t> _unresolved_breaks;
+
+  zs::vector<size_t> _continues;
+  zs::vector<size_t> _unresolved_continues;
 
   zs::vector<captured_variable> _captures;
   size_t _n_capture = 0;
@@ -391,9 +547,15 @@ private:
   bool _vargs_params = false;
 
   int_t _export_table_target = -1;
-  //  bool _is_module = false;
 
   void mark_local_as_capture(int_t pos);
+
+  ZS_CK_INLINE zs::error_result update_total_stack_size() noexcept {
+    return ((_total_stack_size = zb::maximum(_total_stack_size, (uint32_t)_vlocals.size()))
+               < k_max_func_stack_size)
+        ? zs::errc::success
+        : zs::errc::too_many_locals;
+  }
 
   ZB_CHECK int_t alloc_stack_pos();
 };
@@ -401,11 +563,125 @@ private:
 namespace jit {
   class closure_compile_state_ref {
   public:
+    ZS_CK_INLINE zs::error_result add_parameter(const object& param_name) {
+      return _ccs->add_parameter(param_name);
+    }
+
+    ZS_CK_INLINE zs::error_result add_parameter(
+        const object& param_name, uint32_t mask, uint64_t custom_mask, bool is_const = false) {
+      return _ccs->add_parameter(param_name, mask, custom_mask, is_const);
+    }
+    /// @}
+    ///
+    /// Create a new target.
+    /// This is the same as calling `push_target(-1)`.
+    ///
+    /// @note Avoid calling `push_target(-1)` when creating a new target,
+    ///       use `new_target()` for performance reason.
+    ZS_CK_INLINE target_t new_target() { return _ccs->new_target(); }
+
+    /// Create a new target.
+    ZS_CK_INLINE target_t new_target(uint32_t mask, uint64_t custom_mask, bool is_const = false) {
+      return _ccs->new_target(mask, custom_mask, is_const);
+    }
+
+    /// Repush the target at the given index.
+    //    ZS_INLINE target_t push_target(int_t n) { return _ccs->push_target(n); }
+
+    ZS_INLINE target_t push_var_target(int_t n) { return _ccs->push_var_target(n); }
+
+    ZS_INLINE target_t push_this_target() { return _ccs->push_var_target(0); }
+
     /// Removes the top target from the target stack.
     /// This will also pop it from the `_vlocals` if it was an stack variable
     /// (unnamed).
-    inline int_t pop_target() { return _ccs->pop_target(); }
+    ZS_INLINE target_t pop_target() { return _ccs->pop_target(); }
 
+    ZS_CK_INLINE target_t top_target() const noexcept { return _ccs->top_target(); }
+
+    ZS_CK_INLINE target_t up_target(int_t n) const noexcept {
+      ZS_ASSERT(n < 0);
+
+      return (target_t)(_ccs->_target_stack[_ccs->_target_stack.size() + n].index);
+    }
+
+    //    /// Add a new named local variable.
+    //    /// @{
+    //    ZS_CK_INLINE zs::error_result push_local_variable(const object& name, int_t* ret_pos = nullptr,
+    //        uint32_t mask = 0, uint64_t custom_mask = 0, bool is_const = false) {
+    //      return _ccs->push_local_variable(name, ret_pos, mask, custom_mask, is_const);
+    //    }
+    //
+    //    ZS_CK_INLINE zs::error_result push_local_variable(
+    //        const object& name, int_t* ret_pos, const variable_type_info_t& type_info) {
+    //      return _ccs->push_local_variable(
+    //          name, ret_pos, type_info.mask, type_info.custom_mask, type_info.is_const);
+    //    }
+    //    /// @}
+
+    ZS_CK_INLINE uint32_t get_functions_count() const noexcept { return (uint32_t)_ccs->_functions.size(); }
+
+    ZS_CK_INLINE uint32_t get_last_function_index() const noexcept {
+      ZS_ASSERT(
+          !_ccs->_functions.empty(), "Can't call get_last_function_index() when no functions were declared.");
+      return (uint32_t)(_ccs->_functions.size() - 1);
+    }
+
+    ZS_CK_INLINE zs::vector<zs::object>& get_functions() noexcept { return _ccs->_functions; }
+
+    ZS_CK_INLINE const zs::vector<zs::object>& get_functions() const noexcept { return _ccs->_functions; }
+
+    ZS_CK_INLINE zs::object& get_function(size_t index) noexcept { return _ccs->_functions[index]; }
+
+    ZS_CK_INLINE const zs::object& get_function(size_t index) const noexcept {
+      return _ccs->_functions[index];
+    }
+
+    ZS_CK_INLINE zs::function_prototype_object& get_function_proto(size_t index) noexcept {
+      return _ccs->_functions[index].as_proto();
+    }
+
+    ZS_CK_INLINE const zs::function_prototype_object& get_function_proto(size_t index) const noexcept {
+      return _ccs->_functions[index].as_proto();
+    }
+
+    ZS_CK_INLINE zs::function_prototype_object& get_last_function_proto() noexcept {
+      return _ccs->_functions.back().as_proto();
+    }
+
+    ZS_CK_INLINE const zs::function_prototype_object& get_last_function_proto() const noexcept {
+      return _ccs->_functions.back().as_proto();
+    }
+
+    ZS_CK_INLINE int_t get_instruction_index() const noexcept { return _ccs->get_instruction_index(); }
+
+    ZS_CK_INLINE int_t get_next_instruction_index() const noexcept {
+      return _ccs->get_next_instruction_index();
+    }
+
+    template <opcode Op>
+    ZS_CK_INLINE instruction_t<Op>& get_instruction_ref(size_t index) noexcept {
+      return _ccs->_instructions.get_ref<Op>(index);
+    }
+
+    template <opcode Op>
+    ZS_CK_INLINE auto get_instruction_value(size_t index) const noexcept {
+      return _ccs->_instructions.get_ref<Op>(index).value;
+    }
+
+    ZS_CK_INLINE zs::opcode get_instruction_opcode(size_t index) const noexcept {
+      return _ccs->_instructions.get_opcode(index);
+    }
+
+    ZS_CK_INLINE zs::opcode get_instruction_opcode() const noexcept {
+      return _ccs->_instructions.get_opcode(get_instruction_index());
+    }
+
+    ZS_CK_INLINE zs::instruction_vector& get_instructions() noexcept { return _ccs->_instructions; }
+
+    ZS_CK_INLINE zs::vector<uint8_t>& get_instructions_internal_vector() noexcept {
+      return _ccs->_instructions._data;
+    }
     zs::closure_compile_state* _ccs = nullptr;
   };
 } // namespace jit.

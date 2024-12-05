@@ -11,6 +11,8 @@ enum class error_code : int32_t {
   #undef ZS_DECL_ERROR_CODE
 };
 
+using errc = error_code;
+
 ZB_CK_INLINE_CXPR const char* error_code_to_string(error_code ec) noexcept {
   switch (ec) {
   #define ZS_DECL_ERROR_CODE(name, str) case error_code::name: return str;

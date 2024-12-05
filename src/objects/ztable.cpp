@@ -1,5 +1,5 @@
 #include <zscript.h>
-
+#include "objects/zfunction_prototype.h"
 namespace zs {
 
 table_object::table_object(zs::engine* eng)
@@ -57,6 +57,13 @@ zs::error_result table_object::set(const object& key, object&& obj) noexcept {
 }
 
 zs::error_result table_object::set(object&& key, const object& obj) noexcept {
+
+  //  if(key == "__add" and obj.is_closure()) {
+  //    if(obj.as_closure().get_proto()._parameter_names.size()==2) {
+  //      obj.as_closure().get_proto()._parameter_names.push_back(zs::_ss("__delegate__"));
+  //      obj.as_closure().get_proto()._default_params.push_back(0);
+  //    }
+  //  }
   map_type::insert_or_assign(std::move(key), obj);
   return {};
 }
@@ -73,4 +80,43 @@ table_object* table_object::clone() const noexcept {
   return tbl;
 }
 
+zs::error_result table_object::serialize_to_json(zs::engine* eng, std::ostream& stream, int idt) {
+
+  stream << "{\n";
+
+  const size_t sz = this->size();
+  size_t count = 0;
+  idt++;
+  for (auto it : *this) {
+
+    stream << zb::indent_t(idt, 4);
+
+    if (it.first.is_table() and this == it.first._table) {
+      stream << "<RECURSION>";
+    }
+    else {
+
+      //      stream << zs::serializer(  it.first, idt);
+      zs::serialize_to_json(eng, stream, it.first, idt);
+    }
+
+    stream << ": ";
+
+    if (it.second.is_table() and this == it.second._table) {
+      stream << "<RECURSION>";
+    }
+    else {
+
+      //      stream << zs::serializer(  it.second, idt);
+      zs::serialize_to_json(eng, stream, it.second, idt);
+    }
+
+    stream << ((++count == sz) ? "\n" : ",\n");
+  }
+
+  idt--;
+  stream << zb::indent_t(idt, 4) << "}";
+
+  return {};
+}
 } // namespace zs.

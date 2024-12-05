@@ -1,5 +1,7 @@
 namespace zs {
 
+#define ZS_VM_ERROR(err, ...) handle_error(err, { -1, -1 }, ZS_DEVELOPER_SOURCE_LOCATION(), __VA_ARGS__)
+
 #define REF(...) zb::wref(__VA_ARGS__)
 #define CREF(...) zb::wcref(__VA_ARGS__)
 
@@ -21,6 +23,17 @@ namespace zs {
 
 zs::instruction_vector& virtual_machine::exec_op_data_t::instructions() const noexcept {
   return fct->_instructions;
+}
+
+int_t virtual_machine::exec_op_data_t::get_iterator_index(
+    const zs::instruction_vector::iterator& it) const noexcept {
+  return (int_t)fct->_instructions.get_iterator_index(it);
+}
+
+zs::instruction_vector::iterator virtual_machine::exec_op_data_t::get_instruction(
+    size_t index) const noexcept {
+  ZS_ASSERT(index < fct->_instructions._data.size());
+  return fct->_instructions[index];
 }
 
 // static inline void print_stack(zs::vm_ref vm) {
@@ -46,6 +59,9 @@ zs::error_code virtual_machine::exec_op_wrapper(zs::instruction_iterator& it, ex
 // These instructions takes care of incrementing the instruction pointer.
 ZS_VM_DECL_OP_NO_INST_PTR_INCR(op_jz)
 ZS_VM_DECL_OP_NO_INST_PTR_INCR(op_jmp)
+ZS_VM_DECL_OP_NO_INST_PTR_INCR(op_if_null)
+ZS_VM_DECL_OP_NO_INST_PTR_INCR(op_and)
+ZS_VM_DECL_OP_NO_INST_PTR_INCR(op_or)
 
 #undef ZS_VM_DECL_OP_NO_INST_PTR_INCR
 
@@ -142,9 +158,12 @@ virtual_machine::virtual_machine(zs::engine* eng, size_t stack_size, bool owns_e
     : engine_holder(eng)
     , _stack(eng, stack_size)
     , _call_stack((zs::allocator<call_info>(eng, zs::memory_tag::nt_vm)))
+    , _open_captures(zs::allocator<object>(eng))
     , _error_message(zs::allocator<char>(eng))
-    , _constexpr_variables(zs::allocator<object>(eng))
+    , _errors(eng)
     , _owns_engine(owns_engine) {
+
+  _global_table = zs::_t(_engine);
 
   _default_array_delegate = zs::create_array_default_delegate(_engine);
   _default_native_array_delegate = zs::create_native_array_default_delegate(_engine);
@@ -184,11 +203,13 @@ void virtual_machine::release() noexcept {
   const bool owns_engine = _owns_engine;
 
   _root_table.reset();
-  _imported_module_cache.reset();
+  _global_table.reset();
+  _imported_modules.reset();
+  _module_loaders.reset();
 
   _stack.set_stack_base(0);
   _stack.pop_to(0);
-  _constexpr_variables.clear();
+  //  _constexpr_variables.clear();
 
   // Destroy itself (virtual_machine).
   internal::zs_delete(eng, this);
@@ -203,28 +224,67 @@ void virtual_machine::release() noexcept {
   }
 }
 
+zs::string virtual_machine::get_error() const noexcept {
+
+  zs::ostringstream stream(zs::create_string_stream(_engine));
+
+  _errors.print(stream);
+
+  return stream.str();
+}
+
+zs::error_result virtual_machine::handle_error(zs::error_code ec, const zs::line_info& linfo,
+    std::string_view msg, const zs::developer_source_location& loc) {
+  std::string_view filename = "";
+  std::string_view line_content = "";
+  _errors.emplace_back(_engine, error_source::virtual_machine, ec, msg, filename, line_content, linfo, loc);
+  return ec;
+}
+
 zs::error_result virtual_machine::init() {
   _call_stack.push_back(call_info{ nullptr, 0, 0 });
-  _root_table = object::create_table(_engine);
-  _imported_module_cache = zs::_t(_engine);
 
-  table_object& tbl = _imported_module_cache.as_table();
-  tbl.reserve(8);
+  _root_table = object::create_table(_engine);
+  _imported_modules = zs::_t(_engine);
+  _module_loaders = zs::_t(_engine);
+
+  table_object& imported_modules_tbl = _imported_modules.as_table();
+  imported_modules_tbl.reserve(8);
 
   if (auto err = zs::include_lang_lib(this)) {
     return err;
   }
 
-  tbl.set(zs::_ss("zs"), zs::create_zs_lib(this));
-  tbl.set(zs::_ss("base64"), zs::create_base64_lib(this));
-  tbl.set(zs::_ss("graphics"), zs::create_graphics_lib(this));
-  tbl.set(zs::_ss("fs"), zs::create_fs_lib(this));
-  tbl.set(zs::_ss("math"), zs::create_math_lib(this));
+  object zs_lib = zs::create_zs_lib(this);
+  object sys_lib = zs::create_sys_lib(this);
+  object fs_lib = zs::create_fs_lib(this);
+  object math_lib = zs::create_math_lib(this);
+
+  const object zs_lib_name = zs::_ss("zs");
+  const object sys_lib_name = zs::_ss("sys");
+  const object fs_lib_name = zs::_ss("fs");
+  const object math_lib_name = zs::_ss("math");
+
+  table_object& glb = _global_table.as_table();
+
+  glb.emplace(zs_lib_name, zs_lib);
+  glb.emplace(sys_lib_name, sys_lib);
+  glb.emplace(fs_lib_name, fs_lib);
+  glb.emplace(math_lib_name, math_lib);
+
+  imported_modules_tbl.emplace(zs_lib_name, zs_lib);
+  imported_modules_tbl.emplace(sys_lib_name, sys_lib);
+  imported_modules_tbl.emplace(fs_lib_name, fs_lib);
+  imported_modules_tbl.emplace(math_lib_name, math_lib);
+  imported_modules_tbl.emplace(zs::_ss("base64"), zs::create_base64_lib(this));
+  imported_modules_tbl.emplace(zs::_ss("graphics"), zs::create_graphics_lib(this));
 
   return {};
 }
 
-object& virtual_machine::get_imported_module_cache() noexcept { return _imported_module_cache; }
+object& virtual_machine::get_imported_modules() noexcept { return _imported_modules; }
+
+object& virtual_machine::get_module_loaders() noexcept { return _module_loaders; }
 
 void virtual_machine::remove(int_t n) { _stack.remove(n); }
 
@@ -330,6 +390,21 @@ zs::error_result virtual_machine::type_of(const object& obj, object& dest) {
 
     return {};
   }
+  case k_mutable_string: {
+
+    mutable_string_object* mstr = obj._mstring;
+    if (mstr->has_delegate()) {
+      object& delegate_obj = mstr->get_delegate();
+
+      if (!runtime_action<runtime_code::delegate_get_type_of>(CREF(obj), CREF(delegate_obj), REF(dest))) {
+        return {};
+      }
+    }
+
+    dest = object::create_small_string(zs::get_exposed_object_type_name(obj.get_type()));
+
+    return {};
+  }
 
   case k_user_data: {
     user_data_object* tbl = obj._udata;
@@ -344,6 +419,28 @@ zs::error_result virtual_machine::type_of(const object& obj, object& dest) {
 
     return {};
   }
+
+  case k_struct_instance: {
+    const object& name = obj.as_struct_instance().get_base().as_struct().get_name();
+    if (name.is_string()) {
+      dest = name;
+      return {};
+    }
+    dest = object::create_small_string(zs::get_exposed_object_type_name(obj.get_type()));
+
+    return {};
+  }
+  case k_struct: {
+    const object& name = obj.as_struct().get_name();
+    if (name.is_string()) {
+      dest = name;
+      return {};
+    }
+    dest = object::create_small_string(zs::get_exposed_object_type_name(obj.get_type()));
+
+    return {};
+  }
+
   case k_class:
     return zs::error_code::unimplemented;
 
@@ -390,9 +487,49 @@ zs::error_result virtual_machine::get(const object& obj, const object& key, obje
   case k_long_string:
     return ZS_VM_RT_GET_FUNC_PTR(string_get);
   case k_mutable_string:
-    return ZS_VM_RT_GET_FUNC_PTR(string_get);
+    return ZS_VM_RT_GET_FUNC_PTR(mutable_string_get);
   case k_table:
     return ZS_VM_RT_GET_FUNC_PTR(table_get);
+  case k_array:
+    return ZS_VM_RT_GET_FUNC_PTR(array_get);
+  case k_struct:
+    return ZS_VM_RT_GET_FUNC_PTR(struct_get);
+  case k_struct_instance:
+    return ZS_VM_RT_GET_FUNC_PTR(struct_instance_get);
+  case k_native_array:
+    return ZS_VM_RT_GET_FUNC_PTR(native_array_get);
+  case k_user_data:
+    return ZS_VM_RT_GET_FUNC_PTR(user_data_get);
+  case k_instance:
+    return ZS_VM_RT_GET_FUNC_PTR(instance_get);
+  case k_weak_ref:
+    return ZS_VM_RT_GET_FUNC_PTR(weak_get);
+
+  default:
+    return ZS_VM_RT_GET_FUNC_PTR(invalid_get);
+  }
+}
+
+
+zs::error_result virtual_machine::contains(const object& obj, const object& key, object& dest) {
+  using enum object_type;
+  using enum runtime_code;
+
+#define ZS_VM_RT_GET_FUNC_PTR(name) runtime_action<runtime_code::name>(CREF(obj), CREF(key), REF(dest))
+
+  switch (obj.get_type()) {
+  case k_small_string:
+    return ZS_VM_RT_GET_FUNC_PTR(string_get);
+  case k_string_view:
+    return ZS_VM_RT_GET_FUNC_PTR(string_get);
+  case k_extension:
+    return ZS_VM_RT_GET_FUNC_PTR(extension_get);
+  case k_long_string:
+    return ZS_VM_RT_GET_FUNC_PTR(string_get);
+  case k_mutable_string:
+    return ZS_VM_RT_GET_FUNC_PTR(mutable_string_get);
+  case k_table:
+    return ZS_VM_RT_GET_FUNC_PTR(table_contains);
   case k_array:
     return ZS_VM_RT_GET_FUNC_PTR(array_get);
   case k_struct:
@@ -421,9 +558,37 @@ zs::error_result virtual_machine::set(object& obj, const object& key, const obje
   case k_extension:
     return ZS_VM_RT_SET_FUNC_PTR(extension_set);
   case k_mutable_string:
-    return ZS_VM_RT_SET_FUNC_PTR(string_set);
+    return ZS_VM_RT_SET_FUNC_PTR(mutable_string_set);
   case k_table:
     return ZS_VM_RT_SET_FUNC_PTR(table_set);
+  case k_array:
+    return ZS_VM_RT_SET_FUNC_PTR(array_set);
+  case k_native_array:
+    return ZS_VM_RT_SET_FUNC_PTR(native_array_set);
+  case k_struct:
+    return ZS_VM_RT_SET_FUNC_PTR(struct_set);
+  case k_struct_instance:
+    return ZS_VM_RT_SET_FUNC_PTR(struct_instance_set);
+  case k_user_data:
+    return ZS_VM_RT_SET_FUNC_PTR(user_data_set);
+  case k_weak_ref:
+    return ZS_VM_RT_SET_FUNC_PTR(weak_set);
+  default:
+    return ZS_VM_RT_SET_FUNC_PTR(invalid_set);
+  }
+}
+
+zs::error_result virtual_machine::set_if_exists(object& obj, const object& key, const object& value) {
+  using enum object_type;
+#define ZS_VM_RT_SET_FUNC_PTR(name) runtime_action<runtime_code::name>(REF(obj), CREF(key), CREF(value))
+
+  switch (obj.get_type()) {
+  case k_extension:
+    return ZS_VM_RT_SET_FUNC_PTR(extension_set);
+  case k_mutable_string:
+    return ZS_VM_RT_SET_FUNC_PTR(string_set);
+  case k_table:
+    return ZS_VM_RT_SET_FUNC_PTR(table_set_if_exists);
   case k_array:
     return ZS_VM_RT_SET_FUNC_PTR(array_set);
   case k_native_array:
@@ -449,8 +614,8 @@ zs::error_result virtual_machine::call(const object& closure, int_t n_params, in
 
   const object_type otype = closure.get_type();
 
-  zbase_assert(zb::is_one_of(otype, k_closure, k_native_closure, k_native_function, k_table, k_class,
-                   k_instance, k_struct, k_user_data, k_native_function2),
+  zbase_assert(zb::is_one_of(otype, k_closure, k_native_closure, k_native_function, k_native_pfunction,
+                   k_table, k_class, k_instance, k_struct, k_user_data),
       get_object_type_name(otype));
 
   switch (otype) {
@@ -465,8 +630,8 @@ zs::error_result virtual_machine::call(const object& closure, int_t n_params, in
     return runtime_action<runtime_code::call_native_function>(
         CREF(closure), n_params, stack_base, REF(ret_value));
 
-  case zs::object_type::k_native_function2:
-    return runtime_action<runtime_code::call_native_function2>(
+  case zs::object_type::k_native_pfunction:
+    return runtime_action<runtime_code::call_native_pfunction>(
         CREF(closure), n_params, stack_base, REF(ret_value));
 
   case zs::object_type::k_user_data: {
@@ -482,6 +647,7 @@ zs::error_result virtual_machine::call(const object& closure, int_t n_params, in
 
       object sb = std::exchange(_stack.get_at(stack_base), closure);
       if (auto err = call(fct, n_params, stack_base, ret_value, false)) {
+        _stack.get_at(stack_base) = sb;
         return err;
       }
       _stack.get_at(stack_base) = sb;
@@ -514,9 +680,28 @@ zs::error_result virtual_machine::call(const object& closure, int_t n_params, in
   case zs::object_type::k_instance:
     return zs::error_code::unimplemented;
 
-  case zs::object_type::k_table:
-    return zs::error_code::unimplemented;
+  case zs::object_type::k_table: {
+    object fct;
 
+    object key = constants::get<meta_method::mt_call>();
+    if (auto err = runtime_action<runtime_code::table_get>(CREF(closure), CREF(key), REF(fct))) {
+      return err;
+    }
+
+    if (fct.is_function()) {
+      ZS_TODO("Add comments and make sure that this works");
+
+      object sb = std::exchange(_stack.get_at(stack_base), closure);
+      if (auto err = call(fct, n_params, stack_base, ret_value, false)) {
+        _stack.get_at(stack_base) = sb;
+        return err;
+      }
+      _stack.get_at(stack_base) = sb;
+
+      return {};
+    }
+    return zs::error_code::inaccessible;
+  }
   default:
     return zs::error_code::invalid;
   }
@@ -524,14 +709,13 @@ zs::error_result virtual_machine::call(const object& closure, int_t n_params, in
   return {};
 }
 
-zs::error_result virtual_machine::call(
-    const object& closure, std::span<const object> params, object& ret_value) {
+zs::error_result virtual_machine::call(const object& closure, zs::parameter_list params, object& ret_value) {
   using enum object_type;
 
   const object_type otype = closure.get_type();
 
-  zbase_assert(
-      zb::is_one_of(otype, k_closure, k_native_closure, k_native_function, k_table, k_instance, k_user_data),
+  ZS_ASSERT(zb::is_one_of(otype, k_closure, k_native_closure, k_native_function, k_native_pfunction, k_table,
+                k_instance, k_user_data),
       get_object_type_name(otype));
 
   switch (otype) {
@@ -544,8 +728,8 @@ zs::error_result virtual_machine::call(
   case zs::object_type::k_native_function:
     return runtime_action<runtime_code::call_native_function>(CREF(closure), params, REF(ret_value));
 
-  case zs::object_type::k_native_function2:
-    return runtime_action<runtime_code::call_native_function2>(CREF(closure), params, REF(ret_value));
+  case zs::object_type::k_native_pfunction:
+    return runtime_action<runtime_code::call_native_pfunction>(CREF(closure), params, REF(ret_value));
 
   case zs::object_type::k_user_data:
     return zs::error_code::unimplemented;
@@ -553,9 +737,27 @@ zs::error_result virtual_machine::call(
   case zs::object_type::k_instance:
     return zs::error_code::unimplemented;
 
-  case zs::object_type::k_table:
-    return zs::error_code::unimplemented;
+  case zs::object_type::k_table: {
+    object fct;
 
+    object key = constants::get<meta_method::mt_call>();
+    if (auto err = runtime_action<runtime_code::table_get>(CREF(closure), CREF(key), REF(fct))) {
+      return err;
+    }
+
+    if (fct.is_function()) {
+      ZS_TODO("Add comments and make sure that this works");
+
+      //        object sb = std::exchange(_stack.get_at(stack_base), closure);
+      if (auto err = call(fct, params, ret_value)) {
+        return err;
+      }
+      //        _stack.get_at(stack_base) = sb;
+
+      return {};
+    }
+    return zs::error_code::inaccessible;
+  }
   default:
     return zs::error_code::invalid;
   }
@@ -613,7 +815,7 @@ zs::error_result virtual_machine::runtime_arith_operation(
       ZS_EXPOSED_TYPE_ENUM(_SECOND_LEVEL_TYPE)
     default:
       target = nullptr;
-      return zs::error_code::invalid_operation;
+      return zs::errc::invalid_operation;
     }
   };
 
@@ -621,7 +823,7 @@ zs::error_result virtual_machine::runtime_arith_operation(
     ZS_EXPOSED_TYPE_ENUM(_FIRST_LEVEL_TYPE)
   default:
     target = nullptr;
-    return zs::error_code::invalid_operation;
+    return zs::errc::invalid_operation;
   }
 
 #undef _FIRST_LEVEL_TYPE
@@ -645,6 +847,9 @@ zs::error_result virtual_machine::runtime_arith_operation(arithmetic_uop op, obj
   case ke_string:
     return arithmetic_operation<ke_string>(op, target, src);
 
+  case ke_mutable_string:
+    return arithmetic_operation<ke_mutable_string>(op, target, src);
+
   case ke_table:
     return arithmetic_operation<ke_table>(op, target, src);
 
@@ -660,16 +865,36 @@ zs::error_result virtual_machine::runtime_arith_operation(arithmetic_uop op, obj
 }
 
 zs::error_result virtual_machine::compile_buffer(
-    std::string_view content, std::string_view source_name, zs::object& closure_result, bool with_vargs) {
+    std::string_view content, object&& source_name, zs::object& closure_result, bool with_vargs) {
   zs::jit_compiler compiler(_engine);
   zs::object fct_state;
 
-  if (auto err = compiler.compile(content, source_name, fct_state, nullptr, nullptr, with_vargs)) {
+  if (auto err = compiler.compile(content, std::move(source_name), fct_state, this, nullptr, with_vargs)) {
     _error_message = compiler.get_error();
+    _errors.insert(_errors.end(), compiler.get_errors().begin(), compiler.get_errors().end());
     return err;
   }
 
-  closure_result = zs::object::create_closure(_engine, fct_state, _root_table);
+  closure_result = zs::_c(_engine, std::move(fct_state), _root_table);
+
+  if (with_vargs) {
+    closure_result.as_closure()._default_params.push_back(zs::_a(_engine, 0));
+  }
+
+  return {};
+}
+zs::error_result virtual_machine::compile_buffer(
+    std::string_view content, const object& source_name, zs::object& closure_result, bool with_vargs) {
+  zs::jit_compiler compiler(_engine);
+  zs::object fct_state;
+
+  if (auto err = compiler.compile(content, source_name, fct_state, this, nullptr, with_vargs)) {
+    _error_message = compiler.get_error();
+    _errors.insert(_errors.end(), compiler.get_errors().begin(), compiler.get_errors().end());
+    return err;
+  }
+
+  closure_result = zs::_c(_engine, std::move(fct_state), _root_table);
 
   if (with_vargs) {
     closure_result.as_closure()._default_params.push_back(zs::_a(_engine, 0));
@@ -680,6 +905,17 @@ zs::error_result virtual_machine::compile_buffer(
 
 zs::error_result virtual_machine::compile_file(
     const char* filepath, std::string_view source_name, zs::object& closure_result, bool with_vargs) {
+  zs::file_loader loader(_engine);
+
+  if (auto err = loader.open(filepath)) {
+    return err;
+  }
+
+  return compile_buffer(loader.content(), source_name, closure_result, with_vargs);
+}
+
+zs::error_result virtual_machine::compile_file(
+    const zs::object& filepath, std::string_view source_name, zs::object& closure_result, bool with_vargs) {
   zs::file_loader loader(_engine);
 
   if (auto err = loader.open(filepath)) {
@@ -725,7 +961,7 @@ zs::error_result virtual_machine::call_buffer(std::string_view content, std::str
     zs::jit_compiler compiler(_engine);
     zs::object fct_state;
 
-    if (auto err = compiler.compile(content, source_name, fct_state, nullptr, nullptr, with_vargs)) {
+    if (auto err = compiler.compile(content, source_name, fct_state, this, nullptr, with_vargs)) {
       _error_message = compiler.get_error();
       return err;
     }
@@ -816,7 +1052,7 @@ zs::error_result virtual_machine::load_buffer_as_value(
   zs::object fct_state;
 
   zs::token_type prepended_token = token_type::tok_return;
-  if (auto err = compiler.compile(content, source_name, fct_state, nullptr, &prepended_token)) {
+  if (auto err = compiler.compile(content, source_name, fct_state, this, &prepended_token)) {
     _error_message = compiler.get_error();
     return err;
   }
@@ -898,73 +1134,72 @@ zs::error_result virtual_machine::load_json_file(
 }
 
 zs::error_result virtual_machine::add(object& target, const object& lhs, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::add, target, lhs, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_add, target, lhs, rhs);
 }
 
 zs::error_result virtual_machine::sub(object& target, const object& lhs, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::sub, target, lhs, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_sub, target, lhs, rhs);
 }
 
 zs::error_result virtual_machine::mul(object& target, const object& lhs, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::mul, target, lhs, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_mul, target, lhs, rhs);
 }
 
 zs::error_result virtual_machine::div(object& target, const object& lhs, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::div, target, lhs, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_div, target, lhs, rhs);
 }
 
 zs::error_result virtual_machine::exp(object& target, const object& lhs, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::exp, target, lhs, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_exp, target, lhs, rhs);
 }
 
 zs::error_result virtual_machine::mod(object& target, const object& lhs, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::mod, target, lhs, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_mod, target, lhs, rhs);
 }
 
 zs::error_result virtual_machine::bitwise_or(object& target, const object& lhs, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::bitwise_or, target, lhs, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_bitwise_or, target, lhs, rhs);
 }
 
 zs::error_result virtual_machine::bitwise_and(object& target, const object& lhs, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::bitwise_and, target, lhs, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_bitwise_and, target, lhs, rhs);
 }
 
 zs::error_result virtual_machine::bitwise_xor(object& target, const object& lhs, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::bitwise_xor, target, lhs, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_bitwise_xor, target, lhs, rhs);
 }
 
 zs::error_result virtual_machine::lshift(object& target, const object& lhs, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::lshift, target, lhs, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_lshift, target, lhs, rhs);
 }
 
 zs::error_result virtual_machine::rshift(object& target, const object& lhs, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::rshift, target, lhs, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_rshift, target, lhs, rhs);
 }
 
 zs::error_result virtual_machine::add_eq(object& target, const object& rhs) {
-  using enum object_type;
-
-  return runtime_arith_operation(arithmetic_op::add, target, target, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_add, target, target, rhs);
 }
 
 zs::error_result virtual_machine::sub_eq(object& target, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::sub, target, target, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_sub, target, target, rhs);
 }
 
 zs::error_result virtual_machine::mul_eq(object& target, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::mul, target, target, rhs);
+  //  return runtime_arith_operation(arithmetic_op::aop_mul, target, target, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_mul, target, target, rhs);
 }
 
 zs::error_result virtual_machine::div_eq(object& target, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::div, target, target, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_div, target, target, rhs);
 }
 
 zs::error_result virtual_machine::mod_eq(object& target, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::mod, target, target, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_mod, target, target, rhs);
 }
 
 zs::error_result virtual_machine::exp_eq(object& target, const object& rhs) {
-  return runtime_arith_operation(arithmetic_op::exp, target, target, rhs);
+  return runtime_arith_operation(arithmetic_op::aop_exp, target, target, rhs);
 }
 
 /////////////////////////////////////////////////
@@ -1014,6 +1249,38 @@ object virtual_machine::exp(const object& lhs, const object& rhs) {
     return nullptr;
   }
   return obj;
+}
+
+zs::error_result virtual_machine::add_eq(object& obj, const object& key, const object& rhs, object& target) {
+  ZS_TODO("FIX THIS");
+
+  zs::object dest;
+  if (auto err = get(obj, key, dest)) {
+    return err;
+  }
+
+  if (auto err = runtime_arith_operation(arithmetic_op::aop_add, dest, dest, rhs)) {
+    return err;
+  }
+
+  target = dest;
+  return set(obj, key, dest);
+}
+
+zs::error_result virtual_machine::mul_eq(object& obj, const object& key, const object& rhs, object& target) {
+  ZS_TODO("FIX THIS");
+
+  zs::object dest;
+  if (auto err = get(obj, key, dest)) {
+    return err;
+  }
+
+  if (auto err = runtime_arith_operation(arithmetic_op::aop_mul, dest, dest, rhs)) {
+    return err;
+  }
+
+  target = dest;
+  return set(obj, key, dest);
 }
 
 //

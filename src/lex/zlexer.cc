@@ -14,6 +14,7 @@ struct lexer::helper {
       { "var", zs::token_type::tok_var },
       { "int", zs::token_type::tok_int },
       { "float", zs::token_type::tok_float },
+      { "number", zs::token_type::tok_number },
       { "bool", zs::token_type::tok_bool },
       { "table", zs::token_type::tok_table },
       { "array", zs::token_type::tok_array },
@@ -46,15 +47,18 @@ struct lexer::helper {
       { "base", zs::token_type::tok_base },
       { "class", zs::token_type::tok_class },
       { "namespace", zs::token_type::tok_namespace },
+      { "use", zs::token_type::tok_use },
       { "global", zs::token_type::tok_global },
       { "const", zs::token_type::tok_const },
       { "static", zs::token_type::tok_static },
       { "export", zs::token_type::tok_export },
       { "function", zs::token_type::tok_function },
+      { "private", zs::token_type::tok_private },
       { "typeof", zs::token_type::tok_typeof },
       { "typeid", zs::token_type::tok_typeid },
       { "constructor", zs::token_type::tok_constructor },
       { "destructor", zs::token_type::tok_destructor },
+      { "mutable", zs::token_type::tok_mutable },
       { "in", zs::token_type::tok_in },
       { "enum", zs::token_type::tok_enum },
       { "xor", zs::token_type::tok_xor },
@@ -166,6 +170,87 @@ struct lexer::helper {
     }
   }
 
+  inline static void skip_triple_dash_doc_block_comment2(lexer* l) {
+    auto& s = l->_stream;
+
+    // Skip `/// @`.
+    l->next(5);
+
+    if (s.is_end()) {
+      l->set_token(tok_eof);
+      return;
+    }
+
+    zb_loop() {
+      if (s.is_end()) {
+        l->set_token(tok_eof);
+        return;
+      }
+
+      if (*s == '\n') {
+        s.incr();
+        l->new_line();
+
+        while (zb::is_one_of(*s, '\t', '\r', ' ')) {
+          l->next();
+        }
+
+        if (s.rsize() >= 3 and s[0] == '/' and s[1] == '/' and s[2] == '/') {
+          l->next(3);
+          continue;
+        }
+        else {
+          return;
+        }
+      }
+      else {
+        s.incr();
+      }
+    }
+
+    if (*s == '\n') {
+      s.incr();
+      l->new_line();
+    }
+  }
+
+  inline static void skip_triple_dash_doc_block_comment(lexer* l) {
+    auto& s = l->_stream;
+
+    const char* beg = s.ptr() + 5;
+
+    skip_triple_dash_doc_block_comment2(l);
+    if (s.is_end()) {
+      l->set_token(tok_eof);
+      return;
+    }
+
+    const size_t sz = std::distance(beg, s.ptr());
+    std::string_view svalue(beg, sz);
+
+    zs::string& estr = l->_escaped_string;
+
+    estr.clear();
+    const char* ptr = svalue.data();
+    const char* end = svalue.data() + svalue.size();
+
+    while (ptr < end) {
+      bool was_endl = *ptr == '\n';
+      estr.push_back(*ptr++);
+
+      if (was_endl and ptr < end) {
+        while (*ptr++ != '/') {
+        }
+
+        ptr += 3;
+      }
+    }
+
+    while (estr.ends_with('\n')) {
+      estr.pop_back();
+    }
+  }
+
   inline static void skip_multi_line_comment(lexer* l) {
     auto& s = l->_stream;
 
@@ -197,6 +282,27 @@ struct lexer::helper {
     if (s.is_end()) {
       l->set_token(tok_eof);
       return;
+    }
+  }
+
+  inline static void cleanup_block_comment(lexer* l, std::string_view svalue) {
+    auto& s = l->_stream;
+
+    zs::string& estr = l->_escaped_string;
+
+    estr.clear();
+
+    const char* ptr = svalue.data();
+    const char* end = svalue.data() + svalue.size();
+    while (ptr < end) {
+      bool was_endl = *ptr == '\n';
+      estr.push_back(*ptr++);
+
+      if (was_endl and ptr < end) {
+        while (zb::is_one_of(*ptr, ' ', '\t')) {
+          ptr++;
+        }
+      }
     }
   }
 
@@ -905,11 +1011,11 @@ token_type lexer::lex(bool keep_endl) {
         helper::skip_block_comment(this);
 
         if (_export_block_comments) {
-
           const size_t sz = std::distance(beg, _stream.ptr() - 3);
           std::string_view svalue(beg, sz);
+
           set_token(tok_doc_block);
-          _string = svalue;
+          helper::cleanup_block_comment(this, zb::strip_all(svalue));
           next();
           return _current_token;
         }
@@ -922,9 +1028,15 @@ token_type lexer::lex(bool keep_endl) {
     }
 
     case '#':
-      set_token(tok_hastag);
-      next();
-      return _current_token;
+      if (_stream.safe_get_next() == '!') {
+        helper::skip_hashtag_comment(this);
+        continue;
+      }
+      else {
+        set_token(tok_hastag);
+        next();
+        return _current_token;
+      }
 
     case '{': {
       if (_stream.safe_get_next() == '/') {
@@ -968,10 +1080,23 @@ token_type lexer::lex(bool keep_endl) {
       next();
       return _current_token;
 
-    case '?':
+    case '?': {
+      if (_stream.rsize() >= 3 and std::string_view(_stream.ptr(), 3) == "???") {
+        set_token(tok_triple_question_mark);
+        next(3);
+        return _current_token;
+      }
+
+      if (_stream.safe_get_next() == '?') {
+        set_token(tok_double_question_mark);
+        next(2);
+        return _current_token;
+      }
+
       set_token(tok_question_mark);
       next();
       return _current_token;
+    }
 
     case ',':
       set_token(tok_comma);
@@ -992,22 +1117,28 @@ token_type lexer::lex(bool keep_endl) {
     case '@': {
       const size_t sz = _stream.rsize();
 
+      static constexpr std::string_view author = "@author";
+      static constexpr std::string_view brief = "@brief";
+      static constexpr std::string_view version = "@version";
+      static constexpr std::string_view date = "@date";
+      static constexpr std::string_view copyright = "@copyright";
+      static constexpr std::string_view counter = "@counter";
+      static constexpr std::string_view uuid = "@uuid";
+      static constexpr std::string_view keyword = "@keyword";
+      static constexpr std::string_view macro = "@macro";
+      static constexpr std::string_view expr = "@expr";
+
+#define KKKKK(sname)                                                                  \
+  else if (std::string_view(_stream.ptr(), zb::minimum(sname.size(), sz)) == sname) { \
+    set_token(tok_##sname);                                                           \
+    next(sname.size());                                                               \
+    return _current_token;                                                            \
+  }
+
       // @module
       if (sz >= 7 and std::string_view(_stream.ptr(), 7) == "@module") {
         set_token(tok_module);
         next(7);
-        return _current_token;
-      }
-      // @counter
-      else if (sz >= 6 and std::string_view(_stream.ptr(), 8) == "@counter") {
-        set_token(tok_counter);
-        next(8);
-        return _current_token;
-      }
-      // @uuid
-      else if (sz >= 6 and std::string_view(_stream.ptr(), 5) == "@uuid") {
-        set_token(tok_uuid);
-        next(5);
         return _current_token;
       }
       // @str
@@ -1016,24 +1147,48 @@ token_type lexer::lex(bool keep_endl) {
         next(4);
         return _current_token;
       }
-      // @macro
-      else if (sz >= 6 and std::string_view(_stream.ptr(), 6) == "@macro") {
-        set_token(tok_macro);
-        next(6);
-        return _current_token;
-      }
       // @include
       else if (sz >= 8 and std::string_view(_stream.ptr(), 8) == "@include") {
         set_token(tok_include);
         next(8);
         return _current_token;
       }
-      // @macro
+      // @import
       else if (sz >= 7 and std::string_view(_stream.ptr(), 7) == "@import") {
         set_token(tok_import);
         next(7);
         return _current_token;
       }
+      KKKKK(author)
+      KKKKK(brief)
+      KKKKK(copyright)
+      KKKKK(version)
+      KKKKK(date)
+      KKKKK(counter)
+      KKKKK(uuid)
+      KKKKK(keyword)
+      KKKKK(macro)
+      KKKKK(expr)
+
+      //      // @counter
+      //      else if (sz >= 6 and std::string_view(_stream.ptr(), 8) == "@counter") {
+      //        set_token(tok_counter);
+      //        next(8);
+      //        return _current_token;
+      ////      }
+      //      // @uuid
+      //      else if (sz >= 6 and std::string_view(_stream.ptr(), 5) == "@uuid") {
+      //        set_token(tok_uuid);
+      //        next(5);
+      //        return _current_token;
+      //      }
+
+      //      // @keyword
+      //      else if (sz >= 4 and std::string_view(_stream.ptr(), 8) == "@keyword") {
+      //        set_token(tok_keyword);
+      //        next(8);
+      //        return _current_token;
+      //      }
 
       if (_stream.safe_get_next() == '@') {
         set_token(tok_double_at);
@@ -1048,7 +1203,47 @@ token_type lexer::lex(bool keep_endl) {
 
     case '/': {
       if (_stream.is_next_valid()) {
-        if (_stream.get_next() == '/') {
+
+        if (_export_block_comments and _stream.rsize() >= 5 && _stream[1] == '/' && _stream[2] == '/'
+            and _stream[3] == ' ' and _stream[4] == '@') {
+
+          const char* beg = _stream.ptr() + 5;
+
+          helper::skip_triple_dash_doc_block_comment(this);
+          zb::print("BLOCK COMMENT", _escaped_string);
+
+          set_token(tok_doc_block);
+          return _current_token;
+          //            const size_t sz = std::distance(beg, _stream.ptr());
+          //            std::string_view svalue(beg, sz);
+          //
+          //          _escaped_string.clear();
+          //          const char* ptr = svalue.data();
+          //          const char* end =  svalue.data() + svalue.size();
+          //          while(ptr <end) {
+          //
+          //
+          //            bool was_endl =*ptr == '\n';
+          //            _escaped_string.push_back(*ptr++);
+          //
+          //            if(was_endl and ptr < end) {
+          //              while(*ptr++ != '/') {
+          //              }
+          //
+          //              ptr+= 3;
+          //            }
+          //          }
+          //
+          //          while(_escaped_string.ends_with('\n')) {
+          //            _escaped_string.pop_back();
+          //          }
+
+          //          zb::print("BLOCK COMMENT", _escaped_string);
+          //
+          //          set_token(tok_doc_block);
+          //            return _current_token;
+        }
+        else if (_stream.get_next() == '/') {
           helper::skip_single_line_comment(this);
           continue;
         }
@@ -1090,6 +1285,12 @@ token_type lexer::lex(bool keep_endl) {
       if (sz >= 2 && _stream.get_next() == '=') {
 
         set_token(tok_eq_eq);
+        next(2);
+        return _current_token;
+      }
+      if (sz >= 2 && _stream.get_next() == '>') {
+
+        set_token(tok_right_arrow);
         next(2);
         return _current_token;
       }
@@ -1470,7 +1671,7 @@ token_type lexer::lex(bool keep_endl) {
         case tok_string:
           switch (c) {
           case '(':
-            set_identifier("tostring");
+            set_identifier("__tostring");
             ZBASE_NO_BREAK;
           case '.':
             // Can't use `set_token()` here, we don't want `_last_token` to change.
@@ -1481,7 +1682,7 @@ token_type lexer::lex(bool keep_endl) {
         case tok_int:
           switch (c) {
           case '(':
-            set_identifier("toint");
+            set_identifier("__toint");
             ZBASE_NO_BREAK;
           case '.':
             // Can't use `set_token()` here, we don't want `_last_token` to change.
@@ -1492,7 +1693,7 @@ token_type lexer::lex(bool keep_endl) {
         case tok_float:
           switch (c) {
           case '(':
-            set_identifier("tofloat");
+            set_identifier("__tofloat");
             ZBASE_NO_BREAK;
           case '.':
             // Can't use `set_token()` here, we don't want `_last_token` to change.
@@ -1505,7 +1706,7 @@ token_type lexer::lex(bool keep_endl) {
           case '<':
             ZBASE_NO_BREAK;
           case '(':
-            set_identifier("create_array");
+            set_identifier("__create_array");
             ZBASE_NO_BREAK;
           case '.':
             // Can't use `set_token()` here, we don't want `_last_token` to change.
@@ -1539,19 +1740,19 @@ token_type lexer::lex(bool keep_endl) {
   return tok_eof;
 }
 
-zs::error_result lexer::lex_compare(std::span<const token_type> buffer) {
+bool lexer::lex_compare(std::span<const token_type> buffer) {
 
   for (token_type t : buffer) {
     if (lex() != t or zb::is_one_of(_current_token, tok_eof, tok_lex_error)) {
-      return zs::error_code::invalid_token;
+      return false;
     }
   }
-  return {};
+  return true;
 }
 
-token_type lexer::peek() const {
+token_type lexer::peek(bool keep_endl) const {
   lexer l(*this);
-  return l.lex();
+  return l.lex(keep_endl);
 }
 
 zs::error_result lexer::peek(std::span<token_type>& buffer) const {
@@ -1567,6 +1768,32 @@ zs::error_result lexer::peek(std::span<token_type>& buffer) const {
   return {};
 }
 
+bool lexer::peek_compare(std::span<const token_type> buffer) {
+  lexer l(*this);
+  return l.lex_compare(buffer);
+}
+
+bool lexer::is_right_arrow_function_call() const {
+  ZS_ASSERT(_current_token == tok_lbracket);
+
+  lexer l(*this);
+  token_type tok = tok_none;
+  int_t count = 1;
+  while (!zb::is_one_of(tok = l.lex(), tok_eof, tok_lex_error)) {
+
+    if (tok == tok_rbracket) {
+      if (--count == 0) {
+
+        return l.lex() == tok_right_arrow;
+      }
+    }
+    else if (tok == tok_lbracket) {
+      count++;
+    }
+  }
+
+  return false;
+}
 bool lexer::is_template_function_call() const {
   ZS_ASSERT(_current_token == tok_lt);
 
@@ -1583,6 +1810,7 @@ bool lexer::is_template_function_call() const {
     case tok_var:
     case tok_int:
     case tok_float:
+    case tok_number:
     case tok_bool:
     case tok_table:
     case tok_array:
@@ -1686,6 +1914,29 @@ zs::error_result lexer::lex_rbracket(std::span<token_type>& buffer) {
   }
 
   buffer = buffer.subspan(0, std::distance(buffer.begin(), it));
+  return {};
+}
+
+zs::error_result lexer::lex_to_rctrlbracket() {
+  int_t count = 1;
+  const char* beg = _stream.ptr();
+  token_type tok = tok_none;
+  while (!zb::is_one_of(tok = lex(), tok_eof, tok_lex_error)) {
+
+    if (tok == tok_rcrlbracket) {
+      if (!--count) {
+        break;
+      }
+    }
+    else if (tok == tok_lcrlbracket) {
+      count++;
+    }
+  }
+
+  if (zb::is_one_of(tok, tok_eof, tok_lex_error)) {
+    return zs::errc::not_found;
+  }
+
   return {};
 }
 

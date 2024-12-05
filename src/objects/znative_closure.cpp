@@ -9,27 +9,27 @@ native_closure_object* native_closure_object::create(zs::engine* eng, zs::native
   return nc;
 }
 
-native_closure_object* native_closure_object::create(zs::engine* eng, zs::native_cclosure_t closure) {
+native_closure_object* native_closure_object::create(zs::engine* eng, zs::function_t fct) {
   native_closure_object* nc
-      = internal::zs_new<memory_tag::nt_native_closure, native_closure_object>(eng, eng, closure);
+      = internal::zs_new<memory_tag::nt_native_closure, native_closure_object>(eng, eng, fct);
 
   return nc;
 }
 
 native_closure_object::native_closure_object(zs::engine* eng, zs::native_closure* closure) noexcept
     : reference_counted_object(eng, zs::object_type::k_native_closure)
-    , _type_check(zs::allocator<uint32_t>(eng)) {
+    , _callback{ .closure = closure }
+    , _type_check(zs::allocator<uint32_t>(eng))
+    , _ctype(closure_type::obj) {
 
-  _closure.closure = closure;
-  _ctype = closure_type::obj;
+  //      _callback.closure = closure;
 }
 
-native_closure_object::native_closure_object(zs::engine* eng, zs::native_cclosure_t closure) noexcept
+native_closure_object::native_closure_object(zs::engine* eng, zs::function_t fct) noexcept
     : reference_counted_object(eng, zs::object_type::k_native_closure)
-    , _type_check(zs::allocator<uint32_t>(eng)) {
-  _closure.c_fct = closure;
-  _ctype = closure_type::c_func;
-}
+    , _callback{ .fct = fct }
+    , _type_check(zs::allocator<uint32_t>(eng))
+    , _ctype(closure_type::fct) {}
 
 native_closure_object::~native_closure_object() {
 
@@ -38,16 +38,16 @@ native_closure_object::~native_closure_object() {
   }
 
   if (_ctype == closure_type::obj) {
-    _closure.closure->release();
+    _callback.closure->release();
   }
 }
 
-int_t native_closure_object::call(vm_ref v) {
-  if (_ctype == closure_type::c_func) {
-    return (*_closure.c_fct)(v.get_virtual_machine());
+int_t native_closure_object::call(vm_ref vm) {
+  if (_ctype == closure_type::fct) {
+    return (*_callback.fct)(vm);
   }
   else {
-    return _closure.closure->call(v);
+    return _callback.closure->call(vm);
   }
 }
 
@@ -55,13 +55,12 @@ native_closure_object* native_closure_object::clone() {
 
   if (_ctype == closure_type::obj) {
     native_closure_object* nc
-        = native_closure_object::create(reference_counted_object::_engine, _closure.closure);
-    nc->_closure.closure->retain();
+        = native_closure_object::create(reference_counted_object::_engine, _callback.closure);
+    nc->_callback.closure->retain();
     return nc;
   }
 
-  native_closure_object* nc
-      = native_closure_object::create(reference_counted_object::_engine, _closure.c_fct);
+  native_closure_object* nc = native_closure_object::create(reference_counted_object::_engine, _callback.fct);
   return nc;
 }
 

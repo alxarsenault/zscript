@@ -1,6 +1,8 @@
 
 
 namespace zs {
+using enum opcode;
+
 template <opcode Op>
 zs::error_code virtual_machine::exec_op(zs::instruction_iterator& it, exec_op_data_t& op_data) {
   zb::print("unimplemented operation", it.get_opcode());
@@ -94,8 +96,30 @@ ZS_DECL_EXEC_OP(set_meta_argument) {
 // op_move.
 ZS_DECL_EXEC_OP(move) {
   ZS_INST(move);
+
+  //  zb::print("OP_MOVE=", _stack[inst.idx], "FROM ", (int)inst.idx, " TO ", (int)inst.target_idx, " STACK
+  //  BASE ", _stack.get_stack_base());
+
+  //  if(_stack[inst.idx] == 69) {
+  //    zb::print("MOVE 609");
+  //  }
   _stack[inst.target_idx] = _stack[inst.idx];
+
   return zs::error_code::success;
+}
+// op_assign.
+ZS_DECL_EXEC_OP(assign) {
+  ZS_INST(assign);
+
+  //  zb::print("OP_MOVE=", _stack[inst.idx], "FROM ", (int)inst.idx, " TO ", (int)inst.target_idx, " STACK
+  //  BASE ", _stack.get_stack_base());
+
+  //  if(_stack[inst.idx] == 69) {
+  //    zb::print("MOVE 609");
+  //  }
+  _stack[inst.target_idx] = _stack[inst.idx];
+
+  return zs::errc::success;
 }
 
 // op_get.
@@ -105,15 +129,14 @@ zs::error_code virtual_machine::exec_op<opcode::op_get>(
   const zs::instruction_t<op_get>& inst = it.get_ref<op_get>();
 
   object dst;
-  const object& tbl = _stack[inst.table_idx];
-  const object& key = _stack[inst.key_idx];
-  //  zb::print(tbl, key);
+  const object tbl = _stack[inst.table_idx];
+  const object key = _stack[inst.key_idx];
+
   if (auto err = this->get(tbl, key, dst)) {
 
-    if (err == zs::error_code::not_found && inst.look_in_root) {
-      // TODO: Use closure's root.
-      //      ZS_RETURN_IF_ERROR(this->get(_root_table, key, dst));
+    if (err == zs::error_code::not_found && (inst.flags & get_op_flags_t::gf_look_in_root) != 0) {
 
+      // TODO: Use closure's root.
       if (auto err = this->get(_root_table, key, dst)) {
         zb::print("-------dsljkdjjksadl", key);
         return err;
@@ -130,6 +153,16 @@ zs::error_code virtual_machine::exec_op<opcode::op_get>(
   return zs::error_code::success;
 }
 
+// op_load_lib_ss.
+template <>
+zs::error_code virtual_machine::exec_op<op_load_lib_ss>(
+    zs::instruction_iterator& it, exec_op_data_t& op_data) {
+  const zs::instruction_t<op_load_lib_ss>& inst = it.get_ref<op_load_lib_ss>();
+
+  object& target = _stack[inst.target_idx];
+  return this->get(_global_table, inst.key.get_small_string(), target);
+}
+
 // op_set.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_set>(
@@ -139,8 +172,64 @@ zs::error_code virtual_machine::exec_op<opcode::op_set>(
   object& tbl = _stack[inst.table_idx];
   const object& key = _stack[inst.key_idx];
   const object& value = _stack[inst.value_idx];
-  return this->set(tbl, key, value);
+  //  zb::print("DSKLDKSLKDLKLDS", key, inst.can_create);
+  zs::error_code err = inst.can_create ? this->set(tbl, key, value) : this->set_if_exists(tbl, key, value);
+
+  if (inst.target_idx != (uint8_t)-1) {
+    _stack[inst.target_idx] = value;
+  }
+
+  return err;
 }
+
+// op_set_ss.
+template <>
+zs::error_code virtual_machine::exec_op<opcode::op_set_ss>(
+    zs::instruction_iterator& it, exec_op_data_t& op_data) {
+  const zs::instruction_t<op_set_ss>& inst = it.get_ref<op_set_ss>();
+
+  object& tbl = _stack[inst.table_idx];
+  const object& value = _stack[inst.value_idx];
+
+  zs::error_code err = inst.can_create ? this->set(tbl, inst.key.get_small_string(), value)
+                                       : this->set_if_exists(tbl, inst.key.get_small_string(), value);
+
+  //  zs::error_code err = this->set(tbl, inst.key.get_small_string(), value);
+
+  if (inst.target_idx != (uint8_t)-1) {
+    _stack[inst.target_idx] = value;
+  }
+
+  return err;
+}
+//
+//// op_rawset.
+// template <>
+// zs::error_code virtual_machine::exec_op<opcode::op_rawset>(
+//     zs::instruction_iterator& it, exec_op_data_t& op_data) {
+//   const zs::instruction_t<op_rawset>& inst = it.get_ref<op_rawset>();
+//
+//   object& tbl = _stack[inst.table_idx];
+//
+//   if (!tbl.is_table()) {
+//     return zs::error_code::invalid_type;
+//   }
+//
+//   const object& key = _stack[inst.key_idx];
+//   const object value = _stack[inst.value_idx];
+//   zb::print("DSKLDKSLKDLKLDS", key, inst.can_create);
+//
+//   if(inst.can_create) {
+//
+//   }
+//   zs::error_code err = tbl.as_table().set(key, value);
+//
+//   if (inst.target_idx != (uint8_t)-1) {
+//     _stack[inst.target_idx] = value;
+//   }
+//
+//   return err;
+// }
 
 // op_rawset.
 template <>
@@ -148,22 +237,42 @@ zs::error_code virtual_machine::exec_op<opcode::op_rawset>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
   const zs::instruction_t<op_rawset>& inst = it.get_ref<op_rawset>();
 
-  object& tbl = _stack[inst.table_idx];
+  object tbl = _stack[inst.table_idx];
 
   if (!tbl.is_table()) {
     return zs::error_code::invalid_type;
   }
 
-  const object& key = _stack[inst.key_idx];
-  const object& value = _stack[inst.value_idx];
-  return tbl.as_table().set(key, value);
+  object key = _stack[inst.key_idx];
+  object value = _stack[inst.value_idx];
+  //  zb::print("DSKLDKSLKDLKLDS", key, inst.can_create);
+
+  if (inst.target_idx != (uint8_t)-1) {
+    _stack[inst.target_idx] = value;
+  }
+
+  if (inst.can_create) {
+    return tbl.as_table().set(std::move(key), std::move(value));
+  }
+
+  //  return tbl.as_table().set_no_create(std::move(key), std::move(value));
+
+  if (auto err = tbl.as_table().set_no_create(std::move(key), std::move(value))) {
+    set_error("Can't create new element without 'this'.\n");
+    return err;
+  }
+
+  return {};
+  //  zs::error_code err = tbl.as_table().set(key, value);
+
+  //  return err;
 }
 
-// op_rawsets.
+// op_rawset_ss.
 template <>
-zs::error_code virtual_machine::exec_op<opcode::op_rawsets>(
+zs::error_code virtual_machine::exec_op<opcode::op_rawset_ss>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_rawsets>& inst = it.get_ref<op_rawsets>();
+  const zs::instruction_t<op_rawset_ss>& inst = it.get_ref<op_rawset_ss>();
 
   object& tbl = _stack[inst.table_idx];
 
@@ -171,179 +280,230 @@ zs::error_code virtual_machine::exec_op<opcode::op_rawsets>(
     return zs::error_code::invalid_type;
   }
 
-  const char* sbuffer = (const char*)&inst.value_1;
-  object key = zs::_ss(std::string_view(sbuffer, std::strlen(sbuffer)));
-
-  //  const object& key = _stack[inst.key_idx];
   const object& value = _stack[inst.value_idx];
-  return tbl.as_table().set(key, value);
+
+  zs::error_code err = tbl.as_table().set(inst.key.get_small_string(), value);
+
+  if (inst.target_idx != (uint8_t)-1) {
+    _stack[inst.target_idx] = value;
+  }
+
+  return err;
+}
+
+// op_object_add_eq.
+template <>
+zs::error_code virtual_machine::exec_op<opcode::op_object_add_eq>(
+    zs::instruction_iterator& it, exec_op_data_t& op_data) {
+  const zs::instruction_t<op_object_add_eq>& inst = it.get_ref<op_object_add_eq>();
+
+  object& obj = _stack[inst.obj_idx];
+  const object& key = _stack[inst.key_idx];
+  const object& value = _stack[inst.value_idx];
+  object dest;
+  //  zs::error_code err = this->set(obj, key, value);
+
+  if (auto err = this->add_eq(obj, key, value, dest)) {
+    zb::print("ERROR", err, __FILE__, __LINE__);
+    return err;
+  }
+
+  if (inst.target_idx != (uint8_t)-1) {
+    _stack[inst.target_idx] = dest;
+  }
+
+  return errc::success;
+}
+
+// op_object_mul_eq.
+template <>
+zs::error_code virtual_machine::exec_op<opcode::op_object_mul_eq>(
+    zs::instruction_iterator& it, exec_op_data_t& op_data) {
+  const zs::instruction_t<op_object_mul_eq>& inst = it.get_ref<op_object_mul_eq>();
+
+  object& obj = _stack[inst.obj_idx];
+  const object& key = _stack[inst.key_idx];
+  const object& value = _stack[inst.value_idx];
+  object dest;
+
+  if (auto err = this->mul_eq(obj, key, value, dest)) {
+    zb::print("ERROR", err, __FILE__, __LINE__);
+    return err;
+  }
+
+  if (inst.target_idx != (uint8_t)-1) {
+    _stack[inst.target_idx] = dest;
+  }
+
+  return errc::success;
+}
+
+// op_close.
+template <>
+zs::error_code virtual_machine::exec_op<op_close>(zs::instruction_iterator& it, exec_op_data_t& op_data) {
+
+  const zs::instruction_t<op_close>& inst = it.get_ref<op_close>();
+
+  ZS_TRACE("VM - CLOSE_CAPTURE");
+  //  zs::vector<zs::object>& closure_capture_values =
+  //  _call_stack.back().closure.as_closure()._capture_values;// op_data.closure->_capture_values;
+  const object* stack_ptr = _stack.stack_base_pointer() + inst.stack_size;
+  if (auto err = runtime_action<rt_close_captures>(stack_ptr)) {
+    return err;
+  }
+
+  return zs::errc::success;
 }
 
 // op_get_capture.
+// ZS_DECL_EXEC_OP(get_capture)
+
 template <>
-zs::error_code virtual_machine::exec_op<opcode::op_get_capture>(
+zs::error_code virtual_machine::exec_op<op_get_capture>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
   const zs::instruction_t<op_get_capture>& inst = it.get_ref<op_get_capture>();
-  const zs::vector<zs::object>& closure_capture_values = op_data.closure->_capture_values;
 
-  if (inst.idx >= closure_capture_values.size()) {
-    _error_message += zs::strprint(_engine, "op_get_capture could not find capture\n");
-    return zs::error_code::out_of_bounds;
+  const zs::vector<zs::object>& closure_captured_values = op_data.closure->_captured_values;
+
+  if (inst.idx >= closure_captured_values.size()) {
+    return ZS_VM_ERROR(zs::errc::out_of_bounds, "Capture index out of bounds in op_get_capture.");
   }
 
-  _stack[inst.target_idx] = closure_capture_values[inst.idx];
-  return zs::error_code::success;
+  const object& value = closure_captured_values[inst.idx];
+  if (value.is_capture()) {
+    _stack[inst.target_idx] = value.as_capture().get_value();
+  }
+  else {
+    _stack[inst.target_idx] = value;
+  }
+
+  return zs::errc::success;
+}
+
+// op_set_capture.
+template <>
+zs::error_code virtual_machine::exec_op<opcode::op_set_capture>(
+    zs::instruction_iterator& it, exec_op_data_t& op_data) {
+  const zs::instruction_t<op_set_capture>& inst = it.get_ref<op_set_capture>();
+
+  const object& value = _stack[inst.value_idx];
+
+  const zs::vector<zs::object>& closure_captured_values = op_data.closure->_captured_values;
+
+  if (inst.capture_idx >= closure_captured_values.size()) {
+    return ZS_VM_ERROR(zs::errc::out_of_bounds, "Capture index out of bounds in op_set_capture.");
+  }
+
+  *(closure_captured_values[inst.capture_idx].as_capture().get_value_ptr()) = value;
+
+  if (inst.target_idx != k_invalid_target) {
+
+    //    zb::print("ASASASA", closure_captured_values[inst.capture_idx].as_capture().get_value_ptr(), &
+    //    _stack[inst.target_idx]);
+
+    _stack[inst.target_idx] = value;
+  }
+
+  return {};
 }
 
 // op_arith.
-template <>
-zs::error_code virtual_machine::exec_op<opcode::op_arith>(
-    zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_arith>& inst = it.get_ref<op_arith>();
-
-  return runtime_arith_operation(
-      inst.aop, _stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
-}
+// template <>
+// zs::error_code virtual_machine::exec_op<opcode::op_arith>(
+//    zs::instruction_iterator& it, exec_op_data_t& op_data) {
+//  const zs::instruction_t<op_arith>& inst = it.get_ref<op_arith>();
+//
+//  return runtime_arith_operation(
+//      inst.aop, _stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
+//}
 
 // op_add.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_add>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_add>& inst = it.get_ref<op_add>();
-
-  //  zb::print("op_add", _stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx],
-  //  ZBASE_VNAME(inst.target_idx), ZBASE_VNAME(inst.lhs_idx),ZBASE_VNAME(inst.rhs_idx));
-
-  if (auto err = add(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
-    zb::print("ERROR", err, __FILE__, __LINE__);
-    return err;
-  }
-
-  //  zb::print("op_add_after", _stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
-  return zs::error_code::success;
+  const auto& inst = it.get_ref<op_add>();
+  return add(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
 }
 
 // op_sub.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_sub>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_sub>& inst = it.get_ref<op_sub>();
-  if (auto err = sub(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
-    zb::print("ERROR", __FILE__, __LINE__);
-    return err;
-  }
-  return zs::error_code::success;
+  const auto& inst = it.get_ref<op_sub>();
+  return sub(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
 }
 
 // op_mul.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_mul>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_mul>& inst = it.get_ref<op_mul>();
-  if (auto err = mul(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
-    zb::print("ERROR", __FILE__, __LINE__);
-    return err;
-  }
-  return zs::error_code::success;
+  const auto& inst = it.get_ref<op_mul>();
+
+  return mul(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
 }
 
 // op_div.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_div>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_div>& inst = it.get_ref<op_div>();
-  if (auto err = div(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
-    zb::print("ERROR", err, __FILE__, __LINE__);
-    return err;
-  }
-  return zs::error_code::success;
-}
-
-// op_exp.
-template <>
-zs::error_code virtual_machine::exec_op<opcode::op_exp>(
-    zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_exp>& inst = it.get_ref<op_exp>();
-  if (auto err = exp(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
-    zb::print("ERROR", err, __FILE__, __LINE__);
-    return err;
-  }
-  return zs::error_code::success;
+  const auto& inst = it.get_ref<op_div>();
+  return div(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
 }
 
 // op_mod.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_mod>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_mod>& inst = it.get_ref<op_mod>();
-  if (auto err = mod(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
-    zb::print("ERROR", err, __FILE__, __LINE__);
-    return err;
-  }
-  return zs::error_code::success;
+  const auto& inst = it.get_ref<op_mod>();
+  return mod(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
+}
+
+// op_exp.
+template <>
+zs::error_code virtual_machine::exec_op<opcode::op_exp>(
+    zs::instruction_iterator& it, exec_op_data_t& op_data) {
+  const auto& inst = it.get_ref<op_exp>();
+  return exp(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
 }
 
 // op_bitwise_or.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_bitwise_or>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_bitwise_or>& inst = it.get_ref<op_bitwise_or>();
-  if (auto err = bitwise_or(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
-    zb::print("ERROR", err, __FILE__, __LINE__);
-    return err;
-  }
-
-  return zs::error_code::success;
+  const auto& inst = it.get_ref<op_bitwise_or>();
+  return bitwise_or(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
 }
 
 // op_bitwise_and.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_bitwise_and>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_bitwise_and>& inst = it.get_ref<op_bitwise_and>();
-  if (auto err = bitwise_and(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
-    zb::print("ERROR", err, __FILE__, __LINE__);
-    return err;
-  }
-
-  return zs::error_code::success;
+  const auto& inst = it.get_ref<op_bitwise_and>();
+  return bitwise_and(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
 }
 
 // op_bitwise_xor.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_bitwise_xor>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_bitwise_xor>& inst = it.get_ref<op_bitwise_xor>();
-  if (auto err = bitwise_xor(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
-    zb::print("ERROR", err, __FILE__, __LINE__);
-    return err;
-  }
-
-  return zs::error_code::success;
+  const auto& inst = it.get_ref<op_bitwise_xor>();
+  return bitwise_xor(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
 }
 
 // op_lshift.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_lshift>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_lshift>& inst = it.get_ref<op_lshift>();
-  if (auto err = lshift(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
-    zb::print("ERROR", err, __FILE__, __LINE__);
-    return err;
-  }
-  return zs::error_code::success;
+  const auto& inst = it.get_ref<op_lshift>();
+  return lshift(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
 }
 
 // op_rshift.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_rshift>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_rshift>& inst = it.get_ref<op_rshift>();
-  if (auto err = rshift(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
-    zb::print("ERROR", err, __FILE__, __LINE__);
-    return err;
-  }
-  return zs::error_code::success;
+  const auto& inst = it.get_ref<op_rshift>();
+  return rshift(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
 }
 
 //
@@ -354,7 +514,7 @@ zs::error_code virtual_machine::exec_op<opcode::op_rshift>(
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_add_eq>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_add_eq>& inst = it.get_ref<op_add_eq>();
+  const auto& inst = it.get_ref<op_add_eq>();
   if (auto err = add_eq(_stack[inst.target_idx], _stack[inst.rhs_idx])) {
     zb::print("ERROR", err, __FILE__, __LINE__);
     return err.code;
@@ -367,6 +527,7 @@ template <>
 zs::error_code virtual_machine::exec_op<opcode::op_mul_eq>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
   const zs::instruction_t<op_mul_eq>& inst = it.get_ref<op_mul_eq>();
+  //  zb::print("OPMULEQ", inst);
   if (auto err = mul_eq(_stack[inst.target_idx], _stack[inst.rhs_idx])) {
     zb::print("ERROR", err, __FILE__, __LINE__);
     return err.code;
@@ -428,6 +589,8 @@ zs::error_code virtual_machine::exec_op<opcode::op_return>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
   const zs::instruction_t<op_return>& inst = it.get_ref<op_return>();
 
+  ZS_TRACE("VM - op_return");
+
   if (inst.has_value) {
     this->push(_stack[inst.idx]);
     op_data.ret_value = _stack[inst.idx];
@@ -436,6 +599,26 @@ zs::error_code virtual_machine::exec_op<opcode::op_return>(
     this->push_null();
     op_data.ret_value.reset();
   }
+
+  //  const object* stack_ptr = _stack.get_internal_vector().data()+ _call_stack.back().previous_stack_base;
+  //  if(auto err = runtime_action<rt_close_captures>(stack_ptr)) {
+  //    return err;
+  //  }
+
+  //  call_info cinfo = _call_stack.get_pop_back();
+  //  _stack.set_stack_base(cinfo.previous_stack_base);
+  //
+  //  if(cinfo.closure.is_closure()) {
+  //    zs::closure_object& cobj = cinfo.closure.as_closure();
+  //        zs::vector<zs::object>& closure_capture_values = cobj._capture_values;
+  //    const object* stack_ptr = _stack.stack_base_pointer() ;//+cinfo.previous_top_index;
+  //     for(object& cap : closure_capture_values) {
+  //       if(!cap.as_capture().is_baked() and cap.as_capture().get_value_ptr() >= stack_ptr) {
+  //         cap.as_capture().bake();
+  //         zb::print(cinfo.closure.as_closure().get_proto()._name);
+  //       }
+  //     }
+  //  }
 
   //  if(_call_stack.size() == 2) {
   //    zb::print("DSLKDSKDJSKLJDKSLJDS");
@@ -450,10 +633,10 @@ ZS_DECL_EXEC_OP(return_export) {
 
   object export_table = _stack[inst.idx];
 
-  zbase_assert(export_table.is_table(), "returned export table is not a table");
+  //  zbase_assert(export_table.is_table(), "returned export table is not a table");
 
   // Look for cycling references.
-  table_object& tbl = export_table.as_table();
+  //  table_object& tbl = export_table.as_table();
 
   //  for(auto it : tbl) {
   //    zb::print(it);
@@ -484,9 +667,9 @@ template <>
 zs::error_code virtual_machine::exec_op<opcode::op_line>(
     zs::instruction_iterator& it, exec_op_data_t& op_data) {
   ZS_TODO("Implement");
-  //  const zs::instruction_t<op_line>& inst = it.get_ref<op_line>();
+  const zs::instruction_t<op_line>& inst = it.get_ref<op_line>();
 
-  //  zb::print(inst.line, __FILE_NAME__, __LINE__);
+  ZS_TRACE("op_line", inst.line);
   return zs::error_code::success;
 }
 
@@ -512,6 +695,38 @@ zs::error_code virtual_machine::exec_op<opcode::op_check_type>(
   return zs::error_code::success;
 }
 
+// op_assign_w_mask.
+ZS_DECL_EXEC_OP(assign_w_mask) {
+  ZS_INST(assign_w_mask);
+  // Check if object at 'idx' has type mask.
+  if (!_stack[inst.idx].has_type_mask(inst.mask)) {
+    //    zb::print("ERROR wrong type", _stack[inst.idx].get_type(), "expected
+    //    mask", inst.mask);
+    _error_message += zs::sstrprint(_engine, "wrong type mask", _stack[inst.idx].get_type(), "expected",
+        zs::object_type_mask_printer{ inst.mask }, "\n");
+
+    return zs::error_code::invalid_type_assignment;
+  }
+  _stack[inst.target_idx] = _stack[inst.idx];
+
+  return zs::error_code::success;
+}
+// op_assign_custom.
+ZS_DECL_EXEC_OP(assign_custom) {
+  ZS_INST(assign_custom);
+  // Check if object at 'idx' has type mask.
+  if (!_stack[inst.idx].has_type_mask(inst.mask)) {
+    //    zb::print("ERROR wrong type", _stack[inst.idx].get_type(), "expected
+    //    mask", inst.mask);
+    _error_message += zs::sstrprint(_engine, "wrong type mask", _stack[inst.idx].get_type(), "expected",
+        zs::object_type_mask_printer{ inst.mask }, "\n");
+
+    return zs::error_code::invalid_type_assignment;
+  }
+  _stack[inst.target_idx] = _stack[inst.idx];
+
+  return zs::error_code::success;
+}
 // op_check_type_mask.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_check_type_mask>(
@@ -657,6 +872,36 @@ ZS_DECL_EXEC_OP(new_slot_ss_small_string) {
   return table.as_table().set(inst.key.get_small_string(), inst.value.get_small_string());
 }
 
+//// op_new_struct_slot.
+// ZS_DECL_EXEC_OP(new_struct_slot) {
+//   ZS_INST(new_struct_slot);
+//   object& strct = _stack[inst.struct_idx];
+//   const object& key = _stack[inst.key_idx];
+//
+//   //  object value = inst.has_value ?
+//   if (inst.value_idx != k_invalid_target) {
+//     return strct.as_struct().new_slot(
+//         key, _stack[inst.value_idx], inst.mask, inst.is_static, inst.is_private, inst.is_const);
+//   }
+//
+//   return strct.as_struct().new_slot(key, inst.mask, inst.is_static, inst.is_private, inst.is_const);
+// }
+
+//// op_new_struct_slot.
+// ZS_DECL_EXEC_OP(new_struct_slot) {
+//   ZS_INST(new_struct_slot);
+//   object& strct = _stack[inst.struct_idx];
+//   const object& key = _stack[inst.key_idx];
+//
+//   //  object value = inst.has_value ?
+//   if (inst.has_value) {
+//     return strct.as_struct().new_slot(
+//         key, _stack[inst.value_idx], inst.mask, inst.is_static, inst.is_private, inst.is_const);
+//   }
+//
+//   return strct.as_struct().new_slot(key, inst.mask, inst.is_static, inst.is_private, inst.is_const);
+// }
+
 // op_new_struct_slot.
 ZS_DECL_EXEC_OP(new_struct_slot) {
   ZS_INST(new_struct_slot);
@@ -664,11 +909,11 @@ ZS_DECL_EXEC_OP(new_struct_slot) {
   const object& key = _stack[inst.key_idx];
 
   //  object value = inst.has_value ?
-  if (inst.has_value) {
-    return strct.as_struct().new_slot(key, _stack[inst.value_idx], inst.mask, inst.is_static, inst.is_const);
+  if (inst.value_idx != k_invalid_target) {
+    return strct.as_struct().new_slot(key, _stack[inst.value_idx], inst.mask, inst.vdecl_flags);
   }
 
-  return strct.as_struct().new_slot(key, inst.mask, inst.is_static, inst.is_const);
+  return strct.as_struct().new_slot(key, inst.mask, inst.vdecl_flags);
 }
 
 // op_new_struct_slot_ss.
@@ -679,22 +924,116 @@ ZS_DECL_EXEC_OP(new_struct_slot_ss) {
 
   object key = inst.key.get_small_string();
 
-  if (inst.has_value) {
-    return strct.as_struct().new_slot(key, _stack[inst.value_idx], inst.mask, inst.is_static, inst.is_const);
+  if (inst.value_idx != k_invalid_target) {
+    return strct.as_struct().new_slot(key, _stack[inst.value_idx], inst.mask, inst.vdecl_flags);
   }
 
-  return strct.as_struct().new_slot(key, inst.mask, inst.is_static, inst.is_const);
+  return strct.as_struct().new_slot(key, inst.mask, inst.vdecl_flags);
+}
+
+// op_new_struct_default_constructor.
+ZS_DECL_EXEC_OP(new_struct_default_constructor) {
+  ZS_INST(new_struct_default_constructor);
+  object& strct = _stack[inst.struct_idx];
+  return runtime_action<runtime_code::struct_new_default_constructor>(zb::wref(strct));
 }
 
 // op_new_struct_constructor.
 ZS_DECL_EXEC_OP(new_struct_constructor) {
   ZS_INST(new_struct_constructor);
+
+  object closure;
+  uint8_t bounded_target = k_invalid_target;
+  if (auto err = runtime_action<runtime_code::new_closure>(inst.fct_idx, bounded_target, zb::wref(closure))) {
+    return err;
+  }
+
   object& strct = _stack[inst.struct_idx];
-  object value = _stack[inst.value_idx];
-  return runtime_action<runtime_code::struct_new_constructor>(zb::wref(strct), zb::wcref(value));
+  return runtime_action<runtime_code::struct_new_constructor>(zb::wref(strct), zb::wcref(closure));
 }
 
-// op_new_class_slot.
+// op_new_struct_method.
+ZS_DECL_EXEC_OP(new_struct_method) {
+  ZS_INST(new_struct_method);
+
+  object closure;
+  if (auto err = runtime_action<runtime_code::new_closure>(inst.fct_idx, (uint8_t)-1, zb::wref(closure))) {
+    return err;
+  }
+
+  object& strct = _stack[inst.struct_idx];
+  //  const object& name = _stack[inst.key_idx];
+  return runtime_action<runtime_code::struct_new_method>(zb::wref(strct), zb::wcref(closure), inst.decl_flag);
+}
+
+// op_set_struct_name.
+ZS_DECL_EXEC_OP(set_struct_name) {
+  ZS_INST(set_struct_name);
+
+  object& strct = _stack[inst.struct_idx];
+  strct.as_struct().set_name(_stack[inst.name_idx]);
+  return zs::errc::success;
+}
+
+// op_set_struct_doc.
+ZS_DECL_EXEC_OP(set_struct_doc) {
+  ZS_INST(set_struct_doc);
+
+  object& strct = _stack[inst.struct_idx];
+  //  zb::print("STRUCT DOC", _stack[inst.doc_idx]);
+  strct.as_struct().set_doc(_stack[inst.doc_idx]);
+  return zs::errc::success;
+}
+
+// op_set_struct_member_doc.
+ZS_DECL_EXEC_OP(set_struct_member_doc) {
+  ZS_INST(set_struct_member_doc);
+
+  object& strct = _stack[inst.struct_idx];
+
+  strct.as_struct().set_member_doc(_stack[inst.name_idx], _stack[inst.doc_idx]);
+
+  //  zb::print("STRUCT MEMBER DOC", _stack[inst.name_idx], _stack[inst.doc_idx]);
+  //  strct.as_struct().set_doc(_stack[inst.doc_idx]);
+  return zs::errc::success;
+}
+
+//// op_new_struct_method_ss.
+// ZS_DECL_EXEC_OP(new_struct_method_ss) {
+//   ZS_INST(new_struct_method_ss);
+//
+//   object closure;
+//   if (auto err = runtime_action<runtime_code::new_closure>(inst.fct_idx, (uint8_t)-1, zb::wref(closure))) {
+//     return err;
+//   }
+//
+//   object& strct = _stack[inst.struct_idx];
+//   object name = inst.key.get_small_string();
+//   return runtime_action<runtime_code::struct_new_method>(zb::wref(strct), zb::wcref(name),
+//   zb::wcref(closure));
+// }
+
+///// .
+// #d efine ZS_INSTRUCTION_NEW_STRUCT_METHOD(X) \
+//  X(u8, struct_idx)                       \
+//  X(u8, key_idx)                          \
+//  X(u32, fct_idx)
+// ZS_DECL_OPCODE(new_struct_method, ZS_INSTRUCTION_NEW_STRUCT_METHOD)
+//
+///// op_new_struct_method_ss
+// #d efine ZS_INSTRUCTION_NEW_STRUCT_METHOD_SS(X) \
+//  X(u8, struct_idx)                          \
+//  X(ss_inst_data, key)                       \
+//  X(u32, fct_idx)
+// ZS_DECL_OPCODE(new_struct_method_ss, ZS_INSTRUCTION_NEW_STRUCT_METHOD_SS)
+//
+
+//// op_new_closure.
+// ZS_DECL_EXEC_OP(new_closure) {
+//   ZS_INST(new_closure);
+//   return
+// }
+//  op_new_class_slot.
 ZS_DECL_EXEC_OP(new_class_slot) {
   ZS_INST(new_class_slot);
 
@@ -722,138 +1061,10 @@ ZS_DECL_EXEC_OP(new_class_slot) {
 }
 
 // op_new_closure.
-template <>
-zs::error_code virtual_machine::exec_op<opcode::op_new_closure>(
-    zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  const zs::instruction_t<op_new_closure>& inst = it.get_ref<op_new_closure>();
-
-  // Current function call info.
-  const call_info& cinfo = _call_stack.back();
-
-  // Get the current closure.
-  const zs::object& current_closure = cinfo.closure;
-  if (!current_closure.is_closure()) {
-    return zs::error_code::invalid_type;
-  }
-
-  // Get the current closure function prototype.
-  const zs::object& current_closure_fct_proto = current_closure._closure->_function;
-  if (!current_closure_fct_proto.is_function_prototype()) {
-    return zs::error_code::invalid_type;
-  }
-
-  // We want to create a closure object with the function prototype at index
-  // `inst.fct_idx` in the current closure function prototype.
-  const zs::object& new_closure_fct_proto = current_closure_fct_proto._fproto->_functions[inst.fct_idx];
-
-  // TODO: Use closure's root.
-  // Create the new closure object.
-  object new_closure_obj = zs::object::create_closure(this->get_engine(), new_closure_fct_proto, _root_table);
-
-  if (inst.bounded_target != 0xFF) {
-    new_closure_obj.as_closure()._env = _stack[inst.bounded_target];
-  }
-
-  new_closure_obj.as_closure()._module = current_closure.as_closure()._module;
-
-  if (int_t module_idx = current_closure_fct_proto._fproto->_export_table_target; module_idx != -1) {
-
-    if (module_idx >= (int_t)_stack.stack_size()) {
-      _error_message += zs::strprint(_engine, "op_new_closure could not find local capture\n");
-      return zs::error_code::out_of_bounds;
-    }
-
-    new_closure_obj.as_closure()._module = _stack[module_idx];
-  }
-
-  // In the new closure function prototype, we might have some captures to fetch.
-  const zs::vector<captured_variable>& captures = new_closure_fct_proto._fproto->_captures;
-  if (const size_t capture_sz = captures.size()) {
-
-    // Ref to the vector or capture values in the new closure object.
-    // We will push all the required capture values in here.
-    zs::vector<zs::object>& new_closure_capture_values = new_closure_obj._closure->_capture_values;
-
-    for (size_t i = 0; i < capture_sz; i++) {
-      const captured_variable& captured_var = captures[i];
-
-      switch (captured_var.type) {
-      case captured_variable::local: {
-        // The capture value is on the stack. `captured_var.src` is the index of
-        // the value on the stack. We push that value in the new closure capture
-        // values vector.
-        const int_t cap_idx = captured_var.src;
-
-        if (cap_idx >= (int_t)_stack.stack_size()) {
-          _error_message += zs::strprint(_engine, "op_new_closure could not find local capture\n");
-          return zs::error_code::out_of_bounds;
-        }
-
-        object obj = _stack[cap_idx];
-        if (captured_var.is_weak) {
-          obj = obj.get_weak_ref();
-        }
-
-        new_closure_capture_values.push_back(std::move(obj));
-
-        if (captured_var.name == "__exports__") {
-          new_closure_obj.as_closure()._module = new_closure_capture_values.back();
-        }
-        break;
-      }
-
-      case captured_variable::outer: {
-        // When the capture type is outer, the capture value is in the
-        // `capture_values` vector of the current closure object.
-        const zs::vector<zs::object>& current_closure_capture_values
-            = current_closure._closure->_capture_values;
-
-        const int_t cap_idx = captured_var.src;
-
-        if (cap_idx >= (int_t)current_closure_capture_values.size()) {
-          _error_message += zs::strprint(_engine, "op_new_closure could not find parent capture\n");
-          return zs::error_code::out_of_bounds;
-        }
-
-        //        new_closure_capture_values.push_back(current_closure_capture_values[cap_idx]);
-        object obj = current_closure_capture_values[cap_idx];
-        if (captured_var.is_weak) {
-          obj = obj.get_weak_ref();
-        }
-
-        new_closure_capture_values.push_back(std::move(obj));
-
-        if (captured_var.name == "__exports__") {
-          new_closure_obj.as_closure()._module = new_closure_capture_values.back();
-        }
-        break;
-      }
-      }
-    }
-  }
-
-  // In the new closure function prototype, we might have some default
-  // parameters to fetch.
-  const zs::vector<zs::int_t>& default_params = new_closure_fct_proto._fproto->_default_params;
-  if (const size_t default_params_sz = default_params.size()) {
-    zs::vector<zs::object>& new_closure_default_param_values = new_closure_obj._closure->_default_params;
-
-    const int_t stack_sz = _stack.stack_size();
-
-    for (size_t i = 0; i < default_params_sz; i++) {
-      int_t default_param_idx = default_params[i];
-
-      if (default_param_idx >= stack_sz) {
-        _error_message += zs::strprint(_engine, "op_new_closure could not find default param\n");
-        return zs::error_code::out_of_bounds;
-      }
-
-      new_closure_default_param_values.push_back(_stack[default_param_idx]);
-    }
-  }
-
-  _stack[inst.target_idx] = std::move(new_closure_obj);
-  return zs::error_code::success;
+ZS_DECL_EXEC_OP(new_closure) {
+  ZS_INST(new_closure);
+  return runtime_action<runtime_code::new_closure>(
+      inst.fct_idx, inst.bounded_target, zb::wref(_stack[inst.target_idx]));
 }
 
 // op_typeid.
@@ -958,6 +1169,42 @@ zs::error_code virtual_machine::exec_op<opcode::op_pobjincr>(
       inst.is_incr ? arithmetic_uop::pincr : arithmetic_uop::pdecr, _stack[inst.target_idx], val));
   ZS_RETURN_IF_ERROR(this->set(tbl, key, val));
 
+  return zs::error_code::success;
+}
+
+// op_use.
+ZS_DECL_EXEC_OP(use) {
+  ZS_INST(use);
+
+  const object& tbl = _stack[inst.target_idx];
+  const object& src = _stack[inst.src_idx];
+
+  if (tbl.is_table() and src.is_table()) {
+    for (auto t : src.as_table()) {
+      tbl.as_table().insert(t);
+    }
+  }
+
+  return {};
+}
+
+// op_if_null.
+template <>
+zs::error_code virtual_machine::exec_op<opcode::op_if_null>(
+    zs::instruction_iterator& it, exec_op_data_t& op_data) {
+  const zs::instruction_t<op_if_null>& inst = it.get_ref<op_if_null>();
+
+  const object& obj = _stack[inst.value_idx];
+
+  if ((inst.null_only and obj.is_null_or_none())
+      or not(inst.null_only or obj.is_double_question_mark_true())) {
+    ++it;
+  }
+  else {
+    it = op_data.get_instruction(op_data.get_iterator_index(it) + inst.offset);
+  }
+
+  _stack[inst.target_idx] = obj;
   return zs::error_code::success;
 }
 
@@ -1096,15 +1343,6 @@ zs::error_code virtual_machine::exec_op<opcode::op_cmp>(
   return zs::error_code::success;
 }
 
-// op_close.
-template <>
-zs::error_code virtual_machine::exec_op<opcode::op_close>(
-    zs::instruction_iterator& it, exec_op_data_t& op_data) {
-  ZS_TODO("Close captures");
-  //  const zs::instruction_t<op_close>& inst = it.get_ref<op_close>();
-  return zs::error_code::success;
-}
-
 // op_not.
 template <>
 zs::error_code virtual_machine::exec_op<opcode::op_not>(
@@ -1122,6 +1360,89 @@ zs::error_code virtual_machine::exec_op<opcode::op_not>(
 
   _stack[inst.target_idx] = !value;
   return zs::error_code::success;
+}
+// op_obj_not.
+template <>
+zs::error_code virtual_machine::exec_op<opcode::op_obj_not>(
+    zs::instruction_iterator& it, exec_op_data_t& op_data) {
+  const zs::instruction_t<op_obj_not>& inst = it.get_ref<op_obj_not>();
+  object dst;
+
+  const object tbl = _stack[inst.table_idx];
+  const object key = _stack[inst.key_idx];
+
+  if (auto err = this->get(tbl, key, dst)) {
+
+    if (err == zs::error_code::not_found) {
+
+      // TODO: Use closure's root.
+      if (auto err = this->get(_root_table, key, dst)) {
+        zb::print("-------dsljkdjjksadl", key);
+        return err;
+      }
+    }
+    else {
+      set_error("Get failed in type: '", tbl.get_type(), "' with key: ", key, ".\n");
+      _stack[inst.target_idx].reset();
+      return err;
+    }
+  }
+
+  bool_t value = dst.is_if_true();
+
+  //  bool_t value = false;
+  //
+  //  if (auto err = _stack[inst.idx].convert_to_bool(value)) {
+  //    _error_message += zs::strprint(_engine, "cannot convert to bool",
+  //    _stack[inst.idx].get_type(), "\n"); return err;
+  //  }
+
+  _stack[inst.target_idx] = !value;
+  return zs::error_code::success;
+}
+
+// op_and.
+template <>
+zs::error_code virtual_machine::exec_op<op_and>(zs::instruction_iterator& it, exec_op_data_t& op_data) {
+  const zs::instruction_t<op_and>& inst = it.get_ref<op_and>();
+
+  bool_t src = _stack[inst.src_idx].is_if_true();
+
+  if (!src) {
+    zs::instruction_vector& inst_vec = op_data.instructions();
+    size_t current_inst_index = inst_vec.get_iterator_index(it);
+    int_t jmp_to_inst_index = int_t(current_inst_index) + inst.offset;
+
+    it = inst_vec[jmp_to_inst_index];
+  }
+  else {
+    ++it;
+  }
+
+  _stack[inst.target_idx] = src;
+  return zs::errc::success;
+}
+
+// op_or.
+template <>
+zs::error_code virtual_machine::exec_op<op_or>(zs::instruction_iterator& it, exec_op_data_t& op_data) {
+  const zs::instruction_t<op_or>& inst = it.get_ref<op_or>();
+
+  bool_t src = _stack[inst.src_idx].is_if_true();
+
+  if (src) {
+    zs::instruction_vector& inst_vec = op_data.instructions();
+    size_t current_inst_index = inst_vec.get_iterator_index(it);
+    int_t jmp_to_inst_index = int_t(current_inst_index) + inst.offset;
+
+    it = inst_vec[jmp_to_inst_index];
+  }
+  else {
+    ++it;
+  }
+
+  _stack[inst.target_idx] = src;
+  return zs::errc::success;
 }
 
 // op_close_enum.

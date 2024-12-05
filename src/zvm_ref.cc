@@ -89,8 +89,12 @@ zs::error_result vm_ref::call(zs::int_t n_params, bool returns, bool pop_callabl
 zs::engine* vm_ref::get_engine() const noexcept { return _vm->get_engine(); }
 std::ostream& vm_ref::get_stream() const noexcept { return _vm->get_engine()->get_stream(); }
 
+table_object& vm_ref::get_registry_table_object() const noexcept {
+  return _vm->get_engine()->get_registry_table_object();
+}
+
 void vm_ref::set_error(std::string_view msg) { _vm->set_error(msg); }
-const zs::string& vm_ref::get_error() const noexcept { return _vm->get_error(); }
+zs::string vm_ref::get_error() const noexcept { return _vm->get_error(); }
 
 object& vm_ref::top() noexcept { return _vm->top(); }
 const object& vm_ref::top() const noexcept { return _vm->top(); }

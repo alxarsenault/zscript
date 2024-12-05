@@ -49,7 +49,7 @@ zs::error_result macro_parser::look_and_replace_one_macro_call(
   const char* begin_ptr = _lexer->stream().ptr();
   lex(true);
 
-  while (!zb::is_one_of(_token, tok_eof, tok_lex_error)) {
+  while (!zb::is_one_of(_token, tok_eof)) {
 
     if (is(tok_dollar)) {
       lex();
@@ -140,7 +140,7 @@ zs::error_result macro_parser::parse_macro_call(zs::string& output_code, const c
   bool first = true;
 
   const char* params_last_end = _lexer->stream().ptr();
-  while (!zb::is_one_of(_token, tok_rbracket, tok_eof, tok_lex_error)) {
+  while (!zb::is_one_of(_token, tok_rbracket, tok_eof)) {
     const char* params_end = _lexer->stream().ptr();
     params_last_end = params_end;
 
@@ -254,7 +254,7 @@ zs::error_result macro_parser::replace_macro_content(
   const char* identifier_begin = lexer.stream().ptr();
   token_type tok = lref.lex();
 
-  while (!zb::is_one_of(tok, tok_eof, tok_lex_error)) {
+  while (!zb::is_one_of(tok, tok_eof)) {
     if (tok == tok_identifier) {
       const char* identifier_end = lexer.stream().ptr();
 

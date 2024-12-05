@@ -329,7 +329,7 @@ var a = [1, 3, "67"];
 var concat = "";
 
 for(var<int, string, john> i : a) {
-  concat += tostring(i);
+  concat += zs::to_string(i);
 }
 
 return concat;
@@ -342,7 +342,7 @@ var a = [1, 3, "67"];
 var concat = "";
 
 for(var i : a) {
-  concat += tostring(i);
+  concat += zs::to_string(i);
 }
 
 return concat;
@@ -391,7 +391,7 @@ ZS_CODE_TEST("for_loop_auto.09", R"""(
 var a = [1, 2, 3, 4, 5];
 
 var output = array(5);
-var i = 0;
+//var i = 0;
 for(var it = a.begin(), i = 0; it != a.end(); ++it, i++) {
   output[i] = [it.get_key(), it.get()];
 }

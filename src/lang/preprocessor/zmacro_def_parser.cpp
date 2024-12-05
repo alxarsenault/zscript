@@ -22,7 +22,7 @@ zs::error_result macro_def_parser::parse(
 
   size_t start_index = 0;
 
-  while (!zb::is_one_of(_token, tok_eof, tok_lex_error)) {
+  while (!zb::is_one_of(_token, tok_eof)) {
 
     if (is(tok_macro)) {
       const char* begin_ptr = _lexer->stream().ptr() - 6;
@@ -114,7 +114,7 @@ zs::error_result macro_def_parser::parse_macro() {
         int_t sqbrack_count = 0;
 
         const char* params_last_end = _lexer->stream().ptr();
-        while (!zb::is_one_of(_token, tok_rbracket, tok_eof, tok_lex_error)) {
+        while (!zb::is_one_of(_token, tok_rbracket, tok_eof)) {
           const char* params_end = _lexer->stream().ptr();
           params_last_end = params_end;
 
@@ -206,7 +206,7 @@ zs::error_result macro_def_parser::parse_macro() {
   }
 
   int_t brack_count = 0;
-  while (!zb::is_one_of(_token, tok_rcrlbracket, tok_eof, tok_lex_error)) {
+  while (!zb::is_one_of(_token, tok_rcrlbracket, tok_eof)) {
 
     lex();
 

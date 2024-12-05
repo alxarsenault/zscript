@@ -164,37 +164,37 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_integer, exposed_o
   int_t b = rhs._int;
 
   switch (op) {
-  case arithmetic_op::add:
+  case arithmetic_op::aop_add:
     target = a + b;
     return {};
-  case arithmetic_op::sub:
+  case arithmetic_op::aop_sub:
     target = a - b;
     return {};
-  case arithmetic_op::mul:
+  case arithmetic_op::aop_mul:
     target = a * b;
     return {};
-  case arithmetic_op::div:
+  case arithmetic_op::aop_div:
     target = a / b;
     return {};
-  case arithmetic_op::mod:
+  case arithmetic_op::aop_mod:
     target = a % b;
     return {};
-  case arithmetic_op::exp:
+  case arithmetic_op::aop_exp:
     target = (int_t)std::pow(a, b);
     return {};
-  case arithmetic_op::bitwise_or:
+  case arithmetic_op::aop_bitwise_or:
     target = a | b;
     return {};
-  case arithmetic_op::bitwise_and:
+  case arithmetic_op::aop_bitwise_and:
     target = a & b;
     return {};
-  case arithmetic_op::bitwise_xor:
+  case arithmetic_op::aop_bitwise_xor:
     target = a ^ b;
     return {};
-  case arithmetic_op::lshift:
+  case arithmetic_op::aop_lshift:
     target = a << b;
     return {};
-  case arithmetic_op::rshift:
+  case arithmetic_op::aop_rshift:
     target = a >> b;
     return {};
 
@@ -217,26 +217,26 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_integer, exposed_o
   float_t af = a;
 
   switch (op) {
-  case arithmetic_op::add:
+  case arithmetic_op::aop_add:
     target = af + bf;
     return {};
-  case arithmetic_op::sub:
+  case arithmetic_op::aop_sub:
     target = af - bf;
     return {};
-  case arithmetic_op::mul:
+  case arithmetic_op::aop_mul:
     target = af * bf;
     return {};
-  case arithmetic_op::div:
+  case arithmetic_op::aop_div:
     target = af / bf;
     return {};
-  case arithmetic_op::mod:
+  case arithmetic_op::aop_mod:
     target = std::fmod(af, bf);
     return {};
-  case arithmetic_op::exp:
+  case arithmetic_op::aop_exp:
     target = std::pow(af, bf);
     return {};
 
-  case arithmetic_op::bitwise_or:
+  case arithmetic_op::aop_bitwise_or:
     if (b != bf) {
       set_error("Can't do bitwise or with an integer and a float with decimal.\n");
       target = nullptr;
@@ -245,7 +245,7 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_integer, exposed_o
 
     target = a | b;
     return {};
-  case arithmetic_op::bitwise_and:
+  case arithmetic_op::aop_bitwise_and:
     if (b != bf) {
       set_error("Can't do bitwise and with an integer and a float with decimal.\n");
       target = nullptr;
@@ -254,7 +254,7 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_integer, exposed_o
 
     target = a & b;
     return {};
-  case arithmetic_op::bitwise_xor:
+  case arithmetic_op::aop_bitwise_xor:
     if (b != bf) {
       set_error("Can't do xor with an integer and a float with decimal.\n");
       target = nullptr;
@@ -263,7 +263,7 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_integer, exposed_o
 
     target = a ^ b;
     return {};
-  case arithmetic_op::lshift:
+  case arithmetic_op::aop_lshift:
     if (b != bf) {
       set_error("Can't do left shift with an integer and a float with decimal.\n");
       target = nullptr;
@@ -272,7 +272,7 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_integer, exposed_o
 
     target = a << b;
     return {};
-  case arithmetic_op::rshift:
+  case arithmetic_op::aop_rshift:
     if (b != bf) {
       set_error("Can't do right shift with an integer and a float with decimal.\n");
       target = nullptr;
@@ -321,22 +321,22 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_float, exposed_obj
   float_t b = rhs._float;
 
   switch (op) {
-  case arithmetic_op::add:
+  case arithmetic_op::aop_add:
     target = a + b;
     return {};
-  case arithmetic_op::sub:
+  case arithmetic_op::aop_sub:
     target = a - b;
     return {};
-  case arithmetic_op::mul:
+  case arithmetic_op::aop_mul:
     target = a * b;
     return {};
-  case arithmetic_op::div:
+  case arithmetic_op::aop_div:
     target = a / b;
     return {};
-  case arithmetic_op::mod:
+  case arithmetic_op::aop_mod:
     target = std::fmod(a, b);
     return {};
-  case arithmetic_op::exp:
+  case arithmetic_op::aop_exp:
     target = std::pow(a, b);
     return {};
   default:
@@ -361,11 +361,11 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_string, exposed_ob
   std::string_view b = rhs.get_string_unchecked();
 
   switch (op) {
-  case arithmetic_op::add:
+  case arithmetic_op::aop_add:
     target = zs::object::create_concat_string(_engine, a, b);
     return {};
 
-  case arithmetic_op::sub: {
+  case arithmetic_op::aop_sub: {
     std::string::size_type i = a.find(b);
     if (i == std::string::npos) {
       target = lhs;
@@ -384,7 +384,7 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_string, exposed_ob
     return {};
   }
 
-  case arithmetic_op::div: {
+  case arithmetic_op::aop_div: {
     //    auto split = a | std::ranges::views::split(b) | std::ranges::views::transform([](auto&& str) {
     //      return std::string_view(&*str.begin(), std::ranges::distance(str));
     //    });
@@ -401,7 +401,7 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_string, exposed_ob
     return {};
   }
 
-  case arithmetic_op::mod: {
+  case arithmetic_op::aop_mod: {
     if (a == b) {
       target = lhs;
       return {};
@@ -436,13 +436,13 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_string, exposed_ob
   int_t b = rhs._int;
 
   switch (op) {
-  case arithmetic_op::add:
+  case arithmetic_op::aop_add:
     target = nullptr;
     set_error("Can't add a string with an integer.\nUse tostring(v) to concat "
               "a string with a value.\n");
     return zs::error_code::invalid_operation;
 
-  case arithmetic_op::sub: {
+  case arithmetic_op::aop_sub: {
     int_t bi = -b;
     const int_t asz = a.size();
 
@@ -457,7 +457,7 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_string, exposed_ob
     return {};
   }
 
-  case arithmetic_op::mul: {
+  case arithmetic_op::aop_mul: {
     const int_t asz = a.size();
 
     if (b <= 0) {
@@ -479,7 +479,7 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_string, exposed_ob
     return {};
   }
 
-  case arithmetic_op::lshift: {
+  case arithmetic_op::aop_lshift: {
     if (b < 0) {
       set_error("Can't left shift a string with a negative number.\n");
       return zs::error_code::invalid_argument;
@@ -490,7 +490,7 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_string, exposed_ob
     return {};
   }
 
-  case arithmetic_op::rshift: {
+  case arithmetic_op::aop_rshift: {
     if (b < 0) {
       set_error("Can't right shift a string with a negative number.\n");
       return zs::error_code::invalid_argument;
@@ -515,11 +515,8 @@ zs::error_result
 virtual_machine::arithmetic_operation<exposed_object_type::ke_string, exposed_object_type::ke_bool>(
     enum arithmetic_op op, object& target, const object& lhs, const object& rhs) {
 
-  //  std::string_view a = lhs.get_string_unchecked();
-  //  bool_t b = rhs._bool;
-
   switch (op) {
-  case arithmetic_op::add:
+  case arithmetic_op::aop_add:
     target = nullptr;
     set_error("Can't add a string with a boolean.\nUse tostring(v) to concat a "
               "string with a value.\n");
@@ -539,7 +536,7 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_string, exposed_ob
     enum arithmetic_op op, object& target, const object& lhs, const object& rhs) {
 
   switch (op) {
-  case arithmetic_op::add:
+  case arithmetic_op::aop_add:
     target = nullptr;
     set_error("Can't add a string with a float.\nUse tostring(v) to concat a "
               "string with a value.\n");
@@ -566,14 +563,14 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_table, exposed_obj
   if (tbl.has_delegate()) {
     zs::object& del = tbl.get_delegate();
     switch (op) {
-    case arithmetic_op::add:
+    case arithmetic_op::aop_add:
       return runtime_action<runtime_code::meta_arith>(
           meta_method::mt_add, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
 
-    case arithmetic_op::sub:
+    case arithmetic_op::aop_sub:
       return runtime_action<runtime_code::meta_arith>(
           meta_method::mt_sub, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
-    case arithmetic_op::mul:
+    case arithmetic_op::aop_mul:
       return runtime_action<runtime_code::meta_arith>(
           meta_method::mt_mul, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
 
@@ -597,13 +594,13 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_table, exposed_obj
   if (tbl.has_delegate()) {
     zs::object& del = tbl.get_delegate();
     switch (op) {
-    case arithmetic_op::add:
+    case arithmetic_op::aop_add:
       return runtime_action<runtime_code::meta_arith>(
           meta_method::mt_add, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
-    case arithmetic_op::sub:
+    case arithmetic_op::aop_sub:
       return runtime_action<runtime_code::meta_arith>(
           meta_method::mt_sub, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
-    case arithmetic_op::mul:
+    case arithmetic_op::aop_mul:
       return runtime_action<runtime_code::meta_arith>(
           meta_method::mt_mul, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
 
@@ -622,34 +619,176 @@ zs::error_result
 virtual_machine::arithmetic_operation<exposed_object_type::ke_table, exposed_object_type::ke_table>(
     enum arithmetic_op op, object& target, const object& lhs, const object& rhs) {
 
-  zs::table_object& tbl = lhs.as_table();
+  if (!zs::arithmetic_op_has_meta_method(op)) {
+    target = nullptr;
+    return zs::error_code::invalid_operation;
+  }
 
-  if (tbl.has_delegate()) {
-    zs::object& del = tbl.get_delegate();
-    switch (op) {
-    case arithmetic_op::add:
-      if (auto err = runtime_action<runtime_code::meta_arith>(
-              meta_method::mt_add, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del))) {
-        return err;
-      }
-      return {};
-    case arithmetic_op::sub:
-      if (auto err = runtime_action<runtime_code::meta_arith>(
-              meta_method::mt_sub, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del))) {
-        return err;
-      }
-      return {};
-    case arithmetic_op::mul:
-      if (auto err = runtime_action<runtime_code::meta_arith>(
-              meta_method::mt_mul, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del))) {
-        return err;
-      }
-      return {};
+  {
+    bool has_delegate = lhs.has_delegate();
 
-    default:
-      break;
+    meta_method mt = zs::arithmetic_op_to_meta_method(op);
+    object meta_func;
+    object key = zs::_ss(zs::meta_method_name(mt));
+    object del = has_delegate ? lhs.get_delegate() : lhs;
+    if (auto err = runtime_action<runtime_code::table_get>(CREF(lhs), CREF(key), REF(meta_func))) {
+      if (err != zs::errc::not_found) {
+        return err;
+      }
+    }
+    else if (meta_func.is_function()) {
+      push(lhs);
+      push(rhs);
+      int_t nparams = 3;
+      if (meta_func.is_closure() and meta_func.as_closure().get_proto()._parameter_names.size() < 3) {
+        nparams--;
+      }
+      else {
+
+        push(del);
+      }
+
+      if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+        pop(nparams);
+        return err;
+      }
+
+      pop(nparams);
+      return {};
+    }
+    else {
+      return zs::errc::invalid_type;
+    }
+
+    if (has_delegate) {
+      return runtime_action<meta_arith>(
+          zs::arithmetic_op_to_meta_method(op), CREF(lhs), CREF(rhs), REF(target), REF(del));
     }
   }
+
+  {
+    bool has_delegate = rhs.has_delegate();
+
+    meta_method mt = zs::arithmetic_op_to_rhs_meta_method(op);
+    object meta_func;
+    object key = zs::_ss(zs::meta_method_name(mt));
+    object del = has_delegate ? rhs.get_delegate() : rhs;
+    if (auto err = runtime_action<runtime_code::table_get>(CREF(rhs), CREF(key), REF(meta_func))) {
+      if (err != zs::errc::not_found) {
+        return err;
+      }
+    }
+    else if (meta_func.is_function()) {
+      push(rhs);
+      push(lhs);
+      int_t nparams = 3;
+      if (meta_func.is_closure() and meta_func.as_closure().get_proto()._parameter_names.size() < 3) {
+        nparams--;
+      }
+      else {
+
+        push(del);
+      }
+
+      if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+        pop(nparams);
+        return err;
+      }
+
+      pop(nparams);
+      return {};
+    }
+    else {
+      return zs::errc::invalid_type;
+    }
+
+    if (has_delegate) {
+      return runtime_action<meta_arith>(
+          zs::arithmetic_op_to_rhs_meta_method(op), CREF(rhs), CREF(lhs), REF(target), REF(del));
+    }
+  }
+
+  //  if ( lhs.has_delegate()) {
+  //
+  //    meta_method mt = zs::arithmetic_op_to_meta_method(op);
+  //    object meta_func;
+  //    object key = zs::_ss(zs::meta_method_name(mt));
+  //    object del =lhs.get_delegate();
+  //    if (auto err = runtime_action<runtime_code::table_get>(CREF(lhs), CREF(key), REF(meta_func))) {
+  //      if (err != zs::errc::not_found) {
+  //        return err;
+  //      }
+  //    }
+  //    else {
+  //
+  //      if (meta_func.is_function()) {
+  //        push(lhs);
+  //        push(rhs);
+  //        int_t nparams = 3;
+  //        if (meta_func.is_closure() and meta_func.as_closure().get_proto()._parameter_names.size() < 3) {
+  //          nparams--;
+  //        }
+  //        else {
+  //          push(del);
+  //        }
+  //
+  //        if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+  //          pop(nparams);
+  //          return err;
+  //        }
+  //
+  //        pop(nparams);
+  //        return {};
+  //      }
+  //    }
+  //
+  //    return runtime_action<meta_arith>(zs::arithmetic_op_to_meta_method(op), CREF(lhs), CREF(rhs),
+  //    REF(target),
+  //        REF(del));
+  //  }
+
+  //  if ( rhs.has_delegate()) {
+  //
+  //    meta_method mt = zs::arithmetic_op_to_rhs_meta_method(op);
+  //    object meta_func;
+  //    object key = zs::_ss(zs::meta_method_name(mt));
+  //    object del = rhs.get_delegate();
+  //    if (auto err = runtime_action<runtime_code::table_get>(CREF(rhs), CREF(key), REF(meta_func))) {
+  //      if (err != zs::errc::not_found) {
+  //        return err;
+  //      }
+  //    }
+  //    else {
+  //
+  //      if (meta_func.is_function()) {
+  //        push(rhs);
+  //        push(lhs);
+  //        int_t nparams = 3;
+  //        if (meta_func.is_closure() and meta_func.as_closure().get_proto()._parameter_names.size() < 3) {
+  //          nparams--;
+  //        }
+  //        else {
+  //          push(rhs .get_delegate());
+  //        }
+  //
+  //        if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+  //          pop(nparams);
+  //          return err;
+  //        }
+  //
+  //        pop(nparams);
+  //        //      if (!dest->is_string()) {
+  //        //        zb::print("Invalid typeof operator return type (should be a
+  //        //        string)"); return zs::error_code::invalid_type;
+  //        //      }
+  //        return {};
+  //      }
+  //    }
+  //
+  //    return runtime_action<meta_arith>(zs::arithmetic_op_to_rhs_meta_method(op), CREF(rhs), CREF(lhs),
+  //    REF(target),
+  //        REF(del));
+  //  }
 
   target = nullptr;
   return zs::error_code::invalid_operation;
@@ -667,12 +806,12 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_extension, exposed
   if (lhs.is_array_iterator()) {
 
     switch (op) {
-    case arithmetic_op::add:
+    case arithmetic_op::aop_add:
       target = lhs;
       target._array_it += rhs._int;
       target._reserved_u32 += rhs._int;
       return {};
-    case arithmetic_op::sub:
+    case arithmetic_op::aop_sub:
       target = lhs;
       target._array_it -= rhs._int;
       target._reserved_u32 -= rhs._int;
@@ -687,7 +826,7 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_extension, exposed
   if (lhs.is_table_iterator()) {
 
     switch (op) {
-    case arithmetic_op::add:
+    case arithmetic_op::aop_add:
       target = lhs;
 
       for (int_t i = 0; i < rhs._int; i++) {
@@ -698,6 +837,488 @@ virtual_machine::arithmetic_operation<exposed_object_type::ke_extension, exposed
     default:
       target = nullptr;
       return zs::error_code::invalid_operation;
+    }
+  }
+
+  target = nullptr;
+  return zs::error_code::invalid_operation;
+}
+
+// UserData and String.
+template <>
+zs::error_result
+virtual_machine::arithmetic_operation<exposed_object_type::ke_user_data, exposed_object_type::ke_string>(
+    enum arithmetic_op op, object& target, const object& lhs, const object& rhs) {
+
+  zs::user_data_object& tbl = lhs.as_udata();
+
+  if (tbl.has_delegate()) {
+    zs::object& del = tbl.get_delegate();
+    switch (op) {
+    case arithmetic_op::aop_add:
+      return runtime_action<runtime_code::meta_arith>(
+          meta_method::mt_add, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
+    case arithmetic_op::aop_sub:
+      return runtime_action<runtime_code::meta_arith>(
+          meta_method::mt_sub, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
+
+    case arithmetic_op::aop_mul:
+      return runtime_action<runtime_code::meta_arith>(
+          meta_method::mt_mul, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
+
+    case arithmetic_op::aop_div:
+      return runtime_action<runtime_code::meta_arith>(
+          meta_method::mt_div, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
+
+    default:
+      break;
+    }
+  }
+
+  target = nullptr;
+  return zs::errc::invalid_operation;
+}
+
+// UserData and UserData.
+template <>
+zs::error_result
+virtual_machine::arithmetic_operation<exposed_object_type::ke_user_data, exposed_object_type::ke_user_data>(
+    enum arithmetic_op op, object& target, const object& lhs, const object& rhs) {
+
+  if (!zs::arithmetic_op_has_meta_method(op)) {
+    target = nullptr;
+    return zs::error_code::invalid_operation;
+  }
+
+  if (lhs.has_delegate()) {
+
+    meta_method mt = zs::arithmetic_op_to_meta_method(op);
+    object meta_func;
+    object key = zs::_ss(zs::meta_method_name(mt));
+    object del = lhs.get_delegate();
+    if (auto err = runtime_action<runtime_code::user_data_get>(CREF(lhs), CREF(key), REF(meta_func))) {
+      if (err != zs::errc::not_found) {
+        return err;
+      }
+    }
+    else {
+
+      if (meta_func.is_function()) {
+        push(lhs);
+        push(rhs);
+        int_t nparams = 3;
+        if (meta_func.is_closure() and meta_func.as_closure().get_proto()._parameter_names.size() < 3) {
+          nparams--;
+        }
+        else {
+          push(del);
+        }
+
+        if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+          pop(nparams);
+          return err;
+        }
+
+        pop(nparams);
+        return {};
+      }
+    }
+
+    return runtime_action<meta_arith>(
+        zs::arithmetic_op_to_meta_method(op), CREF(lhs), CREF(rhs), REF(target), REF(del));
+  }
+
+  if (rhs.has_delegate()) {
+
+    meta_method mt = zs::arithmetic_op_to_rhs_meta_method(op);
+    object meta_func;
+    object key = zs::_ss(zs::meta_method_name(mt));
+    object del = rhs.get_delegate();
+    if (auto err = runtime_action<runtime_code::user_data_get>(CREF(rhs), CREF(key), REF(meta_func))) {
+      if (err != zs::errc::not_found) {
+        return err;
+      }
+    }
+    else {
+
+      if (meta_func.is_function()) {
+        push(rhs);
+        push(lhs);
+        int_t nparams = 3;
+        if (meta_func.is_closure() and meta_func.as_closure().get_proto()._parameter_names.size() < 3) {
+          nparams--;
+        }
+        else {
+          push(rhs.get_delegate());
+        }
+
+        if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+          pop(nparams);
+          return err;
+        }
+
+        pop(nparams);
+        //      if (!dest->is_string()) {
+        //        zb::print("Invalid typeof operator return type (should be a
+        //        string)"); return zs::error_code::invalid_type;
+        //      }
+        return {};
+      }
+    }
+
+    return runtime_action<meta_arith>(
+        zs::arithmetic_op_to_rhs_meta_method(op), CREF(rhs), CREF(lhs), REF(target), REF(del));
+  }
+
+  target = nullptr;
+  return zs::error_code::invalid_operation;
+
+  //
+  //  if (lhs.has_delegate()) {
+  //    zs::object  del = tbl.get_delegate();
+  //    switch (op) {
+  //    case arithmetic_op::aop_add:
+  //      return runtime_action<runtime_code::meta_arith>(
+  //          meta_method::mt_add, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
+  //
+  //    case arithmetic_op::aop_sub:
+  //      return runtime_action<runtime_code::meta_arith>(
+  //          meta_method::mt_sub, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
+  //
+  //    case arithmetic_op::aop_mul:
+  //      return runtime_action<runtime_code::meta_arith>(
+  //          meta_method::mt_mul, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
+  //
+  //    case arithmetic_op::aop_div:
+  //      return runtime_action<runtime_code::meta_arith>(
+  //          meta_method::mt_div, zb::wcref(lhs), zb::wcref(rhs), zb::wref(target), zb::wref(del));
+  //
+  //    default:
+  //      break;
+  //    }
+  //  }
+  //
+  //  target = nullptr;
+  //  return zs::errc::invalid_operation;
+}
+
+// MutableString and String.
+template <>
+zs::error_result
+virtual_machine::arithmetic_operation<exposed_object_type::ke_mutable_string, exposed_object_type::ke_string>(
+    enum arithmetic_op op, object& target, const object& lhs, const object& rhs) {
+
+  zs::mutable_string_object& tbl = lhs.as_mutable_string();
+
+  if (tbl.has_delegate()) {
+    if (zs::arithmetic_op_has_meta_method(op)) {
+      zs::object& del = tbl.get_delegate();
+      return runtime_action<meta_arith>(
+          zs::arithmetic_op_to_meta_method(op), CREF(lhs), CREF(rhs), REF(target), REF(del));
+    }
+
+    target = nullptr;
+    return zs::errc::invalid_operation;
+  }
+
+  return arithmetic_operation<exposed_object_type::ke_string, exposed_object_type::ke_string>(
+      op, target, lhs, rhs);
+}
+
+// MutableString and MutableString.
+template <>
+zs::error_result virtual_machine::arithmetic_operation<exposed_object_type::ke_mutable_string,
+    exposed_object_type::ke_mutable_string>(
+    enum arithmetic_op op, object& target, const object& lhs, const object& rhs) {
+
+  if (zs::mutable_string_object& mstr = lhs.as_mutable_string(); mstr.has_delegate()) {
+    if (zs::arithmetic_op_has_meta_method(op)) {
+      return runtime_action<meta_arith>(
+          zs::arithmetic_op_to_meta_method(op), CREF(lhs), CREF(rhs), REF(target), REF(mstr.get_delegate()));
+    }
+
+    target = nullptr;
+    return zs::errc::invalid_operation;
+  }
+
+  if (zs::mutable_string_object& mstr = rhs.as_mutable_string(); mstr.has_delegate()) {
+    if (zs::arithmetic_op_has_rhs_meta_method(op)) {
+      return runtime_action<meta_arith>(zs::arithmetic_op_to_rhs_meta_method(op), CREF(rhs), CREF(lhs),
+          REF(target), REF(mstr.get_delegate()));
+    }
+
+    target = nullptr;
+    return zs::errc::invalid_operation;
+  }
+
+  return arithmetic_operation<exposed_object_type::ke_string, exposed_object_type::ke_string>(
+      op, target, lhs, rhs);
+}
+
+// String and MutableString.
+template <>
+zs::error_result
+virtual_machine::arithmetic_operation<exposed_object_type::ke_string, exposed_object_type::ke_mutable_string>(
+    enum arithmetic_op op, object& target, const object& lhs, const object& rhs) {
+
+  if (zs::mutable_string_object& mstr = rhs.as_mutable_string(); rhs.has_delegate()) {
+    if (zs::arithmetic_op_has_rhs_meta_method(op)) {
+      return runtime_action<meta_arith>(zs::arithmetic_op_to_rhs_meta_method(op), CREF(rhs), CREF(lhs),
+          REF(target), REF(mstr.get_delegate()));
+    }
+
+    target = nullptr;
+    return zs::errc::invalid_operation;
+  }
+
+  return arithmetic_operation<exposed_object_type::ke_string, exposed_object_type::ke_string>(
+      op, target, lhs, rhs);
+}
+
+// Instance and Instance.
+template <>
+zs::error_result
+virtual_machine::arithmetic_operation<exposed_object_type::ke_instance, exposed_object_type::ke_instance>(
+    enum arithmetic_op op, object& target, const object& lhs, const object& rhs) {
+
+  if (!zs::arithmetic_op_has_meta_method(op)) {
+    target = nullptr;
+    return zs::error_code::invalid_operation;
+  }
+
+  if (!(lhs.is_struct_instance() and rhs.is_struct_instance())) {
+    return zs::errc::unimplemented;
+  }
+
+  // Op X eq.
+  if (target._struct_instance == lhs._struct_instance) {
+    meta_method mt = zs::arithmetic_op_to_meta_eq_method(op);
+    object meta_func;
+    object key = zs::_ss(zs::meta_method_name(mt));
+
+    if (auto err = runtime_action<runtime_code::struct_instance_get>(CREF(lhs), CREF(key), REF(meta_func))) {
+      if (err != zs::errc::not_found) {
+        return err;
+      }
+    }
+    else {
+
+      if (meta_func.is_function()) {
+        push(lhs);
+        push(rhs);
+        int_t nparams = 2;
+        if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+          pop(nparams);
+          return err;
+        }
+
+        pop(nparams);
+        return {};
+      }
+    }
+  }
+
+  {
+    meta_method mt = zs::arithmetic_op_to_meta_method(op);
+    object meta_func;
+    object key = zs::_ss(zs::meta_method_name(mt));
+
+    if (auto err = runtime_action<runtime_code::struct_instance_get>(CREF(lhs), CREF(key), REF(meta_func))) {
+      if (err != zs::errc::not_found) {
+        return err;
+      }
+    }
+    else {
+
+      if (meta_func.is_function()) {
+        push(lhs);
+        push(rhs);
+        int_t nparams = 2;
+        if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+          pop(nparams);
+          return err;
+        }
+
+        pop(nparams);
+        return {};
+      }
+    }
+  }
+
+  {
+
+    meta_method mt = zs::arithmetic_op_to_rhs_meta_method(op);
+    object meta_func;
+    object key = zs::_ss(zs::meta_method_name(mt));
+
+    if (auto err = runtime_action<runtime_code::struct_instance_get>(CREF(rhs), CREF(key), REF(meta_func))) {
+      if (err != zs::errc::not_found) {
+        return err;
+      }
+    }
+    else {
+
+      if (meta_func.is_function()) {
+        push(rhs);
+        push(lhs);
+        int_t nparams = 2;
+
+        if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+          pop(nparams);
+          return err;
+        }
+
+        pop(nparams);
+        return {};
+      }
+    }
+  }
+
+  target = nullptr;
+  return zs::error_code::invalid_operation;
+}
+
+// Instance and Integer.
+template <>
+zs::error_result
+virtual_machine::arithmetic_operation<exposed_object_type::ke_instance, exposed_object_type::ke_integer>(
+    enum arithmetic_op op, object& target, const object& lhs, const object& rhs) {
+
+  if (!zs::arithmetic_op_has_meta_method(op)) {
+    target = nullptr;
+    return zs::error_code::invalid_operation;
+  }
+
+  if (!(lhs.is_struct_instance())) {
+    return zs::errc::unimplemented;
+  }
+
+  // Op X eq.
+  if (target._struct_instance == lhs._struct_instance) {
+    meta_method mt = zs::arithmetic_op_to_meta_eq_method(op);
+    object meta_func;
+    object key = zs::_ss(zs::meta_method_name(mt));
+
+    if (auto err = runtime_action<runtime_code::struct_instance_get>(CREF(lhs), CREF(key), REF(meta_func))) {
+      if (err != zs::errc::not_found) {
+        return err;
+      }
+    }
+    else {
+
+      if (meta_func.is_function()) {
+        push(lhs);
+        push(rhs);
+        int_t nparams = 2;
+        if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+          pop(nparams);
+          return err;
+        }
+
+        pop(nparams);
+        return {};
+      }
+    }
+  }
+
+  {
+    meta_method mt = zs::arithmetic_op_to_meta_method(op);
+    object meta_func;
+    object key = zs::_ss(zs::meta_method_name(mt));
+
+    if (auto err = runtime_action<runtime_code::struct_instance_get>(CREF(lhs), CREF(key), REF(meta_func))) {
+      if (err != zs::errc::not_found) {
+        return err;
+      }
+    }
+    else {
+
+      if (meta_func.is_function()) {
+        push(lhs);
+        push(rhs);
+        int_t nparams = 2;
+        if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+          pop(nparams);
+          return err;
+        }
+
+        pop(nparams);
+        return {};
+      }
+    }
+  }
+
+  target = nullptr;
+  return zs::error_code::invalid_operation;
+}
+
+// Instance and Float.
+template <>
+zs::error_result
+virtual_machine::arithmetic_operation<exposed_object_type::ke_instance, exposed_object_type::ke_float>(
+    enum arithmetic_op op, object& target, const object& lhs, const object& rhs) {
+
+  if (!zs::arithmetic_op_has_meta_method(op)) {
+    target = nullptr;
+    return zs::error_code::invalid_operation;
+  }
+
+  if (!(lhs.is_struct_instance())) {
+    return zs::errc::unimplemented;
+  }
+
+  // Op X eq.
+  if (target._struct_instance == lhs._struct_instance) {
+    meta_method mt = zs::arithmetic_op_to_meta_eq_method(op);
+    object meta_func;
+    object key = zs::_ss(zs::meta_method_name(mt));
+
+    if (auto err = runtime_action<runtime_code::struct_instance_get>(CREF(lhs), CREF(key), REF(meta_func))) {
+      if (err != zs::errc::not_found) {
+        return err;
+      }
+    }
+    else {
+
+      if (meta_func.is_function()) {
+        push(lhs);
+        push(rhs);
+        int_t nparams = 2;
+        if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+          pop(nparams);
+          return err;
+        }
+
+        pop(nparams);
+        return {};
+      }
+    }
+  }
+
+  {
+    meta_method mt = zs::arithmetic_op_to_meta_method(op);
+    object meta_func;
+    object key = zs::_ss(zs::meta_method_name(mt));
+
+    if (auto err = runtime_action<runtime_code::struct_instance_get>(CREF(lhs), CREF(key), REF(meta_func))) {
+      if (err != zs::errc::not_found) {
+        return err;
+      }
+    }
+    else {
+
+      if (meta_func.is_function()) {
+        push(lhs);
+        push(rhs);
+        int_t nparams = 2;
+        if (auto err = call(meta_func, nparams, stack_size() - nparams, target)) {
+          pop(nparams);
+          return err;
+        }
+
+        pop(nparams);
+        return {};
+      }
     }
   }
 

@@ -42,6 +42,7 @@ enum class memory_tag {
   nt_native_closure,
   nt_node,
   nt_weak_ptr,
+  nt_capture,
   nt_allocator
 };
 
@@ -245,6 +246,8 @@ inline zs::ostringstream create_string_stream(zs::engine* eng) {
 using unordered_object_map_allocator = zs::allocator<std::pair<const object, object>>;
 
 struct object_table_hash {
+  using is_transparent = void;
+
   ZS_CK_INLINE size_t operator()(const object_base& obj) const noexcept;
   ZS_CK_INLINE size_t operator()(std::string_view s) const noexcept;
   ZS_CK_INLINE size_t operator()(const std::string& s) const noexcept;
@@ -252,7 +255,11 @@ struct object_table_hash {
 };
 
 struct object_table_equal_to {
+  using is_transparent = void;
+
   ZS_CK_INLINE bool operator()(const object_base& lhs, const object_base& rhs) const noexcept;
+  ZS_CK_INLINE bool operator()(const object_base& lhs, std::string_view rhs) const noexcept;
+  ZS_CK_INLINE bool operator()(std::string_view lhs, const object_base& rhs) const noexcept;
 };
 
 template <class T>

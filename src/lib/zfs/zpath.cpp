@@ -1,6 +1,7 @@
 #include "lib/zfs/zpath.h"
 #include <zbase/sys/path.h>
 #include "zvirtual_machine.h"
+#include "zparameter_stream.h"
 
 #include <stdlib.h>
 
@@ -47,20 +48,20 @@ static std::string_view k_path_method_is_refular_file = "is_refular_file";
 
 zs::string* get_path(zs::vm_ref vm) {
   const zs::object& path_obj = vm[0];
-  if (!path_obj.is_user_data() or path_obj._udata->get_uid() != k_path_uid) {
+  if (!path_obj.is_mutable_string()) {
     return nullptr;
   }
 
-  return path_obj._udata->data<zs::string>();
+  return &path_obj.as_mutable_string().get_string();
 }
 
 zs::string* get_path(zs::vm_ref vm, int_t idx) {
   const zs::object& path_obj = vm[idx];
-  if (!path_obj.is_user_data() or path_obj._udata->get_uid() != k_path_uid) {
+  if (!path_obj.is_mutable_string()) {
     return nullptr;
   }
 
-  return path_obj._udata->data<zs::string>();
+  return &path_obj.as_mutable_string().get_string();
 }
 
 inline static constexpr const char* file_type_to_string(std::filesystem::file_type ft) noexcept {
@@ -89,47 +90,6 @@ inline static constexpr const char* file_type_to_string(std::filesystem::file_ty
 
   return "unknown";
 }
-
-// bool path_is_directory(const zs::string& path) {
-//
-// #if ZS_UNIX
-//   struct stat s;
-//   //  std::string nstr = native();
-//
-//   if (::stat(path.c_str(), &s) < 0) {
-//     int errsav = errno;
-//
-//     // "Not found" means it isn’t a directory.
-//     if (errsav == ENOENT)
-//       return false;
-//     else
-//       return false;
-//     //      throw(Pathie::ErrnoError(errsav));
-//   }
-//
-//   if (S_ISDIR(s.st_mode)) {
-//     return true;
-//   }
-//   else {
-//     return false;
-//   }
-// #elif defined(_WIN32)
-//   struct _stat s;
-//   std::wstring utf16 = utf8_to_utf16(m_path);
-//   if (_wstat(utf16.c_str(), &s) < 0) {
-//     int errsav = errno;
-//
-//     if (errsav == ENOENT)
-//       return false;
-//     else
-//       throw(Pathie::ErrnoError(errsav));
-//   }
-//
-//   return s.st_mode & S_IFDIR;
-// #else
-// #error Unsupported system.
-// #endif
-// }
 
 bool path_is_root(std::string_view path) {
 #if ZS_UNIX
@@ -508,50 +468,8 @@ size_t path_component_count(zb::string_view path) {
   return ++result;
 }
 
-/**
- * \note Under specific circumstances (see below), this method
- * accesses the file system.
- *
- * This method creates an absolute path by use of prune(), but
- * additionally expands any expandable strings. If one of the
- * following substitution sequences are encountered, it will be
- * replaced accordingly.
- *
- * "~" is expanded to the user’s home directory, see home().
- *
- * \returns a new instance with everything expanded.
- *
- * \remark This method uses prune() to expand ".." entries, therefore
- * it will not consider symbolic links when resolving those. Use
- * real() if you need to do that.
- *
- * \see prune() real()
- */
-// zs::string path_expand(const zs::string& path) {
-//   zs::string newpath(path, path.get_allocator());
-//
-//   if (m_path[0] != '~')
-//     newpath = newpath.absolute();
-//
-//   std::string str = path.str();
-//   if (str[0] == '~') {
-//     Path homepath = home();
-//
-//     if (str[1] == '/' || str.length() == 1) {
-//       // User home requested
-//       str.replace(0, 1, homepath.m_path);
-//     }
-//
-//     path = Path(str);
-//   }
-//
-//   return path.prune();
-// }
-
 zs::error_result path_mkdir(const zs::string& path) {
 #if ZS_UNIX
-  //  std::string nstr = native();
-
   if (::mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) < 0) {
     return zs::error_code::invalid;
   }
@@ -630,19 +548,12 @@ zs::error_result path_unlink(const zs::string& path) {
 zs::error_result path_rmtree(const zs::string& path) {
 
   if (zb::sys::path_ref(path.c_str()).is_directory()) {
-    //    std::vector<Path> kids = children();
-
     std::filesystem::path filepath(path);
 
     for (const std::filesystem::directory_entry& dir_entry :
         std::filesystem::directory_iterator{ filepath }) {
       path_rmtree(zs::string(dir_entry.path().c_str(), path.get_allocator()));
     }
-
-    //    for(std::vector<Path>::iterator iter=kids.begin(); iter != kids.end();
-    //    iter++) {
-    //       join(*iter).rmtree();
-    //    }
 
     zb::sys::path_ref(path).rmdir();
   }
@@ -662,11 +573,7 @@ zs::error_result path_rmtree(const zs::string& path) {
  * \param[in] newname The new name of the file.
  */
 zs::error_result path_rename(const zs::string& path, const zs::string& new_path) {
-
 #if ZS_UNIX
-  //  std::string nstr = native();
-  //  std::string newname_nstr = newname.native();
-
   if (::rename(path.c_str(), new_path.c_str()) != 0) {
     return zs::error_code::invalid;
   }
@@ -680,6 +587,17 @@ zs::error_result path_rename(const zs::string& path, const zs::string& new_path)
 #else
 #error Unsupported system.
 #endif
+}
+
+zs::error_result path_copy(const zs::string& path, const zs::string& new_path) {
+  std::error_code ec;
+  bool res = std::filesystem::copy_file(path, new_path, ec);
+
+  if (!res or ec) {
+    return zs::errc::copy_file_error;
+  }
+
+  return {};
 }
 
 zs::error_result path_remove(const zs::string& path) {
@@ -1096,7 +1014,7 @@ static int_t path_get_impl(zs::vm_ref vm) {
   // vm[0] should be the user_data.
   // vm[1] should be the key.
 
-  if (vm.stack_size() != 2) {
+  if (vm.stack_size() != 3) {
     return -1;
   }
 
@@ -1233,7 +1151,7 @@ static int_t path_set_impl(zs::vm_ref vm) {
   // vm[1] should be the key.
   // vm[2] should be the value.
 
-  if (vm.stack_size() != 3) {
+  if (vm.stack_size() != 4) {
     return -1;
   }
 
@@ -1249,6 +1167,62 @@ static int_t path_set_impl(zs::vm_ref vm) {
   return -1;
 }
 
+static int_t path_div_impl(zs::vm_ref vm) {
+  // vm[0] should be the lhs.
+  // vm[1] should be the rhs.
+  // vm[2] should be the delegate.
+
+  if (vm.stack_size() != 3) {
+    return -1;
+  }
+
+  const zs::object& path_obj = vm[0];
+  if (ZBASE_UNLIKELY(!path_obj.is_mutable_string())) {
+    vm.set_error("Invalid fs.path object");
+    return -1;
+  }
+
+  zs::string* path = &path_obj.as_mutable_string().get_string();
+
+  const zs::object& rhs = vm[1];
+
+  if (rhs.is_string()) {
+    zs::string newpath(*path);
+    std::string_view rhs_str = rhs.get_string_unchecked();
+
+    if (newpath.back() == '/' and rhs_str.front() == '/') {
+      rhs_str = rhs_str.substr(0);
+    }
+    else if (newpath.back() != '/' and rhs_str.front() != '/') {
+      newpath.push_back('/');
+    }
+
+    newpath.append(rhs_str);
+    vm->push(create_path(vm, std::move(newpath)));
+    return 1;
+  }
+
+  if (rhs.is_mutable_string()) {
+    std::string_view rhs_str = rhs.as_mutable_string().get_string();
+    zs::string newpath(*path);
+
+    if (newpath.back() == '/' and rhs_str.front() == '/') {
+      rhs_str = rhs_str.substr(0);
+    }
+    else if (newpath.back() != '/' and rhs_str.front() != '/') {
+      newpath.push_back('/');
+    }
+
+    newpath.append(rhs_str);
+
+    vm->push(create_path(vm, std::move(newpath)));
+    return 1;
+  }
+
+  vm.set_error("Invalid fs.path object");
+  return -1;
+}
+
 static int_t path_is_root_impl(zs::vm_ref vm) {
   zs::string* path = ZS_GET_PATH();
   vm.push_bool(path_is_root(*path));
@@ -1256,9 +1230,14 @@ static int_t path_is_root_impl(zs::vm_ref vm) {
 }
 
 static int_t path_is_directory_impl(zs::vm_ref vm) {
-  zs::string* path = ZS_GET_PATH();
-  vm.push_bool(zb::sys::path_ref(path->c_str()).is_directory());
-  return 1;
+  zs::parameter_stream ps(vm);
+
+  mutable_string_object* mstr = nullptr;
+  if (auto err = ps.require<string_parameter>(mstr)) {
+    return -1;
+  }
+
+  return vm.push_bool(zb::sys::path_ref(mstr->c_str()).is_directory());
 }
 
 static int_t path_is_file_impl(zs::vm_ref vm) {
@@ -1512,6 +1491,19 @@ static int_t path_rename_impl(zs::vm_ref vm) {
   return 1;
 }
 
+static int_t path_copy_impl(zs::vm_ref vm) {
+  zs::string* path = ZS_GET_PATH();
+
+  const size_t nargs = vm.stack_size();
+  if (nargs != 2) {
+    return -1;
+  }
+
+  zs::string new_path(vm[1].get_string_unchecked(), zs::allocator<char>(vm.get_engine()));
+
+  return vm.push_bool(!path_copy(*path, new_path));
+}
+
 static int_t path_remove_impl(zs::vm_ref vm) {
   zs::string* path = ZS_GET_PATH();
   vm.push_bool(!path_remove(*path));
@@ -1561,16 +1553,16 @@ static int_t path_read_all_impl(zs::vm_ref vm) {
 }
 
 static void set_path_delegate_methods(zs::vm_ref vm, zs::object& path_delegate,
-    const std::initializer_list<std::pair<zs::object, zs::native_cpp_closure_t>>& list) {
+    const std::initializer_list<std::pair<zs::object, zs::function_t>>& list) {
   zs::engine* eng = vm->get_engine();
   zs::table_object* tbl = path_delegate._table;
 
   for (auto& n : list) {
-    tbl->set(std::move(n.first), zs::_nc(eng, n.second));
+    tbl->set(std::move(n.first), zs::_nf(n.second));
   }
 }
 
-static zs::object create_path_delegate(zs::vm_ref vm) {
+zs::object create_path_delegate(zs::vm_ref vm) {
   zs::engine* eng = vm->get_engine();
 
   zs::object delegate_key = zs::_sv(k_path_delegate_name);
@@ -1611,6 +1603,7 @@ static zs::object create_path_delegate(zs::vm_ref vm) {
           { zs::_ss("rmdir"), path_rmdir_impl }, //
           { zs::_sv(k_path_method_rmdir_recursive), path_rmtree_impl }, //
           { zs::_ss("rename"), path_rename_impl }, //
+          { zs::_ss("copy"), path_copy_impl }, //
           { zs::_ss("remove"), path_remove_impl }, //
           { zs::_ss("file_size"), path_file_size_impl }, //
           { zs::_ss("length"), path_length_impl }, //
@@ -1623,27 +1616,27 @@ static zs::object create_path_delegate(zs::vm_ref vm) {
           { zs::_ss("read_all"), path_read_all_impl }, //
           { zs::_ss("tostring"), path_tostring_impl }, //
           { zs::constants::get<meta_method::mt_tostring>(), path_tostring_impl }, //
+          { zs::constants::get<meta_method::mt_div>(), path_div_impl }, //
+
           { zs::constants::get<meta_method::mt_get>(), path_get_impl }, //
           { zs::constants::get<meta_method::mt_set>(), path_set_impl } //
       });
+  path_delegate.as_table()["__typeof"] = zs::_ss("path");
 
   return (registry_map[delegate_key] = std::move(path_delegate));
 }
 
 zs::object create_path(zs::vm_ref vm, std::string_view str_path) {
   zs::engine* eng = vm.get_engine();
-
-  zs::object path_obj = zs::object::create_user_data<zs::string>(eng, str_path, zs::allocator<char>(eng));
-
-  path_obj._udata->set_to_string_callback(
-      [](const object_base& obj, std::ostream& stream) -> zs::error_result {
-        stream << zb::quoted(obj._udata->data_ref<zs::string>());
-        return {};
-      });
-
+  zs::object path_obj = zs::object::create_mutable_string(eng, str_path);
   path_obj.set_delegate(create_path_delegate(vm));
-  path_obj._udata->set_uid(zs::_sv(k_path_uid));
+  return path_obj;
+}
 
+zs::object create_path(zs::vm_ref vm, zs::string&& str_path) {
+  zs::engine* eng = vm.get_engine();
+  zs::object path_obj = zs::object::create_mutable_string(eng, std::move(str_path));
+  path_obj.set_delegate(create_path_delegate(vm));
   return path_obj;
 }
 

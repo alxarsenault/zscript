@@ -653,7 +653,7 @@ ZS_CODE_TEST("operator_04", R"""(
   };
 
   // Set 'b' as delegate.
-  set_delegate(a, b);
+  zs::set_metadata(a, b);
   return typeof(a);
 )""") {
   REQUIRE(vm.top().is_string());
@@ -665,10 +665,10 @@ ZS_CODE_TEST("operator_05", R"""(
   var b = {
     operator(typeof) = function() { return "john"; }
   };
-   set_delegate(b, null);
+   zs::set_metadata(b, null);
   // Set 'b' as delegate.
-  set_delegate(a, b);
-  //a.set_delegate(b);
+  zs::set_metadata(a, b);
+
  return typeof(a);
 )""") {
   REQUIRE(vm.top().is_string());
@@ -680,10 +680,9 @@ var a = { k1 = 56};
 var b = {
   operator(get) = function(key, value) { return "john"; }
 };
- //b.set_delegate(null);
 
 // Set 'b' as delegate.
-set_delegate(a, b);
+zs::set_metadata(a, b);
 
 
 return a.bababa;
@@ -727,10 +726,10 @@ var b = {
   }
 };
 
-set_delegate(b, null);
+zs::set_metadata(b, null);
 
 // Set 'b' as delegate.
-set_delegate(a, b);
+zs::set_metadata(a, b);
 
 
 return a.k1;
@@ -749,7 +748,7 @@ var b = {
 };
 
 // Set 'b' as delegate.
-set_delegate(a, b);
+zs::set_metadata(a, b);
 
 
 return a.k1;

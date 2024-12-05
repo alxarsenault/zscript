@@ -3,6 +3,7 @@
 #include <bitsery/adapter/buffer.h>
 #include <bitsery/traits/vector.h>
 #include <bitsery/traits/string.h>
+#include "json/zjson_parser.h"
 
 namespace bitsery::traits {
 template <typename T>
@@ -215,6 +216,35 @@ void serialize_string_object(Stream& stream, object& obj, size_t max_size) {
 
 template <class Stream>
   requires Stream::is_serializer
+void serialize_table_object(Stream& stream, const object& obj, size_t max_size) {
+  zs::engine* eng = stream.template context<zs::engine*>();
+
+  zs::string output("{}", eng);
+
+  if (obj.is_table()) {
+    if (auto err = obj.to_json(output)) {
+    }
+  }
+
+  stream.text1b(output, max_size);
+}
+
+template <class Stream>
+  requires(!Stream::is_serializer)
+void serialize_table_object(Stream& stream, object& obj, size_t max_size) {
+  zs::engine* eng = stream.template context<zs::engine*>();
+  zs::string str(eng);
+
+  stream.text1b(str, max_size);
+
+  zs::json_parser jparser(eng);
+  zs::error_result err = jparser.parse(nullptr, str, nullptr, obj);
+
+  //  obj = zs::_s(eng, str);
+}
+
+template <class Stream>
+  requires Stream::is_serializer
 void serialize_function_prototype_object(Stream& stream, const object& obj) {
   stream.object(obj.as_proto());
 }
@@ -238,13 +268,13 @@ void serialize(Stream& stream, zs::line_info_op_t& o) {
 
 template <typename Stream>
 void serialize(Stream& stream, zs::local_var_info_t& o) {
-  serialize_string_object(stream, o._name, 100);
-  stream.value8b(o._start_op);
-  stream.value8b(o._end_op);
-  stream.value8b(o._pos);
-  stream.value4b(o._mask);
-  stream.value8b(o._custom_mask);
-  stream.boolValue(o._is_const);
+  serialize_string_object(stream, o.name, 100);
+  stream.value8b(o.start_op);
+  stream.value8b(o.end_op);
+  stream.value8b(o.pos);
+  stream.value4b(o.mask);
+  stream.value8b(o.custom_mask);
+  stream.boolValue(o.is_const);
 }
 
 template <typename Stream>
@@ -260,7 +290,8 @@ void serialize(Stream& stream, zs::function_prototype_object& fpo) {
 
   serialize_string_object(stream, fpo._source_name, 100);
   serialize_string_object(stream, fpo._name, 100);
-  serialize_string_object(stream, fpo._module_name, 100);
+
+  serialize_table_object(stream, fpo._module_info, 1024);
 
   stream.value8b(fpo._stack_size);
   stream.container(fpo._vlocals, 100);
@@ -315,11 +346,51 @@ function_prototype_object* function_prototype_object::create(zs::engine* eng) {
   return fpo;
 }
 
+int_t function_prototype_object::get_parameters_count() const noexcept { return _parameter_names.size(); }
+
+int_t function_prototype_object::get_default_parameters_count() const noexcept {
+  return _default_params.size();
+}
+
+int_t function_prototype_object::get_minimum_required_parameters_count() const noexcept {
+  return _parameter_names.size() - _default_params.size();
+}
+
+bool function_prototype_object::is_possible_parameter_count(size_t sz) const noexcept {
+  const size_t p_count = _parameter_names.size();
+  const size_t def_count = _default_params.size();
+
+  if (!def_count) {
+    return sz == p_count;
+  }
+
+  return sz >= (p_count - def_count) and sz <= get_parameters_count();
+}
+
 zs::object function_prototype_object::find_function(std::string_view name) const {
 
   for (const auto& f : _functions) {
     if (f._fproto->_name == name) {
       return f;
+    }
+  }
+
+  return nullptr;
+}
+
+const zs::local_var_info_t* function_prototype_object::find_local(std::string_view name) const {
+  for (const auto& vinfo : _vlocals) {
+    if (vinfo.name == name) {
+      return &vinfo;
+    }
+  }
+
+  return nullptr;
+}
+const zs::local_var_info_t* function_prototype_object::find_local(const zs::object& name) const {
+  for (const auto& vinfo : _vlocals) {
+    if (vinfo.name == name) {
+      return &vinfo;
     }
   }
 
@@ -342,19 +413,25 @@ void function_prototype_object::debug_print(std::ostream& stream) const {
   //  _instructions.serialize(stream);
 }
 
-zs::error_result function_prototype_object::serialize(zb::byte_vector& buffer) {
+zs::error_result function_prototype_object::save(zb::byte_vector& buffer) {
   using output_adapter = bitsery::OutputBufferAdapter<zb::byte_vector>;
   using serializer_type = bitsery::Serializer<output_adapter, zs::engine*>;
 
   serializer_type s(_engine, buffer);
   s.object(*this);
   buffer.resize(s.adapter().writtenBytesCount());
+
+  buffer.insert(buffer.begin(), k_compiled_header.begin(), k_compiled_header.end());
   return {};
 }
 
-zs::error_result function_prototype_object::serialize(zs::write_function_t write_func, void* udata) {
+zs::error_result function_prototype_object::save(zs::write_function_t write_func, void* udata) {
   using serializer_type
       = bitsery::Serializer<write_function_buffer_adapter<bitsery::DefaultConfig>, zs::engine*>;
+
+  if (auto err = write_func(k_compiled_header.data(), k_compiled_header.size(), udata)) {
+    return err;
+  }
 
   serializer_type s(_engine, write_function_buffer_adapter<bitsery::DefaultConfig>(write_func, udata));
   s.object(*this);
@@ -362,11 +439,12 @@ zs::error_result function_prototype_object::serialize(zs::write_function_t write
   return {};
 }
 
-zs::error_result function_prototype_object::deserialize(zb::byte_view buffer) {
+zs::error_result function_prototype_object::load(zb::byte_view buffer) {
   using input_adapter = bitsery::InputBufferAdapter<zb::byte_view>;
   using deserializer_type = bitsery::Deserializer<input_adapter, zs::engine*>;
 
-  deserializer_type ds(_engine, input_adapter(buffer.begin(), buffer.size()));
+  deserializer_type ds(_engine,
+      input_adapter(buffer.begin() + k_compiled_header.size(), buffer.size() - k_compiled_header.size()));
 
   ds.object(*this);
 

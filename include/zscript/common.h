@@ -122,6 +122,15 @@
 #define ZS_ERROR(...) zbase_error(__VA_ARGS__)
 #endif // ZS_ERROR.
 
+// #define ZS_TRACE(...) zb::print("[trace]:", __VA_ARGS__)
+
+/// @def ZS_TRACE.
+#ifndef ZS_TRACE
+#define ZS_TRACE(...) \
+  do {                \
+  } while (false)
+#endif // ZS_TRACE.
+
 /// @def ZS_TODO
 #if ZS_DEVELOPER_MODE
 #define ZS_TODO(msg) ZBASE_TODO(msg)

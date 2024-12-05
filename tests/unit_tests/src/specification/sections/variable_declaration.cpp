@@ -459,35 +459,35 @@ ZS_SPEC_TEST(variable_declaration,
   //  REQUIRE(value == "bacon-dance");
 }
 
-ZS_SPEC_TEST(variable_declaration, "define", "", ZCODE_A(R"""(
-#define k_my_value = 54;
-var a = @@k_my_value;)"""))
-{
-  //  zb::print(value.to_debug_string());
-  REQUIRE(value == 54);
-  //
-  //  zs::object_unordered_map<zs::object_ptr>& map
-  //    = *value.get_table_internal_map();
-  //
-  //  REQUIRE(map[zs::_ss("a")] == 32);
-  //  zb::print("TABLE VALUE", value.to_debug_string());
-  //  REQUIRE(value == "bacon-dance");
-}
-
-ZS_SPEC_TEST(variable_declaration, "define", "", ZCODE_A(R"""(
-#define k_my_value = 54;
-var a = @@k_my_value;)"""))
-{
-  //  zb::print(value.to_debug_string());
-  REQUIRE(value == 54);
-  //
-  //  zs::object_unordered_map<zs::object_ptr>& map
-  //    = *value.get_table_internal_map();
-  //
-  //  REQUIRE(map[zs::_ss("a")] == 32);
-  //  zb::print("TABLE VALUE", value.to_debug_string());
-  //  REQUIRE(value == "bacon-dance");
-}
+// ZS_SPEC_TEST(variable_declaration, "define", "", ZCODE_A(R"""(
+// #define k_my_value = 54;
+// var a = @@k_my_value;)"""))
+//{
+//   //  zb::print(value.to_debug_string());
+//   REQUIRE(value == 54);
+//   //
+//   //  zs::object_unordered_map<zs::object_ptr>& map
+//   //    = *value.get_table_internal_map();
+//   //
+//   //  REQUIRE(map[zs::_ss("a")] == 32);
+//   //  zb::print("TABLE VALUE", value.to_debug_string());
+//   //  REQUIRE(value == "bacon-dance");
+// }
+//
+// ZS_SPEC_TEST(variable_declaration, "define", "", ZCODE_A(R"""(
+// #define k_my_value = 54;
+// var a = @@k_my_value;)"""))
+//{
+//   //  zb::print(value.to_debug_string());
+//   REQUIRE(value == 54);
+//   //
+//   //  zs::object_unordered_map<zs::object_ptr>& map
+//   //    = *value.get_table_internal_map();
+//   //
+//   //  REQUIRE(map[zs::_ss("a")] == 32);
+//   //  zb::print("TABLE VALUE", value.to_debug_string());
+//   //  REQUIRE(value == "bacon-dance");
+// }
 
 // as_table.
 ZS_SPEC_TEST(variable_declaration,

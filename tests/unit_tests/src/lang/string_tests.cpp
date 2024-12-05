@@ -151,13 +151,13 @@ return "alexalex".replace_last("alexbnmb", "andre");
 }
 
 ZS_CODE_TEST("string_lib_01", R"""(
-return string.size("Bacon");
+return zs::strlen("Bacon");
 )""") {
   REQUIRE(value == 5);
 }
 
 ZS_CODE_TEST("string_lib_02", R"""(
-return tostring(32);
+return zs::to_string(32);
 )""") {
   REQUIRE(value == "32");
 }
@@ -175,7 +175,7 @@ return "A" + @(32);
 }
 
 ZS_CODE_TEST("string_lib_05", R"""(
-return toint("32");
+return zs::to_int("32");
 )""") {
   REQUIRE(value == 32);
 }

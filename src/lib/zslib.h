@@ -17,7 +17,8 @@
 
 #pragma once
 
-#include "zinclude_guard.h"
+#include <zscript/error.h>
+#include <zscript/types.h>
 
 namespace zs {
 zs::object create_zs_lib(zs::virtual_machine* vm);

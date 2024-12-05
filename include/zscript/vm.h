@@ -162,7 +162,7 @@ public:
     return err.code;
   }
 
-  ZS_CHECK const zs::string& get_error() const noexcept;
+  ZS_CHECK zs::string get_error() const noexcept;
 
   //
   // Virtual machine
@@ -191,6 +191,8 @@ public:
   std::ostream& get_stream() const noexcept;
 
   operator std::ostream&() const noexcept { return get_stream(); }
+
+  ZS_CHECK table_object& get_registry_table_object() const noexcept;
 
 protected:
   zs::virtual_machine* _vm;

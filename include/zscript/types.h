@@ -10,20 +10,19 @@ namespace zs {
 // MARK: Forward declarations
 //
 
+template <class T>
+class allocator;
+
 struct internal;
+struct object_base;
+class object;
+using var = object;
+
 class engine;
 class virtual_machine;
 class vm;
 class vm_ref;
 class parameter_list;
-
-template <class T>
-class allocator;
-
-struct object_base;
-class object;
-using var = object;
-
 class delegate_object;
 class weak_ref_object;
 class array_object;
@@ -41,7 +40,7 @@ class node_object;
 class user_data_object;
 class reference_counted_object;
 class native_array_object_interface;
-class closure_object_t;
+class capture_object;
 
 template <class T>
 class native_array_object;
@@ -58,7 +57,7 @@ using f32 = float;
 using f64 = double;
 
 //
-// MARK: - Types
+// MARK: Types
 //
 
 using null_t = std::nullptr_t;
@@ -68,16 +67,11 @@ using uint_t = uint64_t;
 using float_t = double;
 using raw_pointer_t = void*;
 
-///
-using native_cclosure_t = int_t (*)(zs::virtual_machine*);
-using native_cpp_closure_t = int_t (*)(zs::vm_ref);
-
-using closure_t = zs::object (*)(zs::vm_ref, parameter_list);
+using function_t = int_t (*)(zs::vm_ref);
+using parameter_list_function_t = zs::object (*)(zs::vm_ref, zs::parameter_list);
 
 using alloc_info_t = uint32_t;
 
-//
-//
 /// Allocate function.
 ///
 /// A null ptr with a size greater than zero is equivalent to malloc.

@@ -124,4 +124,96 @@ uint32_t array_object::get_array_type_mask() const noexcept {
   return tflags;
 }
 
+zs::error_result array_object::serialize_to_json(zs::engine* eng, std::ostream& stream, int idt) {
+
+  size_t sz = this->size();
+
+  if (sz == 0) {
+    stream << "[]";
+    return {};
+  }
+
+  if (this->is_number_array() or this->is_string_array()) {
+    stream << "[";
+
+    for (size_t i = 0; i < sz - 1; i++) {
+      zs::serialize_to_json(eng, stream, (*this)[i], idt);
+      stream << ", ";
+    }
+    zs::serialize_to_json(eng, stream, this->back(), idt);
+    stream << "]";
+    return {};
+  }
+  else {
+    stream << "[\n";
+    idt++;
+    stream << zb::indent_t(idt, 4);
+    for (size_t i = 0; i < sz - 1; i++) {
+
+      zs::serialize_to_json(eng, stream, (*this)[i], idt);
+      stream << ",\n";
+      stream << zb::indent_t(idt, 4);
+    }
+
+    zs::serialize_to_json(eng, stream, this->back(), idt);
+    idt--;
+    stream << "\n" << zb::indent_t(idt, 4) << "]";
+    return {};
+  }
+
+  //
+  //
+  //
+  //
+  ///
+  ///
+
+  //  bool is_small_array = true;
+  //
+  //  stream << "[";
+  //
+  //  if (const size_t sz = this->size()) {
+  //    for (const auto& item :*this) {
+  //      if (item.is_ref_counted()) {
+  //        is_small_array = false;
+  //        break;
+  //      }
+  //    }
+  //
+  //    if (!is_small_array) {
+  //      stream << "\n";
+  //      idt++;
+  //
+  //    }
+  //
+  //    for (size_t i = 0; i < sz - 1; i++) {
+  //      stream << zb::indent_t(idt, 4);
+  ////      stream << zs::serializer(s.type, arr[i], indent);
+  //      zs::serialize_to_json( eng, stream, (*this)[i],idt ) ;
+  //      //       if (is_small_array) {
+  //      stream << ",";
+  //      //       }
+  //      //       else {
+  //      //         stream << ",";
+  //      //         //          stream << ",\n" << zb::indent_t(indent);
+  //      //       }
+  //    }
+  //
+  //
+  //    stream << zb::indent_t(idt, 4);
+  //    zs::serialize_to_json( eng, stream, this->back(),idt ) ;
+  ////    stream << zs::serializer(s.type, this->back(), idt);
+  //  }
+  //
+  //
+  //
+  //       if (is_small_array) {
+  //  stream << "]";
+  //         return {};
+  //       }
+  //
+  //  idt--;
+  //        stream << "\n" << zb::indent_t(idt, 4) << "]";
+  return {};
+}
 } // namespace zs.

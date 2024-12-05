@@ -5,6 +5,8 @@
 #include "lang/preprocessor/zuuid_parser.h"
 #include "lang/preprocessor/zstringify_parser.h"
 #include "lang/preprocessor/zmacro_def_parser.h"
+#include "lang/preprocessor/zexpr_parser.h"
+#include "lang/preprocessor/zstring_keyword_parser.h"
 
 namespace zs {
 
@@ -89,7 +91,7 @@ zs::error_code preprocessor::expect(
 
 zs::error_result preprocessor::preprocess(
     std::string_view content, std::string_view filename, object& output, zs::virtual_machine* vm) {
-
+  _vm = vm;
   zs::string input_code(content, _engine);
   zs::string output_code(content, _engine);
 
@@ -106,7 +108,30 @@ zs::error_result preprocessor::preprocess(
     return err;
   }
 
-  if (auto err = parse<zs::macro_parser>(input_code, output_code, found_macro)) {
+  if (auto err = parse<zs::expr_parser>(input_code, output_code, found_include)) {
+    return err;
+  }
+
+  if (found_include) {
+    bool found_macro_def_2 = false;
+    if (auto err = parse<zs::macro_def_parser>(input_code, output_code, found_macro_def_2)) {
+      return err;
+    }
+
+    found_macro_def = found_macro_def or found_macro_def_2;
+  }
+
+  if (found_macro_def) {
+    if (auto err = parse<zs::macro_parser>(input_code, output_code, found_macro)) {
+      return err;
+    }
+  }
+
+  if (auto err = parse<zs::string_keyword_parser>(input_code, output_code, found_include)) {
+    return err;
+  }
+
+  if (auto err = parse<zs::stringify_parser>(input_code, output_code, found_include)) {
     return err;
   }
 

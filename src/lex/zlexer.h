@@ -23,6 +23,7 @@
 
 namespace zs {
 
+struct lexer_ref;
 class parser;
 class jit_compiler;
 
@@ -30,6 +31,7 @@ class lexer : public engine_holder {
   ZS_CLASS_COMMON;
   friend class jit_compiler;
   friend class parser;
+  friend struct lexer_ref;
 
 public:
   using enum token_type;
@@ -45,19 +47,26 @@ public:
   zs::error_result lex(std::span<token_type>& buffer);
   zs::error_result lex(std::span<token_type>& buffer, token_type tok);
   zs::error_result lex_rbracket(std::span<token_type>& buffer);
+  zs::error_result lex_to_rctrlbracket();
   zs::error_result lex_for_auto(std::span<token_type>& buffer);
   zs::error_result lex_to(token_type tok);
   zs::error_result lex_to(token_type tok, size_t nmax);
-  zs::error_result lex_compare(std::span<const token_type> buffer);
+  bool lex_compare(std::span<const token_type> buffer);
 
-  inline zs::error_result lex_compare(std::initializer_list<token_type> buffer) {
+  inline bool lex_compare(std::initializer_list<token_type> buffer) {
     return lex_compare(std::span<const token_type>(buffer));
   }
 
-  token_type peek() const;
+  token_type peek(bool keep_endl = false) const;
   zs::error_result peek(std::span<token_type>& buffer) const;
+  bool peek_compare(std::span<const token_type> buffer);
+
+  inline bool peek_compare(std::initializer_list<token_type> buffer) {
+    return peek_compare(std::span<const token_type>(buffer));
+  }
 
   ZS_CHECK bool is_template_function_call() const;
+  ZS_CHECK bool is_right_arrow_function_call() const;
 
   ZS_CK_INLINE zs::line_info get_line_info() const noexcept {
     return { (int_t)_current_line, (int_t)_current_column };
@@ -149,6 +158,11 @@ struct lexer_ref {
   zs::token_type _token = tok_none;
   bool _in_template = false;
 
+  ZS_CK_INLINE const char* stream_ptr() const noexcept { return _lexer->stream().ptr(); }
+  ZS_CK_INLINE zs::line_info get_line_info() const noexcept { return _lexer->get_line_info(); }
+
+  ZS_CK_INLINE zs::line_info get_last_line_info() const noexcept { return _lexer->get_last_line_info(); }
+
   inline token_type lex(bool keep_endl = false) {
     _token = _lexer->lex(keep_endl);
 
@@ -157,6 +171,20 @@ struct lexer_ref {
     }
 
     return _token;
+  }
+
+  inline token_type lex_n(size_t n, bool keep_endl = false) {
+    while (n--) {
+      lex();
+    }
+
+    return _token;
+  }
+
+  ZS_CK_INLINE bool peek_compare(std::span<const token_type> buffer) { return _lexer->peek_compare(buffer); }
+
+  ZS_CK_INLINE bool peek_compare(std::initializer_list<token_type> buffer) {
+    return _lexer->peek_compare(std::span<const token_type>(buffer));
   }
 
   ZS_CK_INLINE bool is(token_type t) const noexcept { return _token == t; }
@@ -169,6 +197,30 @@ struct lexer_ref {
   template <class... Tokens>
   ZS_CK_INLINE bool is_not(Tokens... tokens) const noexcept {
     return !is(tokens...);
+  }
+
+  ZS_CK_INLINE bool last_is(token_type t) const noexcept { return _lexer->_last_token == t; }
+
+  template <class... Tokens>
+  ZS_CK_INLINE bool last_is(Tokens... tokens) const noexcept {
+    return zb::is_one_of(_lexer->_last_token, tokens...);
+  }
+
+  template <class... Tokens>
+  ZS_CK_INLINE bool last_is_not(Tokens... tokens) const noexcept {
+    return !last_is(tokens...);
+  }
+
+  ZS_CK_INLINE bool next_is(token_type t) const noexcept { return _lexer->peek() == t; }
+
+  template <class... Tokens>
+  ZS_CK_INLINE bool next_is(Tokens... tokens) const noexcept {
+    return zb::is_one_of(_lexer->peek(), tokens...);
+  }
+
+  template <class... Tokens>
+  ZS_CK_INLINE bool next_is_not(Tokens... tokens) const noexcept {
+    return !next_is(tokens...);
   }
 
   template <class... Tokens>
@@ -191,6 +243,7 @@ struct lexer_ref {
     case tok_int:
     case tok_bool:
     case tok_float:
+    case tok_number:
       return true;
 
     default:
@@ -209,6 +262,23 @@ struct lexer_ref {
     case tok_int:
     case tok_bool:
     case tok_float:
+    case tok_number:
+
+      return true;
+
+    default:
+      return false;
+    }
+    return false;
+  }
+
+  ZS_CK_INLINE static bool is_var_decl_prefix_token(token_type t) noexcept {
+    switch (t) {
+    case tok_const:
+    case tok_mutable:
+    case tok_static:
+    case tok_private:
+    case tok_export:
       return true;
 
     default:
@@ -221,11 +291,15 @@ struct lexer_ref {
 
   ZS_CK_INLINE bool is_var_decl_tok_no_const() const noexcept { return is_var_decl_tok_no_const(_token); }
 
+  ZS_CK_INLINE bool is_var_decl_prefix_token() const noexcept { return is_var_decl_prefix_token(_token); }
+
   ZS_CK_INLINE bool is_template_function_call() const noexcept { return _lexer->is_template_function_call(); }
 
   ZS_CK_INLINE bool is_end_of_statement() const noexcept {
-    return (_lexer->last_token() == tok_endl) || is(tok_eof, tok_rcrlbracket, tok_semi_colon);
+    return last_is(tok_endl) or is(tok_eof, tok_rcrlbracket, tok_semi_colon, tok_doc_block);
   }
+
+  ZS_CK_INLINE zs::object get_identifier() const noexcept { return _lexer->get_identifier(); }
 };
 
 } // namespace zs.

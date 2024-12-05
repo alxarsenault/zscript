@@ -114,6 +114,27 @@ static int_t file_read_impl(zs::vm_ref vm) {
   return 1;
 }
 
+// static int_t file_read_all_impl(zs::vm_ref vm) {
+//   const int_t nargs = vm.stack_size();
+//   if (nargs != 1) {
+//     vm.set_error("No args in fs.file.read()");
+//     return -1;
+//   }
+//
+//   zfile* file = ZS_GET_FILE();
+//
+//   if (!file->stream.is_open()) {
+//     vm.set_error("File is not open in fs.file.file()");
+//     return -1;
+//   }
+//
+//   std::string value;
+//   file->stream >> value;
+//
+//   vm.push_string(value);
+//   return 1;
+// }
+
 static int_t file_get_impl(zs::vm_ref vm) {
   // vm[0] should be the user_data.
   // vm[1] should be the key.
@@ -134,12 +155,12 @@ static int_t file_get_impl(zs::vm_ref vm) {
 }
 
 static void set_file_delegate_methods(zs::vm_ref vm, zs::object& file_delegate,
-    const std::initializer_list<std::pair<zs::object, zs::native_cpp_closure_t>>& list) {
+    const std::initializer_list<std::pair<zs::object, zs::function_t>>& list) {
   zs::engine* eng = vm->get_engine();
   zs::table_object* tbl = file_delegate._table;
 
   for (auto& n : list) {
-    tbl->set(std::move(n.first), zs::_nc(eng, n.second));
+    tbl->set(std::move(n.first), n.second);
   }
 }
 
@@ -164,6 +185,7 @@ static zs::object create_file_delegate(zs::vm_ref vm) {
           { zs::_ss("write"), file_write_impl }, //
           { zs::_ss("write_json"), file_write_json_impl }, //
           { zs::_ss("read"), file_read_impl }, //
+          //{ zs::_ss("read_all"), file_read_all_impl }, //
           { zs::constants::get<meta_method::mt_get>(), file_get_impl }, //
 
       });

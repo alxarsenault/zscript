@@ -23,7 +23,7 @@ zs::error_result include_parser::parse(
 
   size_t start_index = 0;
 
-  while (!zb::is_one_of(_token, tok_eof, tok_lex_error)) {
+  while (!zb::is_one_of(_token, tok_eof)) {
 
     if (is(tok_include, tok_import)) {
 

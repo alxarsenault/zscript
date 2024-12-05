@@ -10,7 +10,9 @@ enum class runtime_code {
   weak_set,
 
   table_get,
-  table_set,
+  table_set,  table_contains,
+
+  table_set_if_exists,
   array_get,
   array_set,
 
@@ -18,7 +20,9 @@ enum class runtime_code {
   struct_get,
   struct_set,
   struct_new_slot,
+  struct_new_default_constructor,
   struct_new_constructor,
+  struct_new_method,
   struct_call_create,
 
   // Struct instance.
@@ -33,6 +37,10 @@ enum class runtime_code {
 
   string_get,
   string_set,
+
+  mutable_string_get,
+  mutable_string_set,
+
   extension_get,
   extension_set,
 
@@ -49,8 +57,11 @@ enum class runtime_code {
   leave_function_call,
   call_native_closure,
   call_native_function,
-  call_native_function2,
+  call_native_pfunction,
   call_closure,
+
+  new_closure,
+  rt_close_captures,
 
   handle_error,
   execute,
@@ -58,6 +69,7 @@ enum class runtime_code {
   call_arith_op,
   meta_arith,
 };
+using enum runtime_code;
 
 using objref_t = zb::ref_wrapper<object>;
 using cobjref_t = zb::ref_wrapper<const object>;
@@ -74,17 +86,17 @@ ZS_DECL_RT_ACTION(
 
 // clang-format off
 ZS_DECL_RT_ACTION(enter_function_call, cobjref_t closure_obj, int_t n_params, int_t stack_base);
-ZS_DECL_RT_ACTION(enter_function_call, cobjref_t closure_obj, std::span<const object> params);
+ZS_DECL_RT_ACTION(enter_function_call, cobjref_t closure_obj, zs::parameter_list params);
 ZS_DECL_RT_ACTION(leave_function_call);
 ZS_DECL_RT_ACTION(call_closure, cobjref_t obj, int_t n_params, int_t stack_base, objref_t ret_value);
-ZS_DECL_RT_ACTION(call_closure, cobjref_t obj, std::span<const object> params, objref_t ret_value);
+ZS_DECL_RT_ACTION(call_closure, cobjref_t obj, zs::parameter_list params, objref_t ret_value);
 ZS_DECL_RT_ACTION(call_native_closure, cobjref_t obj, int_t n_params, int_t stack_base, objref_t ret_value);
-ZS_DECL_RT_ACTION(call_native_closure, cobjref_t obj, std::span<const object> params, objref_t ret_value);
+ZS_DECL_RT_ACTION(call_native_closure, cobjref_t obj, zs::parameter_list params, objref_t ret_value);
 ZS_DECL_RT_ACTION(call_native_function, cobjref_t obj, int_t n_params, int_t stack_base, objref_t ret_value);
-ZS_DECL_RT_ACTION(call_native_function, cobjref_t obj, std::span<const object> params, objref_t ret_value);
+ZS_DECL_RT_ACTION(call_native_function, cobjref_t obj, zs::parameter_list params, objref_t ret_value);
 
-ZS_DECL_RT_ACTION(call_native_function2, cobjref_t obj, int_t n_params, int_t stack_base, objref_t ret_value);
-ZS_DECL_RT_ACTION(call_native_function2, cobjref_t obj, std::span<const object> params, objref_t ret_value);
+ZS_DECL_RT_ACTION(call_native_pfunction, cobjref_t obj, int_t n_params, int_t stack_base, objref_t ret_value);
+ZS_DECL_RT_ACTION(call_native_pfunction, cobjref_t obj, zs::parameter_list params, objref_t ret_value);
 // clang-format on
 
 ZS_DECL_RT_ACTION(invalid_get, cobjref_t obj, cobjref_t key, objref_t dest);
@@ -94,10 +106,15 @@ ZS_DECL_RT_ACTION(invalid_set, objref_t obj, cobjref_t key, cobjref_t value);
 ZS_DECL_RT_ACTION(string_get, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(string_set, objref_t obj, cobjref_t key, cobjref_t value);
 
+// String.
+ZS_DECL_RT_ACTION(mutable_string_get, cobjref_t obj, cobjref_t key, objref_t dest);
+ZS_DECL_RT_ACTION(mutable_string_set, objref_t obj, cobjref_t key, cobjref_t value);
+
 ZS_DECL_RT_ACTION(delegate_get_type_of, cobjref_t obj, cobjref_t delegate_obj, objref_t dest);
 ZS_DECL_RT_ACTION(delegate_get, cobjref_t obj, cobjref_t delegate_obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(class_get, cobjref_t obj, cobjref_t class_obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(table_get, cobjref_t obj, cobjref_t key, objref_t dest);
+ZS_DECL_RT_ACTION(table_contains, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(array_get, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(array_set, objref_t obj, cobjref_t key, cobjref_t value);
 
@@ -108,9 +125,12 @@ ZS_DECL_RT_ACTION(weak_set, objref_t obj, cobjref_t key, cobjref_t value);
 ZS_DECL_RT_ACTION(struct_get, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(struct_set, objref_t obj, cobjref_t key, cobjref_t value);
 ZS_DECL_RT_ACTION(struct_new_slot, objref_t obj, cobjref_t key, cobjref_t value, uint32_t mask,
-    bool is_static, bool is_const);
-ZS_DECL_RT_ACTION(struct_new_slot, objref_t obj, cobjref_t key, uint32_t mask, bool is_static, bool is_const);
+    bool is_static, bool is_private, bool is_const);
+ZS_DECL_RT_ACTION(struct_new_slot, objref_t obj, cobjref_t key, uint32_t mask, bool is_static,
+    bool is_private, bool is_const);
 ZS_DECL_RT_ACTION(struct_new_constructor, objref_t obj, cobjref_t value);
+ZS_DECL_RT_ACTION(struct_new_default_constructor, objref_t obj);
+ZS_DECL_RT_ACTION(struct_new_method, objref_t obj, cobjref_t closure, var_decl_flags_t decl_flags);
 ZS_DECL_RT_ACTION(struct_call_create, cobjref_t obj, int_t n_params, int_t stack_base, objref_t ret_value);
 
 // Struct instance.
@@ -120,6 +140,7 @@ ZS_DECL_RT_ACTION(struct_instance_set, objref_t obj, cobjref_t key, cobjref_t va
 ZS_DECL_RT_ACTION(instance_get, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(delegate_set, objref_t obj, objref_t delegate_obj, cobjref_t key, cobjref_t value);
 ZS_DECL_RT_ACTION(table_set, objref_t obj, cobjref_t key, cobjref_t value);
+ZS_DECL_RT_ACTION(table_set_if_exists, objref_t obj, cobjref_t key, cobjref_t value);
 ZS_DECL_RT_ACTION(class_set, objref_t obj, cobjref_t key, cobjref_t value);
 ZS_DECL_RT_ACTION(user_data_set, objref_t user_data_obj, cobjref_t key, cobjref_t value);
 ZS_DECL_RT_ACTION(meta_arith, meta_method mt, cobjref_t lhs, cobjref_t rhs, objref_t dest, objref_t del);
@@ -133,6 +154,9 @@ ZS_DECL_RT_ACTION(color_get, cobjref_t obj, cobjref_t key, objref_t dest);
 
 ZS_DECL_RT_ACTION(extension_get, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(extension_set, objref_t obj, cobjref_t key, cobjref_t value);
+
+ZS_DECL_RT_ACTION(new_closure, uint32_t fct_idx, uint8_t bounded_target, objref_t dest);
+ZS_DECL_RT_ACTION(rt_close_captures, const object* stack_ptr);
 
 //
 //
@@ -219,13 +243,20 @@ ZS_DECL_RT_ACTION(meta_arith, meta_method mt, cobjref_t lhs, cobjref_t rhs, objr
     if (meta_oper.is_function()) {
       push(lhs);
       push(rhs);
-      push(del);
-      if (auto err = call(meta_oper, 3, stack_size() - 3, dest)) {
-        pop(3);
+      int_t nparams = 3;
+      if (meta_oper.is_closure() and meta_oper.as_closure().get_proto()._parameter_names.size() < 3) {
+        nparams--;
+      }
+      else {
+        push(del);
+      }
+
+      if (auto err = call(meta_oper, nparams, stack_size() - nparams, dest)) {
+        pop(nparams);
         return err;
       }
 
-      pop(3);
+      pop(nparams);
       //      if (!dest->is_string()) {
       //        zb::print("Invalid typeof operator return type (should be a
       //        string)"); return zs::error_code::invalid_type;
@@ -271,7 +302,7 @@ ZS_DECL_RT_ACTION(native_array_get, cobjref_t obj, cobjref_t key, objref_t dest)
   }
 
   // If the native array has a valid delegate, we'll go look in there first.
-  if (zs::table_object* delegate = obj->get_delegate()) {
+  if (zs::object delegate = obj->as_delegate().get_delegate(); !delegate.is_null()) {
     return zs::error_code::unimplemented;
   }
 
@@ -292,6 +323,25 @@ ZS_DECL_RT_ACTION(native_array_set, objref_t obj, cobjref_t key, cobjref_t value
   const int_t index = key->convert_to_integer_unchecked();
   return obj->as_native_array_interface().set(index, value);
 }
+
+ZS_DECL_RT_ACTION(rt_close_captures, const object* stack_ptr) {
+  ZS_TRACE("VM - rt_close_captures - CLOSE_CAPTURE", stack_ptr - _stack.get_internal_vector().data());
+
+  for (auto it = _open_captures.begin(); it != _open_captures.end();) {
+    if (it->as_capture().is_baked()) {
+      it = _open_captures.erase(it);
+      continue;
+    }
+    if (it->as_capture().get_value_ptr() >= stack_ptr) {
+      it->as_capture().bake();
+      it = _open_captures.erase(it);
+    }
+    else {
+      ++it;
+    }
+  }
+  return {};
+}
 } // namespace zs.
 
 #include "vm/zvm_runtime_string.h"
@@ -305,3 +355,5 @@ ZS_DECL_RT_ACTION(native_array_set, objref_t obj, cobjref_t key, cobjref_t value
 #include "vm/zvm_runtime_instance.h"
 #include "vm/zvm_runtime_extension.h"
 #include "vm/zvm_runtime_struct.h"
+#include "vm/zvm_runtime_closure.h"
+#include "vm/zvm_runtime_mutable_string.h"

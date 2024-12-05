@@ -33,6 +33,8 @@ public:
   ZS_CK_INLINE vector_type& to_vec() noexcept { return *this; }
   ZS_CK_INLINE const vector_type& to_vec() const noexcept { return *this; }
 
+  zs::error_result serialize_to_json(zs::engine* eng, std::ostream& stream, int idt = 0);
+
 private:
   array_object(zs::engine* eng) noexcept;
 };

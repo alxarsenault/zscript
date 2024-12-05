@@ -189,7 +189,7 @@ TEST_CASE("zs::user_data2") {
       return 1;
     });
 
-    zs::var fct = zs::var::create_native_closure_function(&eng, [](zs::vm_ref vm, zs::int_t p1) {
+    zs::var fct = zs::object_function_wrapper::create(&eng, [](zs::vm_ref vm, zs::int_t p1) {
       zs::var& __this = vm[0];
       REQUIRE(__this.is_user_data());
       REQUIRE(__this.has_user_data_uid(zs::_s(vm, "banana-split")));
@@ -226,7 +226,7 @@ TEST_CASE("zs::user_data2") {
 
     {
       zs::var mfct
-          = zs::var::create_native_closure_function(&eng, &my_struct::get_bingo, zs::_s(eng, "banana-split"));
+          = zs::object_function_wrapper::create(&eng, &my_struct::get_bingo, zs::_s(eng, "banana-split"));
       zs::int_t np = vm.stack_size();
       vm.push(obj);
       vm.push_string("yes");
@@ -239,8 +239,8 @@ TEST_CASE("zs::user_data2") {
       vm->pop(vm.stack_size());
     }
     {
-      zs::var mfct = zs::var::create_native_closure_function(
-          &eng, &my_struct::get_bingo2, zs::_s(eng, "banana-split"));
+      zs::var mfct
+          = zs::object_function_wrapper::create(&eng, &my_struct::get_bingo2, zs::_s(eng, "banana-split"));
       zs::int_t np = vm.stack_size();
       vm.push(obj);
       vm.push_string("yes");
@@ -254,8 +254,8 @@ TEST_CASE("zs::user_data2") {
     }
 
     {
-      zs::var mfct = zs::var::create_native_closure_function(
-          &eng, &my_struct::get_bingo3, zs::_s(eng, "banana-split"));
+      zs::var mfct
+          = zs::object_function_wrapper::create(&eng, &my_struct::get_bingo3, zs::_s(eng, "banana-split"));
       zs::int_t np = vm.stack_size();
       vm.push(obj);
 
@@ -306,7 +306,7 @@ TEST_CASE("zs::user_data3") {
     //    REQUIRE(!obj.get_user_data_typeid(utypeid));
 
     {
-      zs::var mfct = zs::var::create_native_closure_function(
+      zs::var mfct = zs::object_function_wrapper::create(
           &eng, +[](zs::vm_ref vm, const my_user_data_type& my_type) {
             //            zb::print(my_type._name);
             REQUIRE(my_type._name == "123");
@@ -326,7 +326,7 @@ TEST_CASE("zs::user_data3") {
     }
 
     {
-      zs::var mfct = zs::var::create_native_closure_function(
+      zs::var mfct = zs::object_function_wrapper::create(
           &eng, +[](zs::vm_ref vm, const my_user_data_type& my_type, const my_user_data_type& my_type2) {
             //            zb::print(my_type._name, my_type2._name);
             REQUIRE(my_type._name == "123");
@@ -348,7 +348,7 @@ TEST_CASE("zs::user_data3") {
     }
 
     {
-      zs::var mfct = zs::var::create_native_closure_function(
+      zs::var mfct = zs::object_function_wrapper::create(
           &eng, &my_user_data_type::get_bingo, zs::_s(eng, "banana-split"));
       zs::int_t np = vm.stack_size();
       vm.push(obj);

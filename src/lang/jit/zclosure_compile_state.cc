@@ -1,166 +1,144 @@
-// #include "lang/zclosure_compile_state.h"
-//
-// #include "objects/zfunction_prototype.h"
-// #include "lang/zopcode.h"
 
 namespace zs {
-closure_compile_state::closure_compile_state(zs::engine* eng, jit::shared_state_data& sdata)
+closure_compile_state::closure_compile_state(
+    private_constructor_tag, zs::engine* eng, jit::shared_state_data& sdata, closure_compile_state* parent)
     : jit::shared_state_data_ref(sdata)
+    , _parent(parent)
     , _parameter_names(zs::allocator<zs::object>(eng))
-    , _children(zs::allocator<zs::unique_ptr<closure_compile_state>>(eng))
     , _instructions(eng)
-    //    , _restricted_types(zs::allocator<object>(eng))
     , _target_stack(zs::allocator<variable_type_info_t>(eng))
     , _literals(zs::unordered_map_allocator<object, int_t>(eng))
-    , _vlocals(zs::allocator<zs::local_var_info_t>(eng))
+    , _vlocals(zs::allocator<zs::scoped_local_var_info_t>(eng))
     , _local_var_infos(zs::allocator<zs::local_var_info_t>(eng))
     , _line_info(zs::allocator<zs::line_info_op_t>(eng))
     , _functions(zs::allocator<object>(eng))
     , _default_params(zs::allocator<int_t>(eng))
+    , _breaks(zs::allocator<size_t>(eng))
+    , _unresolved_breaks(zs::allocator<size_t>(eng))
+, _continues(zs::allocator<size_t>(eng))
+, _unresolved_continues(zs::allocator<size_t>(eng))
     , _captures(zs::allocator<captured_variable>(eng))
-
-//    , _imported_files_set(zs::allocator<object>(eng))
-
 #if ZS_DEBUG
     , _debug_line_info(zs::allocator<zs::line_info_op_t>(eng))
 #endif
 {
 }
 
+closure_compile_state::closure_compile_state(zs::engine* eng, jit::shared_state_data& sdata)
+    : closure_compile_state(private_constructor_tag{}, eng, sdata, nullptr) {}
+
 closure_compile_state::closure_compile_state(zs::engine* eng, closure_compile_state& parent)
-    : jit::shared_state_data_ref(parent._sdata)
-    , _parent(&parent)
-    , _parameter_names(zs::allocator<zs::object>(eng))
-    , _children(zs::allocator<zs::unique_ptr<closure_compile_state>>(eng))
-    , _instructions(eng)
-    //    , _restricted_types(zs::allocator<object>(eng))
-    , _target_stack(zs::allocator<variable_type_info_t>(eng))
-    , _literals(zs::unordered_map_allocator<object, int_t>(eng))
-    , _vlocals(zs::allocator<zs::local_var_info_t>(eng))
-    , _local_var_infos(zs::allocator<zs::local_var_info_t>(eng))
-    , _line_info(zs::allocator<zs::line_info_op_t>(eng))
-    , _functions(zs::allocator<object>(eng))
-    , _default_params(zs::allocator<int_t>(eng))
-    , _captures(zs::allocator<captured_variable>(eng))
+    : closure_compile_state(private_constructor_tag{}, eng, parent._sdata, &parent) {}
 
-#if ZS_DEBUG
-    , _debug_line_info(zs::allocator<zs::line_info_op_t>(eng))
-#endif
-
-{
+closure_compile_state::closure_compile_state(
+    zs::engine* eng, closure_compile_state& parent, const object& sname)
+    : closure_compile_state(eng, parent) {
+  name = sname;
 }
 
 closure_compile_state::~closure_compile_state() {}
 
 zs::error_result closure_compile_state::add_parameter(const object& param_name) {
   _parameter_names.push_back(param_name);
-  return push_local_variable(param_name);
+  return push_local_variable(param_name, 0);
 }
 
 zs::error_result closure_compile_state::add_parameter(
     const object& param_name, uint32_t mask, uint64_t custom_mask, bool is_const) {
   _parameter_names.push_back(param_name);
-  return push_local_variable(param_name, nullptr, mask, custom_mask, is_const);
+  return push_local_variable(param_name, 0, nullptr, mask, custom_mask, is_const);
 }
 
 zs::error_result closure_compile_state::push_local_variable(
-    const object& name, int_t* ret_pos, uint32_t mask, uint64_t custom_mask, bool is_const) {
+    const object& name, int_t scope_id, int_t* ret_pos, uint32_t mask, uint64_t custom_mask, bool is_const) {
 
-  size_t sz = _vlocals.size();
+  //  if(zs::optional_result<int_t> pos = find_local_variable(name)) {
+  //    return zs::errc::duplicated_local_variable_name;
+  //  }
 
-  int_t pos = (int_t)sz;
-  local_var_info_t lvi;
-  lvi._name = name;
-  lvi._start_op = get_instruction_index();
-  lvi._pos = pos;
-  lvi._mask = mask;
-  lvi._custom_mask = custom_mask;
-  lvi._is_const = is_const;
-  _vlocals.push_back(std::move(lvi));
-
-  ++sz;
-
-  if (sz > ((uint_t)_total_stack_size)) {
-    if (sz > k_max_func_stack_size) {
-      return zs::error_code::too_many_locals;
-    }
-
-    _total_stack_size = (uint32_t)sz;
-  }
+  int_t pos = _vlocals.size();
+  _vlocals.emplace_back(name, scope_id, get_instruction_index(), 0, pos, mask, custom_mask, is_const);
 
   if (ret_pos) {
     *ret_pos = pos;
   }
 
-  return {};
+  return update_total_stack_size();
 }
 
 int_t closure_compile_state::alloc_stack_pos() {
+  _vlocals.push_back(scoped_local_var_info_t());
 
-  size_t sz = _vlocals.size();
-  int_t npos = sz;
-  _vlocals.push_back(local_var_info_t());
-  ++sz;
-
-  if (sz > ((uint_t)_total_stack_size)) {
-    if (sz > k_max_func_stack_size) {
-      zs::throw_error(zs::error_code::too_many_locals);
-    }
-
-    _total_stack_size = (uint32_t)sz;
+  if (auto err = update_total_stack_size()) {
+    zs::throw_error(err);
   }
 
-  return npos;
+  return _vlocals.size() - 1;
 }
 
-int_t closure_compile_state::push_target(int_t n) {
-  if (n == -1) {
-    n = alloc_stack_pos();
-  }
+// target_t closure_compile_state::push_target(target_t n) {
+//   const zs::local_var_info_t& v = _vlocals[n];
+//
+//   ZS_ASSERT(v._pos == n, "Invalid local index.");
+//
+//   _target_stack.push_back({ n, v._mask, v._custom_mask, v._is_const });
+//
+//   zbase_assert(n <= k_maximum_target_index, "too many targets");
+//   return (target_t)n;
+// }
 
-  const zs::local_var_info_t& v = _vlocals[n];
-  _target_stack.push_back({ n, v._mask, v._custom_mask, v._is_const });
+target_t closure_compile_state::push_var_target(target_t n) {
+  ZS_ASSERT(n <= k_maximum_target_index, "too many targets.");
+  ZS_ASSERT(n < _vlocals.size(), "invalid target stack index.");
+  const zs::scoped_local_var_info_t& v = _vlocals[n];
 
-  zbase_assert(n <= (std::numeric_limits<uint8_t>::max)(), "too many targets");
-  return n;
+  //  _target_stack.push_back({ n, v._mask, v._custom_mask, v._is_const });
+  ZS_ASSERT(n == _vlocals[n].pos);
+  target_t idx = _target_stack.emplace_back(_vlocals[n]).index;
+  ZS_ASSERT(n == idx);
+
+  return idx;
 }
 
 int_t closure_compile_state::push_export_target() {
-  zbase_assert(has_export(), "no export table");
-  const zs::local_var_info_t& v = _vlocals[_export_table_target];
-  _target_stack.push_back({ _export_table_target, v._mask, v._custom_mask, v._is_const });
+  ZS_ASSERT(has_export(), "no export table");
+  //  const zs::local_var_info_t& v = _vlocals[_export_table_target];
+  //  _target_stack.push_back({ _export_table_target, v.mask, v.custom_mask, v.is_const });
+
+  _target_stack.emplace_back(_vlocals[_export_table_target]);
   return _export_table_target;
 }
 
-uint8_t closure_compile_state::new_target() {
+target_t closure_compile_state::new_target() {
   size_t n = alloc_stack_pos();
   _target_stack.emplace_back((int_t)n);
 
-  zbase_assert(n <= (std::numeric_limits<uint8_t>::max)(), "too many targets");
-  return (uint8_t)n;
+  zbase_assert(n <= k_maximum_target_index, "too many targets");
+  return (target_t)n;
 }
 
-uint8_t closure_compile_state::new_target(uint32_t mask, uint64_t custom_mask, bool is_const) {
+target_t closure_compile_state::new_target(uint32_t mask, uint64_t custom_mask, bool is_const) {
   size_t n = alloc_stack_pos();
   _target_stack.emplace_back(n, mask, custom_mask, is_const);
 
-  zbase_assert(n <= (std::numeric_limits<uint8_t>::max)(), "too many targets");
-  return (uint8_t)n;
+  zbase_assert(n <= k_maximum_target_index, "too many targets");
+  return (target_t)n;
 }
 
-uint8_t closure_compile_state::pop_target() {
+target_t closure_compile_state::pop_target() {
+  zbase_assert(!_target_stack.empty(), "trying to pop an empty target stack");
+
   int_t npos = _target_stack.back().index;
   zbase_assert(npos < (int_t)_vlocals.size());
 
-  local_var_info_t& t = _vlocals[npos];
+  scoped_local_var_info_t& t = _vlocals[npos];
 
-  if (t._name.is_null()) {
+  if (!t.is_named()) {
     _vlocals.pop_back();
   }
 
-  zbase_assert(!_target_stack.empty(), "trying to pop an empty target stack");
   _target_stack.pop_back();
-  return (uint8_t)npos;
+  return (target_t)npos;
 }
 
 int_t closure_compile_state::get_literal(const object& name) {
@@ -172,20 +150,73 @@ int_t closure_compile_state::get_literal(const object& name) {
   return _literals.emplace(name, (int_t)_literals.size()).first->second;
 }
 
-int_t closure_compile_state::find_local_variable(const object& name) const {
-  int_t locals = (int_t)_vlocals.size();
+// zs::optional_result<int_t> closure_compile_state::find_local_variable(const object& name) const {
+//   int_t locals = (int_t)_vlocals.size();
+//
+//   while (locals) {
+//     const local_var_info_t& lvi = _vlocals[locals - 1];
+//
+//     if(lvi.is_named(name)) {
+//       return locals - 1;
+//     }
+//
+//     locals--;
+//   }
+//
+//   return zs::errc::not_found;
+// }
 
-  while (locals) {
-    const local_var_info_t& lvi = _vlocals[locals - 1];
+zs::optional_result<int_t> closure_compile_state::find_local_variable(const object& name) const {
 
-    if (lvi._name.is_string() && lvi._name.get_string_unchecked() == name.get_string_unchecked()) {
-      return locals - 1;
-    }
-
-    locals--;
+  if (is_top_level() and name.get_string_unchecked() == "this") {
+    return find_local_variable(zs::_ss("__this__"));
   }
 
-  return -1;
+  int_t locals = (int_t)_vlocals.size();
+
+  while (locals--) {
+    if (const scoped_local_var_info_t& lvi = _vlocals[locals]; lvi.is_named(name)) {
+      return locals;
+    }
+  }
+
+  return zs::errc::not_found;
+}
+
+const zs::scoped_local_var_info_t* closure_compile_state::find_local_variable_ptr(
+    const object& name) const noexcept {
+
+  if (is_top_level() and name.get_string_unchecked() == "this") {
+    return find_local_variable_ptr(zs::_ss("__this__"));
+  }
+
+  int_t locals = (int_t)_vlocals.size();
+
+  while (locals--) {
+    if (const scoped_local_var_info_t& lvi = _vlocals[locals]; lvi.is_named(name)) {
+      return &lvi;
+    }
+  }
+
+  return nullptr;
+}
+
+zs::error_result closure_compile_state::find_local_variable(const object& name, int_t& pos) const {
+
+  if (is_top_level() and name.get_string_unchecked() == "this") {
+    return find_local_variable(zs::_ss("__this__"), pos);
+  }
+
+  int_t locals = (int_t)_vlocals.size();
+
+  while (locals--) {
+    if (const scoped_local_var_info_t& lvi = _vlocals[locals]; lvi.is_named(name)) {
+      pos = locals;
+      return {};
+    }
+  }
+
+  return zs::errc::not_found;
 }
 
 bool closure_compile_state::is_exported_name(const object& name) const {
@@ -198,12 +229,12 @@ bool closure_compile_state::is_captured_exported_name(const object& name) const 
 }
 
 void closure_compile_state::mark_local_as_capture(int_t pos) {
-  local_var_info_t& lvi = _vlocals[pos];
-  lvi._end_op = std::numeric_limits<uint_t>::max();
+  scoped_local_var_info_t& lvi = _vlocals[pos];
+  lvi.end_op = k_captured_end_op;
   _n_capture++;
 }
 
-int_t closure_compile_state::get_capture(const object& name) {
+zs::optional_result<int_t> closure_compile_state::get_capture(const object& name) {
   size_t count = _captures.size();
   for (size_t i = 0; i < count; i++) {
     if (_captures[i].name.get_string_unchecked() == name.get_string_unchecked()) {
@@ -212,50 +243,68 @@ int_t closure_compile_state::get_capture(const object& name) {
   }
 
   if (!_parent) {
-    return -1;
+    return zs::errc::not_found;
   }
 
   const bool is_export = name == "__exports__";
 
-  if (int_t pos = _parent->find_local_variable(name); pos != -1) {
+  if (zs::optional_result<int_t> pos = _parent->find_local_variable(name)) {
     _parent->mark_local_as_capture(pos);
     _captures.push_back(captured_variable(name, pos, captured_variable::local, is_export));
     return _captures.size() - 1;
   }
-  else if (pos = _parent->get_capture(name); pos != -1) {
+
+  if (zs::optional_result<int_t> pos = _parent->get_capture(name)) {
     _captures.push_back(captured_variable(name, pos, captured_variable::outer, is_export));
     return _captures.size() - 1;
   }
 
-  return -1;
+  return zs::errc::not_found;
 }
 
 bool closure_compile_state::is_local(size_t pos) const {
-  if (pos >= _vlocals.size()) {
-    return false;
-  }
+  return (pos < _vlocals.size()) and _vlocals[pos].is_named();
 
-  return !_vlocals[pos]._name.is_null();
+  //  if (pos >= _vlocals.size()) {
+  //    return false;
+  //  }
+  //
+  //  return !_vlocals[pos].name.is_null();
 }
+
+// void closure_compile_state::set_stack_size(int_t n) {
+//   int_t size = (int_t)_vlocals.size();
+//
+//   while (size-- > n) {
+////    size--;
+//
+//    local_var_info_t lvi = _vlocals.back();
+//    if (lvi.is_named()) {
+//
+//      // This means is a capture.
+//      if (lvi.end_op == k_captured_end_op) {
+//        _n_capture--;
+//      }
+//
+//      lvi.end_op = get_next_instruction_index() - 1;
+//      _local_var_infos.push_back(lvi);
+//    }
+//
+//    _vlocals.pop_back();
+//  }
+//}
 
 void closure_compile_state::set_stack_size(int_t n) {
   int_t size = (int_t)_vlocals.size();
 
-  while (size > n) {
-    size--;
+  while (size-- > n) {
+    if (scoped_local_var_info_t lvi = _vlocals.get_pop_back(); lvi.is_named()) {
+      // This means is a capture.
+      _n_capture -= lvi.end_op == k_captured_end_op;
 
-    local_var_info_t lvi = _vlocals.back();
-    if (!lvi._name.is_null()) {
-
-      if (lvi._end_op == std::numeric_limits<uint_t>::max()) { // this means is an outer
-        _n_capture--;
-      }
-
-      lvi._end_op = get_next_instruction_index() - 1;
-      _local_var_infos.push_back(lvi);
+      lvi.end_op = get_next_instruction_index() - 1;
+      _local_var_infos.push_back(std::move(lvi));
     }
-
-    _vlocals.pop_back();
   }
 }
 
@@ -305,8 +354,7 @@ zs::error_result closure_compile_state::create_export_table() {
 
   add_instruction<opcode::op_new_obj>(new_target(), object_type::k_table);
   pop_target();
-  object var_name = zs::_ss("__exports__");
-  return push_local_variable(var_name, &_export_table_target);
+  return push_local_variable(zs::_ss("__exports__"), 0, &_export_table_target);
 }
 
 void closure_compile_state::add_line_infos(const zs::line_info& linfo) {
@@ -408,60 +456,13 @@ zs::function_prototype_object* closure_compile_state::build_function_prototype()
   fpo->_default_params = _default_params;
   fpo->_n_capture = _n_capture;
   fpo->_export_table_target = _export_table_target;
-  fpo->_module_name = _sdata._module_name;
+  fpo->_module_info = _sdata._module_info;
 
 #if ZS_DEBUG
   fpo->_debug_line_info = std::move(_debug_line_info);
 #endif
   return fpo;
 }
-
-zs::closure_compile_state* closure_compile_state::push_child_state() {
-  closure_compile_state* cs = internal::zs_new<closure_compile_state>(get_engine(), get_engine(), *this);
-  _children.push_back(zs::unique_ptr<closure_compile_state>(cs, { get_engine() }));
-  return cs;
-}
-
-void closure_compile_state::pop_child_state() {
-  zbase_assert(!_children.empty(),
-      "Trying to call zs::closure_compile_state::pop_child_state() when "
-      "empty.");
-  _children.pop_back();
-}
-
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-///
-//
-// top_level_compile_state_data::top_level_compile_state_data(zs::engine* eng )
-//  : engine_holder(eng)
-//  , _restricted_types(zs::allocator<object>(eng))
-//  , _exported_names(zs::allocator<object>(eng))
-//  , _imported_files_set(zs::allocator<object>(eng))
-//{
-//}
-//
-// top_level_compile_state_data::~top_level_compile_state_data() {}
-//
 
 namespace jit {} // namespace jit.
 

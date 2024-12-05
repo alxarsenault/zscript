@@ -1,42 +1,34 @@
 #include "unit_tests.h"
 
-ZCODE_TEST("struct.01", R"""(
-var a = struct{};
-return a;
-)""") {
-  
-}
-
 ZCODE_TEST_FAIL_COMPILE("struct.02", R"""(
-var a = struct Name{};
-return a;
-)""" ) {
+return struct Name{};
+)""") {
+  REQUIRE(error == zs::error_code::unexpected_struct_name);
 }
-
 
 ZCODE_TEST("struct.03", R"""(
 struct Abc {
-  k = 1;
-  p = 9;
+  var a = 1;
+  var b = 2;
+  var c = 3;
 };
 
 return Abc;
 )""") {
   REQUIRE(value.is_struct());
 }
-
 
 ZCODE_TEST("struct.04", R"""(
 var Abc = struct {
-  k = 1;
-  p = 9;
+  var a = 1;
+  var b = 2;
+  var c = 3;
 };
 
 return Abc;
 )""") {
   REQUIRE(value.is_struct());
 }
-
 
 ZCODE_TEST("struct.05", R"""(
 struct Abc {
@@ -58,32 +50,29 @@ var d = Abc(10, 11, 12);
 return [Abc, a, b, c, d];
 )""") {
   REQUIRE(value.is_array());
-   
+
   auto test_struct = [](zs::object obj, std::initializer_list<const zs::object> vs) {
     const zs::struct_instance_object& sinst = obj.as_struct_instance();
-    zb::span<const zs::object>  values = {vs};
+    zb::span<const zs::object> values = { vs };
     REQUIRE(sinst.size() == 3);
     REQUIRE(sinst.key(0) == "a");
     REQUIRE(sinst.key(1) == "b");
     REQUIRE(sinst.key(2) == "c");
-    
+
     REQUIRE(sinst[0] == values[0]);
     REQUIRE(sinst[1] == values[1]);
     REQUIRE(sinst[2] == values[2]);
 
     REQUIRE(sinst.get_span() == values);
   };
-  
+
   const zs::array_object& arr = value.as_array();
-  
-  test_struct(arr[1] , {1, 2, 3});
-  test_struct(arr[2], {10, 2, 3});
-  test_struct(arr[3], {10, 11, 3});
-  test_struct(arr[4], {10, 11, 12});
+
+  test_struct(arr[1], { 1, 2, 3 });
+  test_struct(arr[2], { 10, 2, 3 });
+  test_struct(arr[3], { 10, 11, 3 });
+  test_struct(arr[4], { 10, 11, 12 });
 }
-
-
-
 
 ZCODE_TEST("struct.06", R"""(
 struct Abc {
@@ -99,10 +88,16 @@ struct Abc {
     this.c = 3;
   }
 
-  constructor(var b) {
+  constructor(int b) {
     this.a = 1;
     this.b = b;
     this.c = 3;
+  }
+
+  constructor(float c) {
+    this.a = 1;
+    this.b = 2;
+    this.c = c;
   }
 
   var a = 1;
@@ -112,30 +107,258 @@ struct Abc {
 
 var a = Abc(10, 11, 12);
 var b = Abc(90);
-return [Abc, a, b];
+var c = Abc(90.89);
+return [Abc, a, b, c];
 )""") {
   REQUIRE(value.is_array());
-   
+
   auto test_struct = [](zs::object obj, std::initializer_list<const zs::object> vs) {
     const zs::struct_instance_object& sinst = obj.as_struct_instance();
-    zb::span<const zs::object>  values = {vs};
+    zb::span<const zs::object> values = { vs };
     REQUIRE(sinst.size() == 3);
     REQUIRE(sinst.key(0) == "a");
     REQUIRE(sinst.key(1) == "b");
     REQUIRE(sinst.key(2) == "c");
-    
+
     REQUIRE(sinst[0] == values[0]);
     REQUIRE(sinst[1] == values[1]);
     REQUIRE(sinst[2] == values[2]);
 
     REQUIRE(sinst.get_span() == values);
   };
-  
+
   const zs::array_object& arr = value.as_array();
-  
-  test_struct(arr[1] , {10, 11, 12});
+
+  test_struct(arr[1], { 10, 11, 12 });
+  test_struct(arr[2], { 90, 2, 3 });
+  test_struct(arr[3], { 90.89, 2, 3 });
 }
 
+ZCODE_TEST("struct.07", R"""(
+struct Abc {
+  constructor() = default;
+  constructor() = default;
+
+  var a = 1;
+  var b = 2;
+  var c = 3;
+};
+
+var a = Abc();
+return [Abc, a];
+)""",
+    ZBAD) {
+  REQUIRE(error == zs::error_code::duplicated_default_constructor);
+}
+
+ZCODE_TEST("struct.08", R"""(
+struct Abc {
+  constructor() = default;
+
+  constructor() {
+  }
+
+  var a = 1;
+  var b = 2;
+  var c = 3;
+};
+
+var a = Abc();
+return [Abc, a];
+)""",
+    ZBAD) {
+  REQUIRE(error == zs::error_code::duplicated_default_constructor);
+}
+
+ZCODE_TEST("struct.09", R"""(
+struct Abc {
+  constructor() = default;
+
+  constructor(var a = 89) {
+  }
+
+  var a = 1;
+  var b = 2;
+  var c = 3;
+};
+
+var a = Abc();
+return [Abc, a];
+)""",
+    ZBAD) {
+  REQUIRE(error == zs::error_code::duplicated_default_constructor);
+}
+
+ZCODE_TEST("struct.10", R"""(
+struct Abc {
+  int a = 1, b = 2, c = 3;
+};
+
+return Abc();
+)""") {
+  REQUIRE(value.is_struct_instance());
+  REQUIRE(value.as_struct_instance().get_span().equals({ 1, 2, 3 }));
+}
+
+ZCODE_TEST("struct.11", R"""(
+struct Abc {
+  int a = 1, b = 2, c = 3;
+};
+
+return Abc();
+)""") {
+  REQUIRE(value.is_struct_instance());
+  REQUIRE(value.as_struct_instance().get_span().equals({ 1, 2, 3 }));
+}
+
+ZCODE_TEST("struct.12", R"""(
+struct Abc {
+  static var a = 66;
+  int a = 1;
+  int b = 2;
+  int c = 3;
+};
+
+return Abc();
+)""",
+    ZBAD) {
+  REQUIRE(error == zs::error_code::already_exists);
+}
+
+ZCODE_TEST("struct.13", R"""(
+struct Abc {
+  static int A = 66;
+  constructor() = default;
+
+  constructor(int abc) {
+    this.a = this.b = this.c = abc;
+  }
+
+  int a = 1;
+  int b = 2;
+  int c = 3;
+};
+
+var a = Abc();
+a.a = 55;
+
+var b = Abc(87);
+return [a, b];
+)""") {
+  REQUIRE(value.is_array());
+  REQUIRE(value.as_array()[0].as_struct_instance().get_span().equals({ 55, 2, 3 }));
+  REQUIRE(value.as_array()[1].as_struct_instance().get_span().equals({ 87, 87, 87 }));
+}
+
+ZCODE_TEST("SASA", R"""( 
+
+var zzz = "";
+var kkkk = zzz ?? function() {return "PETER"}();
+ 
+var b = [
+    zs::is_empty([]),
+        zs::is_empty([1, 2, 3]),
+        zs::is_empty(""),
+        zs::is_empty("A"),
+        zs::is_empty(" "),
+        zs::is_empty({}),
+        zs::is_empty({ a = 32}),
+    zs::to_string(32),
+    zs::to_string(12.123) + "AL"
+];
+
+//zs::print(b);
+
+// use std;
+ 
+
+var dsjkd = zs::is_empty([]);
+return kkkk;
+)""") {
+  //  zb::print(value);
+}
+
+ZCODE_TEST("stable.01", R"""(
+
+var t = zs::stable({
+  a = 32
+});
+
+t.p1.a = 32;
+t.p1.b = "AHJ";
+t.peter.bingo.chunko = 32;
+t.pat = [1, 2, 3];
+
+return t;
+)""") {
+  //  zb::print(value);
+}
+
+ZCODE_TEST("struct.14", R"""(
+struct Abc {
+  constructor() = default;
+
+  function sum() {
+    return this.a + this.b + this.c;
+  }
+
+  mutable function add_a(int v) {
+    this.a += v;
+  }
+
+  mutable function set_b(int b) {
+    this.b = b;
+  }
+
+  function get_b() {
+    c = 88;
+    return this.b;
+  }
+
+  int a = 1;
+  int b = 2;
+  int c = 3;
+};
+
+var abc = Abc();
+
+var s = abc.sum();
+abc.add_a(55);
+var b_before = abc.get_b();
+abc.set_b(32);
+var b_after = abc.get_b();
+
+
+
+return [abc, s, b_before, b_after];
+)""") {
+  REQUIRE(value.is_array());
+  REQUIRE(value.as_array()[0].is_struct_instance());
+  //  zb::print(value.as_array()[0].as_struct_instance().get_span());
+  REQUIRE(value.as_array()[0].as_struct_instance().get_span().equals({ 56, 32, 88 }));
+  REQUIRE(value.as_array()[1] == 1 + 2 + 3);
+  //  zb::print(value.as_struct_instance().get_methods());
+
+  REQUIRE(value.as_array()[2] == 2);
+  REQUIRE(value.as_array()[3] == 32);
+}
+
+ZCODE_TEST("EQUALS", R"""(
+
+var t = {
+  a = 1,
+  b = 2,
+  c = 3
+};
+ 
+t.a = t.b = t.c = 129;
+ 
+return [t.a, t.b, t.c];
+
+)""") {
+  REQUIRE(value.is_array());
+  REQUIRE(value == zs::_a(vm.get_engine(), { 129, 129, 129 }));
+}
 
 ZS_CODE_TEST("struct.23432", R"""(
 struct John {
@@ -171,7 +394,7 @@ return a;
   REQUIRE(value.is_struct_instance());
 }
 
-ZS_CODE_TEST("struct.07", R"""(
+ZS_CODE_TEST("struct.23232", R"""(
 
 struct John
 {
@@ -195,7 +418,7 @@ return [a, b, a.Q];
   //    zb::print(value);
 }
 //
-ZS_CODE_TEST("struct.08", R"""(
+ZS_CODE_TEST("struct.dsds", R"""(
 
 struct John
 {
@@ -219,7 +442,7 @@ return [a, b];
   //  zb::print(value);
 }
 
-ZS_CODE_TEST("struct.09", R"""(
+ZS_CODE_TEST("struct.7879", R"""(
 
 struct John
 {
@@ -245,7 +468,7 @@ return [a, b, a.Q1, b.Q1, a.Q2];
   //  zb::print(value);
 }
 
-ZS_CODE_TEST("struct.10", R"""(
+ZS_CODE_TEST("struct.1789780", R"""(
 
 struct John
 {
@@ -271,7 +494,7 @@ return a;
   //  zb::print(value);
 }
 
-ZS_CODE_TEST("struct.11", R"""(
+ZS_CODE_TEST("struct.23211", R"""(
 
 struct John
 {
@@ -293,7 +516,7 @@ return [v, a.value];
   REQUIRE(value.as_array()[1] == 32);
 }
 
-ZS_CODE_TEST("struct.12", R"""(
+ZS_CODE_TEST("struct.13232", R"""(
 struct John {
   constructor(var val = 0) {
     this.value = val;
@@ -487,53 +710,52 @@ return [a];
   //  }
 }
 
-ZS_CODE_TEST("streamer.01", R"""(
-var lllll = struct();
-struct John {
-  static var S1 = 32;
-  var k = 1;
-  var p = 9;
-};
-
- return {
-  jjjjjj = John(),
-  a = lllll,
-  kkds = 21,
-  b = "Skjsakjlsa",
-  c = [1, 2, 3, 4],
-  d = {
-    k = [12, 3],
-    nd = {}
-  }
- };
-
-)""") {
-
-  //  zb::print(value.stream_streamer<zs::object::serializer_type::plain>());
-  //  zb::print(value.stream_streamer<zs::object::serializer_type::plain_compact>());
-  //  zb::print(value.stream_streamer<zs::object::serializer_type::quoted>());
-
-  auto aa = zs::_ss("alex");
-  auto bb = zs::_t(eng, { { zs::_ss("a"), 21 }, { zs::_ss("b"), 22 } });
-  //  zb::print(aa.stream_streamer<zs::object::serializer_type::plain>());
-  //  zb::print(aa.stream_streamer<zs::object::serializer_type::quoted>());
-  //  zb::print(aa.stream_streamer<zs::object::serializer_type::json>());
-  //  zb::print(aa.stream_streamer<zs::object::serializer_type::json_compact>());
-  //  zb::print(aa.stream_streamer<zs::object::serializer_type::plain_compact>());
-  //  zb::print("JKJ");
-
-  //  zb::print(bb.stream_streamer<zs::object::serializer_type::plain>());
-  //  zb::print(bb.stream_streamer<zs::object::serializer_type::quoted>());
-  //  zb::print(bb.stream_streamer<zs::object::serializer_type::json>());
-  //  zb::print(bb.stream_streamer<zs::object::serializer_type::json_compact>());
-  //  zb::print(bb.stream_streamer<zs::object::serializer_type::plain_compact>());
-
-  //  auto table = zs::_t(eng);
-  //  auto& tbl = table.as_table();
-  //  tbl["a"] = 32;
-  //  tbl["b"] = 33;
-}
-
+// ZS_CODE_TEST("streamer.01", R"""(
+// var lllll = struct();
+// struct John {
+//   static var S1 = 32;
+//   var k = 1;
+//   var p = 9;
+// };
+//
+//  return {
+//   jjjjjj = John(),
+//   a = lllll,
+//   kkds = 21,
+//   b = "Skjsakjlsa",
+//   c = [1, 2, 3, 4],
+//   d = {
+//     k = [12, 3],
+//     nd = {}
+//   }
+//  };
+//
+//)""") {
+//
+//   //  zb::print(value.stream_streamer<zs::object::serializer_type::plain>());
+//   //  zb::print(value.stream_streamer<zs::object::serializer_type::plain_compact>());
+//   //  zb::print(value.stream_streamer<zs::object::serializer_type::quoted>());
+//
+//   auto aa = zs::_ss("alex");
+//   auto bb = zs::_t(eng, { { zs::_ss("a"), 21 }, { zs::_ss("b"), 22 } });
+//   //  zb::print(aa.stream_streamer<zs::object::serializer_type::plain>());
+//   //  zb::print(aa.stream_streamer<zs::object::serializer_type::quoted>());
+//   //  zb::print(aa.stream_streamer<zs::object::serializer_type::json>());
+//   //  zb::print(aa.stream_streamer<zs::object::serializer_type::json_compact>());
+//   //  zb::print(aa.stream_streamer<zs::object::serializer_type::plain_compact>());
+//   //  zb::print("JKJ");
+//
+//   //  zb::print(bb.stream_streamer<zs::object::serializer_type::plain>());
+//   //  zb::print(bb.stream_streamer<zs::object::serializer_type::quoted>());
+//   //  zb::print(bb.stream_streamer<zs::object::serializer_type::json>());
+//   //  zb::print(bb.stream_streamer<zs::object::serializer_type::json_compact>());
+//   //  zb::print(bb.stream_streamer<zs::object::serializer_type::plain_compact>());
+//
+//   //  auto table = zs::_t(eng);
+//   //  auto& tbl = table.as_table();
+//   //  tbl["a"] = 32;
+//   //  tbl["b"] = 33;
+// }
 
 //
 ZS_CODE_TEST("struct.78", R"""(

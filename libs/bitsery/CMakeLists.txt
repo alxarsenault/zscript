@@ -28,17 +28,17 @@ target_compile_features(bitsery INTERFACE
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/BitseryConfigVersion.cmake
         COMPATIBILITY SameMajorVersion)
-install(TARGETS bitsery
-        EXPORT bitseryTargets
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(EXPORT bitseryTargets
-        FILE "BitseryConfig.cmake"
-        NAMESPACE Bitsery::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/bitsery)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/BitseryConfigVersion.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/bitsery)
-install(DIRECTORY include/bitsery
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+# install(TARGETS bitsery
+#         EXPORT bitseryTargets
+#         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+# install(EXPORT bitseryTargets
+#         FILE "BitseryConfig.cmake"
+#         NAMESPACE Bitsery::
+#         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/bitsery)
+# install(FILES ${CMAKE_CURRENT_BINARY_DIR}/BitseryConfigVersion.cmake
+#         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/bitsery)
+# install(DIRECTORY include/bitsery
+#         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 #================ handle sub-projects =====================
 

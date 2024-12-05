@@ -139,28 +139,120 @@ namespace {
     return vm.push(dst);
   }
 
-  static inline int_t array_erase_impl(zs::vm_ref vm) noexcept {
+static inline int_t array_erase_impl(zs::vm_ref vm) noexcept {
 
-    if (vm.stack_size() != 2) {
-      vm.set_error("Invalid number of arguments in array::erase(index).");
+  if (vm.stack_size() != 2) {
+    vm.set_error("Invalid number of arguments in array::erase(index).");
+    return -1;
+  }
+
+  object& obj = vm[0];
+  if (!obj.is_array()) {
+    vm.set_error("Invalid array argument in array::erase().");
+    return -1;
+  }
+
+  const object& pos = vm[1];
+
+  if (!pos.is_integer()) {
+    vm.set_error("Pos should be an integer");
+    return -1;
+  }
+
+  array_object& arr = obj.as_array();
+  arr.erase(arr.begin() + pos._int);
+  return vm.push(pos._int);
+}
+static inline int_t array_erase_get_impl(zs::vm_ref vm) noexcept {
+
+  if (vm.stack_size() != 2) {
+    vm.set_error("Invalid number of arguments in array::erase(index).");
+    return -1;
+  }
+
+  object& obj = vm[0];
+  if (!obj.is_array()) {
+    vm.set_error("Invalid array argument in array::erase().");
+    return -1;
+  }
+
+  const object& pos = vm[1];
+
+  if (!pos.is_integer()) {
+    vm.set_error("Pos should be an integer");
+    return -1;
+  }
+
+  array_object& arr = obj.as_array();
+  object val = arr[pos._int];
+  arr.erase(arr.begin() + pos._int);
+  return vm.push(std::move(val));
+}
+
+  static inline int_t array_erase_indices_impl(zs::vm_ref vm) noexcept {
+    int_t nargs = vm.stack_size();
+    
+    if (nargs < 2) {
+      vm.set_error("Invalid number of arguments in array::erase_indexes(indices).");
       return -1;
     }
 
     object& obj = vm[0];
     if (!obj.is_array()) {
-      vm.set_error("Invalid array argument in array::erase().");
+      vm.set_error("Invalid array argument in array::erase_indices().");
       return -1;
     }
 
-    const object& pos = vm[1];
+    zs::vector<int_t> indices(zs::allocator<int_t>(vm->get_engine()));
+  
+    
+    
+    const object& indices_start_obj = vm[1];
 
-    if (!pos.is_integer()) {
-      vm.set_error("Pos should be an integer");
-      return -1;
+    if (indices_start_obj.is_array()) {
+      const zs::array_object& arr_indices = indices_start_obj.as_array();
+      indices.resize(arr_indices.size());
+
+      for (size_t i = 0; i < arr_indices.size(); i++) {
+        int_t index = -1;
+        if (auto err = arr_indices[i].get_integer(index)) {
+          vm.set_error("Parameter 1 should be an array of indices");
+          return -1;
+        }
+
+        indices[i] = index;
+      }
+      
     }
+    else if(indices_start_obj.is_integer()) {
+      for (size_t i = 1; i < nargs; i++) {
+        int_t index = -1;
+        if (auto err = vm[i].get_integer(index)) {
+          vm.set_error("Parameter 1 should be an array of indices");
+          return -1;
+        }
+
+        indices.push_back(index);
+      }
+        
+    }
+    else {
+      
+        vm.set_error("Parameter 1 should be an array of indices");
+        return -1;
+    }
+
+
+    std::sort(indices.begin(), indices.end(), std::greater<int_t>());
+    indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
 
     array_object& arr = obj.as_array();
-    arr.erase(arr.begin() + pos._int);
+
+    
+    for (size_t i = 0; i < indices.size(); i++) {
+      arr.erase(arr.begin() + indices[i]);
+    }
+    //  arr.erase(arr.begin() + pos._int);
     return vm.push(obj);
   }
 
@@ -329,6 +421,9 @@ zs::object create_array_default_delegate(zs::engine* eng) {
   t["reserve"] = _nf(array_reserve_impl);
   t["get"] = _nf(array_get_impl);
   t["erase"] = _nf(array_erase_impl);
+  t["erase_get"] = _nf(array_erase_get_impl);
+  t["erase_indices"] = _nf(array_erase_indices_impl);
+  
   t["insert"] = _nf(array_insert_impl);
   t["clear"] = _nf(array_clear_impl);
   t["pop"] = _nf(array_pop_impl);

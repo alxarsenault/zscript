@@ -90,16 +90,46 @@ public:
     return set_no_replace_internal(zs::_s(get_engine(), s), std::forward<T>(val));
   }
 
+  ZS_CK_INLINE zs::error_result set_no_create(const object& key, const object& obj) noexcept {
+    return set_no_create_internal(key, obj);
+  }
+
+  ZS_CK_INLINE zs::error_result set_no_create(const object& key, object&& obj) noexcept {
+    return set_no_create_internal(key, std::move(obj));
+  }
+
+  ZS_CK_INLINE zs::error_result set_no_create(object&& key, object&& obj) noexcept {
+    return set_no_create_internal(std::move(key), std::move(obj));
+  }
+
+  ZS_CK_INLINE zs::error_result set_no_create(object&& key, const object& obj) noexcept {
+    return set_no_create_internal(std::move(key), obj);
+  }
+
+  template <class K, class T>
+    requires std::is_constructible_v<std::string_view, K>
+  ZS_CK_INLINE zs::error_result set_no_create(const K& s, T&& val) noexcept {
+    return set_no_create_internal(zs::_s(get_engine(), s), std::forward<T>(val));
+  }
+
   template <class T>
     requires std::is_constructible_v<std::string_view, T>
   ZS_CK_INLINE const_iterator find(const T& s) const noexcept {
-    return map_type::find(zs::_s(get_engine(), s));
+    //    return map_type::find(zs::_s(get_engine(), s));
+    return map_type::find(std::string_view(s));
   }
 
   template <class T>
     requires std::is_constructible_v<std::string_view, T>
   ZS_CK_INLINE iterator find(const T& s) noexcept {
-    return map_type::find(zs::_s(get_engine(), s));
+    //    return map_type::find(zs::_s(get_engine(), s));
+    return map_type::find(std::string_view(s));
+  }
+
+  template <class T, class... _Args>
+    requires std::is_constructible_v<std::string_view, T>
+  inline std::pair<iterator, bool> emplace(const T& key, _Args&&... __args) {
+    return emplace(zs::_s(get_engine(), std::string_view(key)), std::forward<_Args>(__args)...);
   }
 
   template <class T>
@@ -124,13 +154,25 @@ public:
   ZS_CK_INLINE map_type& get_map() noexcept { return *this; }
   ZS_CK_INLINE const map_type& get_map() const noexcept { return *this; }
 
+  zs::error_result serialize_to_json(zs::engine* eng, std::ostream& stream, int idt = 0);
+
 private:
   table_object(zs::engine* eng);
 
   template <class Key, class T>
   ZS_CK_INLINE zs::error_result set_no_replace_internal(Key&& key, T&& obj) noexcept {
-    return emplace(std::forward<Key>(key), std::forward<T>(obj)).second ? zs::error_code::already_exists
-                                                                        : zs::error_code::success;
+    return emplace(std::forward<Key>(key), std::forward<T>(obj)).second ? zs::error_code::success
+                                                                        : zs::error_code::already_exists;
+  }
+
+  template <class Key, class T>
+  ZS_CK_INLINE zs::error_result set_no_create_internal(Key&& key, T&& obj) noexcept {
+    if (auto it = map_type::find(std::forward<Key>(key)); it != end()) {
+      it->second = std::forward<T>(obj);
+      return {};
+    }
+
+    return zs::errc::not_found;
   }
 };
 } // namespace zs.

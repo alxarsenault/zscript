@@ -5,9 +5,11 @@ class native_closure_object final : public reference_counted_object {
 public:
   ZS_OBJECT_CLASS_COMMON;
 
+  enum class closure_type : uint8_t { fct, obj };
+
   ZS_CHECK static native_closure_object* create(zs::engine* eng, zs::native_closure* closure);
 
-  ZS_CHECK static native_closure_object* create(zs::engine* eng, zs::native_cclosure_t closure);
+  ZS_CHECK static native_closure_object* create(zs::engine* eng, zs::function_t fct);
 
   virtual ~native_closure_object() override;
 
@@ -79,24 +81,23 @@ public:
 
   ZS_CHECK native_closure_object* clone();
 
+  ZS_CK_INLINE closure_type get_closure_type() const noexcept { return _ctype; }
+
 private:
   native_closure_object() = delete;
   native_closure_object(zs::engine* eng, zs::native_closure* closure) noexcept;
-  native_closure_object(zs::engine* eng, zs::native_cclosure_t closure) noexcept;
-
-  enum class closure_type { c_func, obj };
+  native_closure_object(zs::engine* eng, zs::function_t fct) noexcept;
 
   union callback_type {
     zs::native_closure* closure;
-    zs::native_cclosure_t c_fct;
+    zs::function_t fct;
   };
 
-  callback_type _closure;
+  callback_type _callback;
   native_closure_release_hook_t _release_hook = nullptr;
   zs::raw_pointer_t _user_pointer = nullptr;
-  closure_type _ctype;
-
   zs::vector<uint32_t> _type_check;
   int_t _n_param_check = 0;
+  closure_type _ctype;
 };
 } // namespace zs.

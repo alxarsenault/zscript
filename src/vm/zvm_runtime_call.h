@@ -20,7 +20,7 @@ ZS_DECL_RT_ACTION(enter_function_call, cobjref_t closure_obj, int_t n_params, in
   return {};
 }
 
-ZS_DECL_RT_ACTION(enter_function_call, cobjref_t closure_obj, std::span<const object> params) {
+ZS_DECL_RT_ACTION(enter_function_call, cobjref_t closure_obj, zs::parameter_list params) {
   const int_t n_params = params.size();
 
   zb::execution_stack_state stack_state = _stack.get_state();
@@ -44,10 +44,26 @@ ZS_DECL_RT_ACTION(enter_function_call, cobjref_t closure_obj, std::span<const ob
 
 ZS_DECL_RT_ACTION(leave_function_call) {
   zbase_assert(!_call_stack.empty());
-
-  call_info cinfo = _call_stack.back();
-  _call_stack.pop_back();
+  ZS_TRACE("VM - leave_function_call");
+  call_info cinfo = _call_stack.get_pop_back();
   _stack.set_stack_base(cinfo.previous_stack_base);
+
+  if (cinfo.closure.is_closure()) {
+    zs::closure_object& cobj = cinfo.closure.as_closure();
+    zs::vector<zs::object>& closure_captured_values = cobj._captured_values;
+    const object* stack_ptr = _stack.get_internal_vector().data()
+        + cinfo.previous_top_index; //_stack.stack_base_pointer() ;//+cinfo.previous_top_index;
+
+    if (auto err = runtime_action<rt_close_captures>(stack_ptr)) {
+      return err;
+    }
+    //    for(object& cap : closure_capture_values) {
+    //       if(!cap.as_capture().is_baked() and cap.as_capture().get_value_ptr() >= stack_ptr) {
+    //         cap.as_capture().bake();
+    //         zb::print(std::source_location::current(),cinfo.closure.as_closure().get_proto()._name);
+    //       }
+    //     }
+  }
 
   _stack.pop_to(cinfo.previous_top_index);
 
@@ -80,8 +96,7 @@ ZS_DECL_RT_ACTION(
   return runtime_action<runtime_code::leave_function_call>();
 }
 
-ZS_DECL_RT_ACTION(
-    call_native_closure, cobjref_t closure_obj, std::span<const object> params, objref_t ret_value) {
+ZS_DECL_RT_ACTION(call_native_closure, cobjref_t closure_obj, zs::parameter_list params, objref_t ret_value) {
   ZS_RETURN_IF_ERROR(runtime_action<runtime_code::enter_function_call>(closure_obj, params));
 
   zs::native_closure_object* nclosure = closure_obj->_native_closure;
@@ -108,7 +123,7 @@ ZS_DECL_RT_ACTION(call_native_function, //
 
   ZS_RETURN_IF_ERROR(runtime_action<runtime_code::enter_function_call>(closure_obj, n_params, stack_base));
 
-  zs::native_cpp_closure_t fct = closure_obj->_nfct;
+  zs::function_t fct = closure_obj->_nfct;
   const int_t native_call_result = (*fct)(zs::vm_ref(this));
 
   if (native_call_result < 0) {
@@ -123,11 +138,11 @@ ZS_DECL_RT_ACTION(call_native_function, //
 }
 
 ZS_DECL_RT_ACTION(
-    call_native_function, cobjref_t closure_obj, std::span<const object> params, objref_t ret_value) {
+    call_native_function, cobjref_t closure_obj, zs::parameter_list params, objref_t ret_value) {
 
   ZS_RETURN_IF_ERROR(runtime_action<runtime_code::enter_function_call>(closure_obj, params));
 
-  zs::native_cpp_closure_t fct = closure_obj->_nfct;
+  zs::function_t fct = closure_obj->_nfct;
   const int_t native_call_result = (*fct)(zs::vm_ref(this));
 
   if (native_call_result < 0) {
@@ -141,7 +156,7 @@ ZS_DECL_RT_ACTION(
   return runtime_action<runtime_code::leave_function_call>();
 }
 
-ZS_DECL_RT_ACTION(call_native_function2, //
+ZS_DECL_RT_ACTION(call_native_pfunction, //
     cobjref_t closure_obj, //
     int_t n_params, //
     int_t stack_base, // Absolute stack index.
@@ -149,7 +164,7 @@ ZS_DECL_RT_ACTION(call_native_function2, //
 
   ZS_RETURN_IF_ERROR(runtime_action<runtime_code::enter_function_call>(closure_obj, n_params, stack_base));
 
-  zs::closure_t fct = closure_obj->_fct;
+  zs::parameter_list_function_t fct = closure_obj->_npfct;
   ret_value.get() = (*fct)(zs::vm_ref(this), _stack.get_stack_view());
 
   if (ret_value->is_error()) {
@@ -161,11 +176,11 @@ ZS_DECL_RT_ACTION(call_native_function2, //
 }
 
 ZS_DECL_RT_ACTION(
-    call_native_function2, cobjref_t closure_obj, std::span<const object> params, objref_t ret_value) {
+    call_native_pfunction, cobjref_t closure_obj, zs::parameter_list params, objref_t ret_value) {
 
   ZS_RETURN_IF_ERROR(runtime_action<runtime_code::enter_function_call>(closure_obj, params));
 
-  zs::closure_t fct = closure_obj->_fct;
+  zs::parameter_list_function_t fct = closure_obj->_npfct;
   ret_value.get() = (*fct)(zs::vm_ref(this), params);
 
   if (ret_value->is_error()) {
@@ -247,8 +262,8 @@ ZS_DECL_RT_ACTION(call_closure, cobjref_t closure_obj, int_t n_params, int_t sta
   // We make room for the function stack by pushing some empty objects.
   stack.push_n(fpo->_stack_size - n_params);
 
-  if (!closure->_env.is_null()) {
-    stack[0] = closure->_env;
+  if (!closure->_this.is_null()) {
+    stack[0] = closure->_this;
   }
 
   if (auto err = runtime_action<runtime_code::execute>(closure, zb::wref(ret_value))) {
@@ -258,7 +273,7 @@ ZS_DECL_RT_ACTION(call_closure, cobjref_t closure_obj, int_t n_params, int_t sta
   return runtime_action<runtime_code::leave_function_call>();
 }
 
-ZS_DECL_RT_ACTION(call_closure, cobjref_t closure_obj, std::span<const object> params, objref_t ret_value) {
+ZS_DECL_RT_ACTION(call_closure, cobjref_t closure_obj, zs::parameter_list params, objref_t ret_value) {
   zs::closure_object* closure = closure_obj->_closure;
   zs::function_prototype_object* fpo = closure->get_function_prototype();
 
@@ -294,7 +309,7 @@ ZS_DECL_RT_ACTION(call_closure, cobjref_t closure_obj, std::span<const object> p
   // We have `n_extra_default` that we can add to `n_params`.
   const int_t n_extra_default = default_params.size();
   if (n_expected_params != n_params + n_extra_default) {
-    zb::print("WRONG NUMBER OF PARAMETERS");
+    zb::print("WRONG NUMBER OF PARAMETERS", n_expected_params, n_params + n_extra_default);
     return zs::error_code::invalid_parameter_count;
   }
 
@@ -334,8 +349,8 @@ ZS_DECL_RT_ACTION(call_closure, cobjref_t closure_obj, std::span<const object> p
   // We make room for the function stack by pushing some empty objects.
   stack.push_n(fpo->_stack_size - n_params);
 
-  if (!closure->_env.is_null()) {
-    stack[0] = closure->_env;
+  if (!closure->_this.is_null()) {
+    stack[0] = closure->_this;
   }
 
   if (auto err = runtime_action<runtime_code::execute>(closure, REF(ret_value))) {

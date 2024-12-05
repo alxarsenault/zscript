@@ -6,63 +6,64 @@
 
 #define ZS_OBJECT_TYPE_ENUM_VALUE(X, name, exposed_name) X(k_##name, #name, exposed_name)
 
-#define ZS_OBJECT_TYPE_ENUM(X)                                         \
-  /* k_small_string must be zero */                                    \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, small_string, string)                   \
-  /* BEGIN - Can be false */                                           \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, null, null)                             \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, bool, bool)                             \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, integer, integer)                       \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, float, float)                           \
-  /* END - Can be false */                                             \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, raw_pointer, raw_pointer)               \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, string_view, string)                    \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, native_function, closure)               \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, extension, extension)                   \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, error, error)                           \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, none, null)                             \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, native_function2, closure)              \
-  /* BEGIN - reference counted */                                      \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, long_string, string)                    \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, mutable_string, string)                 \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, closure, closure)                       \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, native_closure, closure)                \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, class, class)                           \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, weak_ref, weak_ref)                     \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, struct, struct)                         \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, struct_instance, instance)              \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, function_prototype, function_prototype) \
-  /* BEGIN - delegable */                                              \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, table, table)                           \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, array, array)                           \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, native_array, native_array)             \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, node, node)                             \
-  ZS_OBJECT_TYPE_ENUM_VALUE(X, user_data, user_data)                   \
+#define ZS_OBJECT_TYPE_ENUM(X)                                     \
+  /* k_small_string must be zero */                                \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, small_string, string)               \
+  /* BEGIN - Can be false */                                       \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, null, null)                         \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, bool, bool)                         \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, integer, integer)                   \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, float, float)                       \
+  /* END - Can be false */                                         \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, raw_pointer, raw_pointer)           \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, string_view, string)                \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, native_function, closure)           \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, native_pfunction, closure)          \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, extension, extension)               \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, error, error)                       \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, none, null)                         \
+  /* BEGIN - reference counted (Everything below k_long_string) */ \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, long_string, string)                \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, closure, closure)                   \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, native_closure, closure)            \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, class, class)                       \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, weak_ref, weak_ref)                 \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, struct, struct)                     \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, struct_instance, instance)          \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, function_prototype, extension)      \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, capture, extension)                 \
+  /* BEGIN - delegable (Everything below k_table) */               \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, table, table)                       \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, mutable_string, mutable_string)     \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, array, array)                       \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, native_array, native_array)         \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, node, node)                         \
+  ZS_OBJECT_TYPE_ENUM_VALUE(X, user_data, user_data)               \
   ZS_OBJECT_TYPE_ENUM_VALUE(X, instance, instance)
 /* END - delegable */
 /* END - reference counted */
 
 #define ZS_EXPOSED_TYPE_ENUM_VALUE(X, name) X(ke_##name, #name)
-#define ZS_EXPOSED_TYPE_ENUM(X)                     \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, null)               \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, bool)               \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, integer)            \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, float)              \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, error)              \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, raw_pointer)        \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, string)             \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, closure)            \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, class)              \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, weak_ref)           \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, function_prototype) \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, capture)            \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, table)              \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, array)              \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, native_array)       \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, node)               \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, struct)             \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, user_data)          \
-  ZS_EXPOSED_TYPE_ENUM_VALUE(X, instance)           \
+#define ZS_EXPOSED_TYPE_ENUM(X)                 \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, null)           \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, bool)           \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, integer)        \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, float)          \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, error)          \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, raw_pointer)    \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, string)         \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, mutable_string) \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, closure)        \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, class)          \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, weak_ref)       \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, capture)        \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, table)          \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, array)          \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, native_array)   \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, node)           \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, struct)         \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, user_data)      \
+  ZS_EXPOSED_TYPE_ENUM_VALUE(X, instance)       \
   ZS_EXPOSED_TYPE_ENUM_VALUE(X, extension)
 
 #define ZS_EXTENSION_TYPE_ENUM_VALUE(X, name) X(kext_##name, #name)
@@ -85,43 +86,48 @@
   ZS_NATIVE_ARRAY_TYPE_ENUM_VALUE(X, double, f64, double)
 
 // identifier, name
-#define ZS_META_METHOD_ENUM(X)                \
-  /* Basic arithmetic */                      \
-  X(mt_add, "__operator_add")                 \
-  X(mt_sub, "__operator_sub")                 \
-  X(mt_mul, "__operator_mul")                 \
-  X(mt_div, "__operator_div")                 \
-  X(mt_exp, "__operator_exp")                 \
-  X(mt_mod, "__operator_mod")                 \
-  /* Basic arithmetic equal */                \
-  X(mt_add_eq, "__operator_add_eq")           \
-  X(mt_sub_eq, "__operator_sub_eq")           \
-  X(mt_mul_eq, "__operator_mul_eq")           \
-  X(mt_div_eq, "__operator_div_eq")           \
-  X(mt_exp_eq, "__operator_exp_eq")           \
-  X(mt_mod_eq, "__operator_mod_eq")           \
-  /* Right hand size arithmetic */            \
-  X(mt_rhs_add, "__operator_rhs_add")         \
-  X(mt_rhs_sub, "__operator_rhs_sub")         \
-  X(mt_rhs_mul, "__operator_rhs_mul")         \
-  X(mt_rhs_div, "__operator_rhs_div")         \
-  X(mt_rhs_exp, "__operator_rhs_exp")         \
-  X(mt_rhs_mod, "__operator_rhs_mod")         \
-  /* Unary */                                 \
-  X(mt_unary_minus, "__operator_unm")         \
-  X(mt_typeof, "__operator_typeof")           \
-  X(mt_tostring, "__operator_tostring")       \
-  /* Get / Set */                             \
-  X(mt_set, "__operator_set")                 \
-  X(mt_get, "__operator_get")                 \
-  /* Others */                                \
-  X(mt_next, "__operator_next")               \
-  X(mt_compare, "__operator_compare")         \
-  X(mt_call, "__operator_call")               \
-  X(mt_cloned, "__operator_cloned")           \
-  X(mt_delete_slot, "__operator_delete_slot") \
-  X(mt_new_member, "__operator_new_member")   \
-  X(mt_inherited, "__operator_inherited")
+#define ZS_META_METHOD_ENUM(X)       \
+  X(mt_none, "__none")               \
+  /* Basic arithmetic */             \
+  X(mt_add, "__add")                 \
+  X(mt_sub, "__sub")                 \
+  X(mt_mul, "__mul")                 \
+  X(mt_div, "__div")                 \
+  X(mt_exp, "__exp")                 \
+  X(mt_mod, "__mod")                 \
+  X(mt_lshift, "__lshift")           \
+  X(mt_rshift, "__rshift")           \
+  /* Basic arithmetic equal */       \
+  X(mt_add_eq, "__add_eq")           \
+  X(mt_sub_eq, "__sub_eq")           \
+  X(mt_mul_eq, "__mul_eq")           \
+  X(mt_div_eq, "__div_eq")           \
+  X(mt_exp_eq, "__exp_eq")           \
+  X(mt_mod_eq, "__mod_eq")           \
+  X(mt_lshift_eq, "__lshift_eq")     \
+  X(mt_rshift_eq, "__rshift_eq")     \
+  /* Right hand size arithmetic */   \
+  X(mt_rhs_add, "__rhs_add")         \
+  X(mt_rhs_sub, "__rhs_sub")         \
+  X(mt_rhs_mul, "__rhs_mul")         \
+  X(mt_rhs_div, "__rhs_div")         \
+  X(mt_rhs_exp, "__rhs_exp")         \
+  X(mt_rhs_mod, "__rhs_mod")         \
+  /* Unary */                        \
+  X(mt_unary_minus, "__unm")         \
+  X(mt_typeof, "__typeof")           \
+  X(mt_tostring, "__tostring")       \
+  /* Get / Set */                    \
+  X(mt_set, "__set")                 \
+  X(mt_get, "__get")                 \
+  /* Others */                       \
+  X(mt_next, "__next")               \
+  X(mt_compare, "__compare")         \
+  X(mt_call, "__call")               \
+  X(mt_cloned, "__cloned")           \
+  X(mt_delete_slot, "__delete_slot") \
+  X(mt_new_member, "__new_member")   \
+  X(mt_inherited, "__inherited")
 
 namespace zs {
 struct object_base;
@@ -138,6 +144,48 @@ enum class object_flags_t : uint8_t {
 };
 
 ZBASE_ENUM_CLASS_FLAGS(object_flags_t);
+
+///
+enum class var_decl_flags_t : uint8_t {
+  vdf_none,
+  vdf_const = 1,
+  vdf_static = 2,
+  vdf_private = 4,
+  vdf_mutable = 8,
+  vdf_export = 16,
+  vdf_doc = 32
+
+};
+
+ZBASE_ENUM_CLASS_FLAGS(var_decl_flags_t);
+
+ZS_CK_INLINE_CXPR bool is_var_decl_flags_const(var_decl_flags_t vflgs) noexcept {
+  return (vflgs & var_decl_flags_t::vdf_const) == var_decl_flags_t::vdf_const;
+}
+
+ZS_CK_INLINE_CXPR bool is_var_decl_flags_static(var_decl_flags_t vflgs) noexcept {
+  return (vflgs & var_decl_flags_t::vdf_static) == var_decl_flags_t::vdf_static;
+}
+
+ZS_CK_INLINE_CXPR bool is_var_decl_flags_private(var_decl_flags_t vflgs) noexcept {
+  return (vflgs & var_decl_flags_t::vdf_private) == var_decl_flags_t::vdf_private;
+}
+
+ZS_CK_INLINE_CXPR bool is_var_decl_flags_mutable(var_decl_flags_t vflgs) noexcept {
+  return (vflgs & var_decl_flags_t::vdf_mutable) == var_decl_flags_t::vdf_mutable;
+}
+
+ZS_CK_INLINE_CXPR bool is_var_decl_flags_export(var_decl_flags_t vflgs) noexcept {
+  return (vflgs & var_decl_flags_t::vdf_export) == var_decl_flags_t::vdf_export;
+}
+
+struct var_decl_info_t {
+  uint64_t custom_mask;
+  uint32_t obj_type_mask;
+  var_decl_flags_t flags;
+};
+
+//
 
 //
 // MARK: - Object
@@ -239,10 +287,9 @@ ZB_CK_INLINE_CXPR const char* get_exposed_object_type_name(object_type t) noexce
   return "unknown";
 }
 
-// ZS_CK_INLINE_CXPR bool is_object_type_ref_counted(object_type t) noexcept {
-//   return static_cast<uint8_t>(t) >= static_cast<uint8_t>(object_type::k_long_string) or (t ==
-//   object_type::k_native_function2);
-// }
+ZS_CK_INLINE_CXPR bool is_object_type_ref_counted(object_type t) noexcept {
+  return static_cast<uint8_t>(t) >= static_cast<uint8_t>(object_type::k_long_string);
+}
 
 ZS_CK_INLINE_CXPR bool is_object_type_convertible_to_false(object_type t) noexcept {
   return static_cast<uint8_t>(t) && static_cast<uint8_t>(t) <= static_cast<uint8_t>(object_type::k_float);
@@ -375,8 +422,11 @@ namespace constants {
   inline constexpr const uint32_t k_string_mask
       = zs::create_type_mask(k_long_string, k_small_string, k_string_view, k_mutable_string);
 
+  inline constexpr const uint32_t k_cstring_mask
+      = zs::create_type_mask(k_long_string, k_small_string, k_mutable_string);
+
   inline constexpr const uint32_t k_function_mask
-      = zs::create_type_mask(k_closure, k_native_closure, k_native_function);
+      = zs::create_type_mask(k_closure, k_native_closure, k_native_function, k_native_pfunction);
 
 #define _X(name, str) inline constexpr const std::string_view k_##name##_string = str;
   ZS_META_METHOD_ENUM(_X)
@@ -399,8 +449,11 @@ inline constexpr const char* meta_method_name(meta_method mm) noexcept {
   zbase_error("invalid meta method");
   return "unknown";
 }
+
 struct object_type_mask_printer {
   uint32_t mask;
+  const char* l = "[";
+  const char* r = "]";
 
   inline friend std::ostream& operator<<(std::ostream& stream, object_type_mask_printer v) {
 
@@ -416,19 +469,11 @@ struct object_type_mask_printer {
     bool found_one = false;
     const bool has_string_mask = (bool)(zs::constants::k_string_mask & v.mask);
     v.mask &= ~zs::constants::k_string_mask;
-
-    stream << "[";
+    stream << v.l;
     ZS_OBJECT_TYPE_ENUM(_STREAM_OBJECT_TYPE_MASK)
 
-    return stream << (has_string_mask ? (found_one ? ", string" : "string") : "") << "]";
+    return stream << (has_string_mask ? (found_one ? ", string" : "string") : "") << v.r;
 #undef _STREAM_OBJECT_TYPE_MASK
   }
 };
-
-// struct object_type_mask_printer2 {
-//   uint32_t mask;
-//
-//   inline friend std::ostream& operator<<(std::ostream& stream, object_type_mask_printer2 v);
-// };
-
 } // namespace zs.
