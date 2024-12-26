@@ -405,6 +405,16 @@ return t.a;
   REQUIRE(value == 34);
 }
 
+ZTEST_CASE("string +=", R"""(
+var a = "A";
+a += "B";
+a += "C";
+return a;
+)""") {
+  REQUIRE(value.is_small_string());
+  REQUIRE(value == "ABC");
+}
+
 //
 // *=
 //

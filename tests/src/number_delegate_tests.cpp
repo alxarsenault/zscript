@@ -69,64 +69,7 @@ return t.a >> 1;
   REQUIRE(value == 28);
 }
 
-ZTEST_CASE("function_delegate", R"""(
-function A() {
-  return 44;
-}
-
-return A.call( );
-)""") {
-  REQUIRE(value == 44);
-}
-
-ZTEST_CASE("function_delegate", R"""(
-
-function A( ) {
-  return john(bingo);
-}
- 
-
-var kk = {};
-var ddd = A.pcall(kk );
-return ddd;
-)""") {
-  REQUIRE(value.is_null());
-}
-
-ZTEST_CASE("function_delegate", R"""(
- 
-function A() {
-  return this.johnson;
-}
-var t  ={johnson = 89};
-var B = A.with_binded_this(t);
-return B();
-)""") {
-  REQUIRE(value == 89);
-}
-
-ZTEST_CASE("function_delegate", R"""(
- 
-function A() {
-  return this.johnson;
-}
-var t  ={johnson = 89};
- A.bind_this(t);
-return A();
-)""") {
-  REQUIRE(value == 89);
-}
-
-ZTEST_CASE("function_delegate", R"""(
-function A() {}
-var t = { johnson = 89 };
-A.bind_this(t);
-//return A.get_this() == t;
-)""") {
-  //  REQUIRE(value == true);
-}
-
-ZTEST_CASE("function_delegate", R"""(
+ZTEST_CASE("zslib", R"""(
 var a = 0;
 var b = a ? a : 55;
 var c = a ?: 55;
@@ -135,193 +78,30 @@ return zs::all_equals(b, c, 55);
   REQUIRE(value == true);
 }
 
-ZTEST_CASE("function_delegate", R"""(
+ZTEST_CASE("zslib", R"""(
 return zs::in_range(9.9, 9.9, 90);
 )""") {
   REQUIRE(value);
 }
 
-ZTEST_CASE("function_delegate", R"""(
+ZTEST_CASE("zslib", R"""(
 return zs::in_range(9.9, 9.9, 90, false);
 )""") {
   REQUIRE(!value);
 }
 
-ZTEST_CASE("all_true", R"""(
+ZTEST_CASE("v", R"""(
 return zs::all_true(1, 3);
 )""") {
   REQUIRE(value);
 }
 
-ZTEST_CASE("all_true", R"""(
+ZTEST_CASE("zslib", R"""(
 return zs::all_true(1, 3, false);
 )""") {
   REQUIRE(!value);
 }
 
-ZTEST_CASE("all_truekk", R"""(
-return ($() return 32)();
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("all_truekk", R"""(
-return $() return 32;();
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("all_truekk", R"""(
-function A(var k = ...) {
-  return 32;
-}
-
-return A();
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("all_truekk", R"""(
-function A(... = 32 ) {
-//  zs::print(vargv);
-  return 32;
-}
-
-return A(1, 2, 3, {});
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("CASE1", R"""(
-function A(... = 32 ) {
-//  zs::print(vargv);
-  return 32;
-}
-return A(1, 2, 3, 4);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("CASE2", R"""(
-function A(k ... = 32 ) {
-//  zs::print(k);
-  return 32;
-}
-return A(1, 2, 3, 4);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("CASE3", R"""(
-function A(var k ... = 32 ) {
-//  zs::print(k);
-  return 32;
-}
-return A(1, 2, 3, 4);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("CASE3", R"""(
-function A(k ... = [8, 9] ) {
-//  zs::print(k);
-  return 32;
-}
-return A(1, 2, 3, 4);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("CASE3", R"""(
-function A(k = ...) {
-//  zs::print(k);
-  return 32;
-}
-return A(1, 2, 3, 4);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("CASE4", R"""(
-function A(var b ... = []) {
-//  zs::print(b);
-  return 32;
-}
-
-return zs::apply(A, this, [1, 2, [3, 3, 4], 4], 13, [10, 20, 30], [[1, 2]]);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("get_parameter_names", R"""(
-
-function A(var a, var b, var c) {
-  return a;
-}
-
-return A.get_parameter_names();
-)""") {
-  //  zs::print(value);
-  //  REQUIRE(value == 4);
-}
-
-ZTEST_CASE("get_default_params", R"""(
-
-function A(var a, var b, var c = 32, d = ...) {
-  return a;
-}
-
-return A.get_default_params();
-)""") {
-  //  zs::print(value);
-  //  REQUIRE(value == 4);
-}
-
-ZTEST_CASE("get_parameter_count", R"""(
-
-function A(var a, var b, var c) {
-  return a;
-}
-
-return A.get_parameter_count();
-)""") {
-  REQUIRE(value == 4);
-}
-
-ZTEST_CASE("variadic", R"""(
-
-function Add(values = ...) {
-  var sum = 0;
-  for(int i = 0; i < values.size(); i++) {
-    sum += values[i];
-  }
-
-  return sum;
-}
-
-var RAdd;
-
-RAdd = function(a, b, values = ...) {
-  return values ? zs::apply(RAdd, this, a + b, values) : a + b;
-}
-
-return RAdd(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
-)""") {
-  REQUIRE(value == 120);
-}
-
-ZTEST_CASE("function_abc", R"""(
-
-function A() {
-  var a = 332;
-  var b = 445;
-  return b;
-}
-
-return A();
-)""") {
-  REQUIRE(value == 445);
-}
 ZTEST_CASE("gkloo", R"""(
 
 global.set("k", 90);

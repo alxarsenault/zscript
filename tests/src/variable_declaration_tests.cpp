@@ -38,19 +38,14 @@ VDECL_FLOAT("float v = -1.18e-49; return v;") { REQUIRE(value == -1.18e-49); }
 ZTEST_CASE("variable_declaration", R"""(
 int v1 = 32;
 var<int> v2 = 33;
-
 float v3 = 0.0;
 var<float> v4 = 0.0;
+var<int | float> v5 = -890;
+var<int | float> v6 = 890.32;
+number v7 = 5.92;
+var<number> v8 = -890;
 
-
-var<int | float> v7 = -890;
-var<int | float> v8 = 890.32;
-
-number v9 = 5.92;
-var<number> v10 = -890;
-
-return 32;
+return [v1, v2, v3, v4, v5, v6, v7, v8];
 )""") {
-  //  zb::print(get_test_name(), "MULEQ", value);
-  //  zs::float_t norm = std::sqrt(1.0 + 2.0 * 2.0 + 3.0 * 3.0);
+  REQUIRE(value == zs::_a(vm, { 32, 33, 0.0, 0.0, -890, 890.32, 5.92, -890 }));
 }

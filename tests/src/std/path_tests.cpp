@@ -140,64 +140,12 @@ return fs::path("/A/BN/Johnson").get_char(3);
 
 ZTEST_CASE("fs::path", R"""(
 var p = fs::path("/A/BN/Johnson");
-
-//for(var v : p) {
-//  zs::print("LLL", v);
-//}
-
-//var it = p.begin();
-//zs::print(it.get());
-//zs::print(it++.get());
-//zs::print(it++.get());
-//zs::print(it++.get());
-)""") {
-  //  REQUIRE(value == 'B');
+var s = "";
+for(var v : p) {
+  s += v;
 }
 
-ZTEST_CASE("fs::path", R"""(
-var p = fs::path("/A/BN/Johnson");
-
-//for(var v : p) {
-//  zs::print("LLL", v);
-//}
-//
-var it = p.begin();
-var end = p.end();
-var it2 = it.next();
-//zs::print("it.dsds()", it.get_if_not(end));
-//zs::print("it.dsds()", it.next().get_if_not(end));
-
-//zs::print("it.get()", it.get());
-//zs::print("it2.get()", it2.get());
-//zs::print(it2.next().get());
-//zs::print(it2.next().next().get());
-//zs::print(it2.next().next().next().get());
-
-//zs::print((++it).get());
-//zs::print((++it).get());
-
+return s;
 )""") {
-  //  REQUIRE(value == 'B');
+  REQUIRE(value == "/ABNJohnson");
 }
-
-ZTEST_CASE("ARRAY", R"""(
-var a = [1, 2, 3];
-
-//for(var v : a) {
-//  zs::print("LLL", v);
-//}
-
-
-)""") {
-  //  REQUIRE(value == 'B');
-}
-
-ZTEST_CASE("TABLE", R"""(
-var a = {a = 32, b = 44}
-
-//for(var k,v  : a) {
-//  zs::print("LLL", k,v );
-//}
-
-
-)""") {}

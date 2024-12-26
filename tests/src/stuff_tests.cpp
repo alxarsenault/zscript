@@ -3,7 +3,376 @@
 #include <zscript/utility/string_template.h>
 #include <zscript/std/zmutable_string.h>
 
+#include "jit/zclosure_compile_state.h"
 using namespace utest;
+
+// ZTEST_CASE("Capture", R"""(
+// var f2;
+//
+//{
+//   var a = 32;
+//
+//   f2 = function(tag) {
+//     print(tag, a);
+//     a = 9;
+//   }
+//
+//   a = 69;
+//   f2("A(69)");
+// }
+//)""") {
+//   REQUIRE(vm->_open_captures.empty());
+// }
+
+// ZTEST_CASE("Capture", R"""(
+//
+// var f2;
+// var f3;
+// var arr = [];
+//
+//{
+//   var a = 32;
+//
+//   f2 = function(tag) {
+//     arr.push(a);
+//     print(tag, a);
+//     a = 55;
+//     return;
+//   }
+//
+//   f3 = function() {
+//     a = 21;
+//   }
+//
+//   f2("A(32)");
+//   f2("A(55)");
+//   a = 69;
+//   f2("A(69)");
+//   f2("A(55)");
+//   print("A(55)", a);
+//
+//   f3();
+//   print("A(21)", a);
+//   f2("A(21)");
+//   print(arr);
+// }
+//)""") {
+//   REQUIRE(vm->_open_captures.empty());
+// }
+
+// ZTEST_CASE("Capture", R"""(
+//
+//@macro CHECK(e) { __zcheck(e, {cond = @str(e), file = __FILE__, line = __LINE__, code = __THIS_LINE__}) }
+//
+// var f2;
+// var f3;
+//
+//{
+//   var a = 32;
+//
+//
+//   $CHECK(a == 32);
+//
+//   __zcheck(a == 32, __FILE__, __LINE__, __THIS_LINE__);
+//
+//   f2 = function(tag) {
+//     print(tag, a);
+//     a = 55;
+//     return;
+//   }
+//
+//   f3 = function() {
+//     a = 21;
+//   }
+//
+//   f2("A(32)");
+//   f2("A(55)");
+//   a = 69;
+//   f2("A(69)");
+//   f2("A(55)");
+//   print("A(55)", a);
+//
+//   f3();
+//   print("A(21)", a);
+//   f2("A(21)");
+//
+// }
+//)""") {
+//   REQUIRE(vm->_open_captures.empty());
+// }
+
+ZTEST_CASE("Capture", R"""(
+var f2;
+
+var arr = [];
+
+function add_to_output(var id, var val) {
+  arr.push({name = id, value = val });
+}
+
+{
+  var a = 32;
+
+  f2 = function(tag) {
+    add_to_output(tag, a);
+    a = 55;
+    return;
+  }
+
+  add_to_output("a0", a);
+  f2("A(32)");
+  f2("A(55)");
+  a = 69;
+  f2("A(69)");
+  f2("A(55)");
+//  print("A(55)", a);
+}
+
+return arr;
+)""") {
+  REQUIRE(vm->_open_captures.empty());
+  //  zb::print(value);
+}
+
+// ZTEST_CASE("Capture", R"""(
+// var f2;
+//
+//{
+//   var a = 32;
+//
+//   f2 = function(tag) {
+//     print(tag, a);
+//     return;
+//   }
+//
+//   f2("A(32)");
+//   a = 69;
+//   f2("A(69)");
+// }
+//)""") {
+//   REQUIRE(vm->_open_captures.empty());
+// }
+//
+// ZTEST_CASE("Capture", R"""(
+// var f2;
+//
+//{
+//   var a = 32;
+//
+//   f2 = function(tag) {
+//     print(tag, a);
+//   }
+//
+//   f2("A(32)");
+//   a = 69;
+//   f2("A(69)");
+// }
+//)""") {
+//   REQUIRE(vm->_open_captures.empty());
+// }
+
+// ZTEST_CASE("Capture", R"""(
+// var f2;
+//
+//{
+//   var a = 32;
+//
+//   f2 = function(tag) {
+//     print(tag, a);
+//     a = 9;
+//   }
+//
+//   f2("A(32)");
+//   print("A(9)", a);
+//   a = 69;
+//   f2("A(69)");
+// }
+//)""") {
+//   REQUIRE(vm->_open_captures.empty());
+// }
+
+// ZTEST_CASE("Capture", R"""(
+// var f2;
+// var f3;
+//
+//{
+//   var a = 32;
+//
+//   f2 = function(tag) {
+//     print(tag, a);
+//     a = 9;
+//   }
+//
+////  f3 = function() {
+////   a = 21;
+////  }
+////
+////  f2("A(32)");
+//
+//  a = 69;
+//  f2("A(69)");
+//}
+//
+////f2("A(9)");
+////f3();
+////f2("A(21)");
+////print(__locals__);
+//)""") {
+//  //
+//  //  zb::print(vm->_open_captures);
+////  REQUIRE(vm->_open_captures.empty());
+//  //
+//  //  if(a == 32) {
+//  //    int a = 33;
+//  //
+//  //    zb::print("A", a);
+//  //  }
+//}
+
+//
+// ZTEST_CASE("Capture", R"""(
+// var f2;
+//{
+//  var a = 32;
+//
+//  function A() {
+//    a = 25;
+//  }
+//
+//  print("A25", a);
+//
+//    f2 = function () {
+//      print("A4", a);
+//       //a = 123321;
+//    }
+////  {
+////    function f5() {
+////      print("A4", a);
+////      a = 123321;
+////    }
+////
+////    f2 = f5;
+////  }
+//
+//  f2();
+//  print("A1", a);
+//
+//  a  = 879;
+//  print("A2", a);
+// A();
+//  f2();
+//  print("A3", a);
+//
+//  a = 33333;
+//  print("A3", a);
+//}
+//
+//
+// f2( );
+//
+//)""") {
+////
+//
+////
+////  if(a == 32) {
+////    int a = 33;
+////
+////    zb::print("A", a);
+////  }
+//
+//}
+
+UTEST_CASE("dddddjhkljljkjlk") {
+
+  zs::vm vm;
+  zs::engine* eng = vm.get_engine();
+
+  zs::jit::shared_state_data sdata(eng);
+  zs::closure_compile_state c_compile_state(eng, sdata);
+  c_compile_state.name = zs::_ss("main");
+  c_compile_state._sdata._source_name = zs::_ss("test");
+
+  REQUIRE(!c_compile_state.add_parameter(zs::_ss("__this__")));
+  REQUIRE(!c_compile_state.add_parameter(zs::_ss("banana")));
+
+  c_compile_state.add_instruction<zs::opcode::op_line>(1);
+
+  c_compile_state.add_instruction<zs::opcode::op_load_small_string>(0, zs::ss_inst_data::create("bingo"));
+
+  zs::int_t previous_n_capture = c_compile_state.get_current_capture_count();
+  //  zb::print("_target_stack.size()", c_compile_state._target_stack.size());
+  (void)c_compile_state.new_target();
+  (void)c_compile_state.pop_target();
+  REQUIRE(!c_compile_state.push_local_variable(zs::_ss("john"), 0));
+
+  (void)c_compile_state.new_target();
+  (void)c_compile_state.pop_target();
+  REQUIRE(!c_compile_state.push_local_variable(zs::_ss("john"), 1));
+
+  c_compile_state.set_stack_size(0);
+
+  zs::object fpo = c_compile_state.build_function_prototype();
+
+  //     zb::print(fpo->_parameter_names);
+  //  fpo->debug_print();
+}
+
+// ZTEST_CASE("dddddd", R"""(
+// var a = 32;
+//
+// function F() {
+//   a = 34;
+// }
+// F();
+// print(a);
+//
+// local var g = "George";
+//
+// export var JohnDow = 12;
+//
+//
+//__exports__.peterson = 123;
+//
+////__exports__.peterson = 1237;
+//
+//
+////k = 90;
+//
+// var kkk = function(k) { return $(v) { return v; }(k); }($(v) { return v; }(90)) + function(z) { return z +
+// 1; }(32);
+//
+// var zp = function(f = $(){ return 32; }) {
+//  return f();
+//};
+//
+// if(a == 32) {
+//  var a = 33;
+////  print("AAAA", a, __locals__);
+// var __locals__ = 1232;
+////  print("AAAA", a, __locals__);
+//  {
+//    var a = 3232;
+//
+////  print("AAAA", a, __locals__);
+//  }
+//
+//}
+//  for(var a = 0; a < 12; a++) {
+//    var a = 12;
+//  }
+//
+////var a = 12332;
+//)""") {
+////
+//
+////
+////  if(a == 32) {
+////    int a = 33;
+////
+////    zb::print("A", a);
+////  }
+//
+//}
 
 ZTEST_CASE("dsdsds", R"""(
 //zs::add_import_directory(ZSCRIPT_MODULES_DIRECTORY);
@@ -220,6 +589,200 @@ return math.sin(0);
   REQUIRE(value == 0);
 }
 
+ZTEST_CASE("struct", R"""(
+return struct{};
+)""") {
+  REQUIRE(value.is_struct());
+}
+
+ZTEST_CASE("Scope", R"""(
+@module dev-uio
+@author "Alexandre Arsenault"
+@version 1.10.1
+@date 2024-08-23
+@copyright BananananP
+
+const m1 = import("module_04");
+//local var p1 = 23;
+//
+//
+//var t = {
+//  A = 32,
+//  B = function() {
+//
+//  }
+//};
+//
+//t.B();
+//m1.a = 222;
+
+function main(var args = []) {
+//  print(args, p1);
+  //p1 = 12;
+  return 0;
+}
+
+)""") {
+  //  zb::print(value);
+
+  //  auto vv = value.as_table()["main"];
+  //  zs::object ret;
+  //  REQUIRE(!vm->call(vv, { value, zs::_a(vm.get_engine(), { zs::_ss("john"), 123, 12.12 }) }, ret));
+  //  zb::print(ret);
+  //
+  //  REQUIRE(!vm->call(vv, { value, zs::_a(vm.get_engine(), { zs::_ss("john") }) }, ret));
+  //  zb::print(ret);
+}
+
+ZTEST_CASE("ImportDev2", R"""(
+@module dev-uio
+@author "Alexandre Arsenault"
+@author "Anghj" jk
+@brief '''"BananananP"
+
+
+jhjhjhjkh
+
+'''
+@version 1.10.1
+@date 2024-08-23
+@copyright BananananP
+
+const m1 = import("module_04");
+
+//local const john = 908;
+//local var abcde = 12312312;
+//__locals__.abcd = 123;
+
+//export john;
+//export.ABC = {};
+var aa = 32;
+//var aa = 333;
+
+//export function BDSJHD() {
+//  var abcdss = 232;
+//  print("KKKK",  local.abcde, __locals__.abcde, local.abcd, __locals__.abcd);
+//}
+
+//print(abcd);
+
+//BDSJHD();
+//__exports__.ABC.g = 7787;
+//export m1;
+)""") {
+  //  zb::print(value);
+
+  //  auto vv = value.as_table()["BDSJHD"];
+  //  zs::object ret;
+  //  vm->call(vv, vm->get_root(), ret);
+}
+
+ZTEST_CASE("ImportDev", R"""(
+@module dev
+@author Alexandre Arsenault
+@brief Banananan
+
+const geo = import("geo");
+const math = import("math");
+const base64 = import("base64");
+//const fs = import("fs");
+
+var r1 = geo.Rect(10, 20, 30, 40);
+ 
+var gino = base64.encode("ALexndre");
+var gino2 = base64.decode(gino);
+
+var s1 = r1.size();
+var s2 = r1.size();
+
+function make_it(a, b) {
+  return geo.Point(a, b);
+}
+
+var m1 = make_it(1, 2);
+
+function make_it_again(a, b) {
+  var mi = make_it(a, b);
+  mi.x = s1.width + s2.width;
+  return mi;
+}
+
+var pts = [geo.Point(0, 0), geo.Point(0, 1), geo.Point(0, 2), geo.Point(1, 0)];
+
+
+var m2 = make_it_again(100, 200);
+
+var t = {
+  function bingo(n) {
+    return 8 * n + s1.width;
+  }
+};
+ 
+s1.width = 1000;
+
+const Alex = "Alex";
+
+struct God {
+  var a = 32;
+};
+
+var gggg = {
+  bacon = "hotdog"
+};
+
+//var gggg = "BANANA";
+
+var abc = 123;
+
+return {"r1":r1, "s1":s1};
+)""") {
+  REQUIRE(value.is_table());
+  // REQUIRE(value.as_table()["a"] == 678);
+  //   zb::print("N", value);
+  //   zb::print(vm->get_root());
+}
+
+ZTEST_CASE("JESUS", R"""(
+const m1 = import("module_01.zs");
+ 
+var f = 32;
+f = 234;
+m1.a = 92;
+ 
+
+var K = 323;
+K = 888;
+
+var ttt = {
+bingo = 234,
+
+gg = function() {
+  bingo = 32;
+//  johnsonsh = 234;
+}
+};
+function banana() {
+  K = 234;
+//  bagel = 32;
+}
+
+banana();
+
+ttt.gg();
+
+__this__.john = 32;
+
+//john = 234;
+ 
+
+//__exports__.somesome = "Some";
+ 
+)""") {
+  //  REQUIRE(value.is_table());
+  // REQUIRE(value.as_table()["a"] == 678);
+  //   zb::print("N", value);
+  //   zb::print(vm->get_root());
+}
 // ZTEST_CASE("$expr", R"""(
 // const var a = @expr {
 // var fpath = fs::path("/Users/alexarse/Develop/zscript/samples/string_01.txt");
@@ -240,198 +803,6 @@ return math.sin(0);
 //   REQUIRE(value.as_table()["a"] == 32);
 //   REQUIRE(value.as_table()["b"] == "johnson");
 // }
-
-ZTEST_CASE("$function", R"""(
-var fct = $(a) return a;
-return fct(32);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("arrow-function", R"""(
-var fct = (a) => { return a; }
-return fct(32);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("arrow-function", R"""(
-var fct = (a) => a;
-return fct(32);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("arrow-function", R"""(
-
-function Call(f, a) {
-  return f(a);
-}
-
-var fct = (a) => a;
-return Call(fct, 32);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("arrow-function", R"""(
-
-function Call(f, a) {
-  return f(a);
-}
- 
-return Call((a) => a, 32);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("arropw", R"""(
-var a = {
-  value = 32,
-  function A() {
-    return (()=> this.value)();
-  }
-};
-
-var f2 = $() return 32;
-return f2();
-return a.A();
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("raw_call", R"""(
-
-var f2 = $(a) return a + 2;
-var f3 = (a)=> a + 12
-//zs::print(f3(12));
-//zs::print(f2(32));
-
-var g3 = (j)=> {
-return j + 90;
-}
-
-var dd = (u)=> u + 8;
-//zs::print(g3(10), dd(670), ((u)  => u + 8;)(89));
-
-var t1 = {
-  a = 1,
-  __add = $(rhs) return this.a + rhs.a;
-  //__add = (rhs) =>{return this.a + rhs.a;}
- jkjjk = (a)=> a + 12,
- b = 90
-};
-
-var t2 = { a = 2 };
-
-//var delegate = {
-//  __add = function(rhs) {
-//    return this.a + rhs.a;
-//  }
-//};
-//zs::set_delegate(t1, delegate);
-
-return t1 + t2;
-
-)""") {
-  REQUIRE(value == 3);
-}
-
-ZTEST_CASE("raw_call", R"""(
-function A(a) {
-  return a;
-}
-
-return zs::call(A, __this__, 21);
-)""") {
-  REQUIRE(value == 21);
-}
-
-ZTEST_CASE("raw_call", R"""(
-function A(a, b, c) {
-  return a + b + c;
-}
-
-return zs::call(A, __this__, 1, 2, 3);
-)""") {
-  REQUIRE(value == 6);
-}
-
-ZTEST_CASE("raw_call", R"""(
-return zs::call($(a, b, c) {
-  return a + b + c;
-}, __this__, 1, 2, 3);
-)""") {
-  REQUIRE(value == 6);
-}
-ZTEST_CASE("raw_call", R"""(
-
-var t = { a = 32 };
-
-function A[t](a, b, c) {
-  return this.a;
-}
-  
-return A(1, 2, 3);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("raw_call", R"""(
-function A[{ peter = 32 }](a, b, c) {
-  return this.peter;
-}
-  
-return A(1, 2, 3);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("raw_call", R"""(
-function A[{ peter = 32 }](a, b, c) {
-  return this.peter;
-}
-  
-return zs::call(A, __this__, 1, 2, 3);
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("raw_call", R"""(
-
-var John = this.john;
-
-var delegate = {
-  __call = function(a) {
-    John(a);
-//    zs::print(a, "DFLSKDJSKJLDS", this);
-  }
-}
- 
-var tbl = zs::set_delegate({}, delegate);
- 
-tbl(1);
-//
-var f1 = zs::bind(tbl, tbl);
-f1(2);
-//
-var f2 = zs::bind(tbl, zs::placeholder);
-f2(tbl, 3);
-
-var f3 = zs::bind(delegate, zs::placeholder, 4);
-f3(tbl);
-
-var f4 = zs::bind(delegate, tbl, zs::placeholder);
-f4(5);
-
-)""",
-    [](zs::vm_ref vm) {
-      static int counter = 0;
-      vm->get_root()._table->emplace("john", [](zs::vm_ref vm) -> zs::int_t {
-        REQUIRE(vm[1] == ++counter);
-        return 0;
-      });
-    }) {}
 
 //
 //
@@ -684,193 +1055,3 @@ f4(5);
 //)""") {
 //  //  zb::print(value);
 //}
-
-ZTEST_CASE("function-table-call", R"""(
-function A(var a) {
-  return a.b;
-}
-
-return A({b = 32});
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("function-table-call", R"""(
-function A(var a) {
-  return a.b;
-}
-
-return A {b = 32};
-)""") {
-  REQUIRE(value == 32);
-}
-
-ZTEST_CASE("function-table-call", R"""(
-var t = {
-  function A(var a) {
-    return a.b * 2;
-  }
-};
-
-return t.A { "b":32 };
-)""") {
-  REQUIRE(value == 64);
-}
-
-ZTEST_CASE("function-table-call", R"""(
-return { A = $(var a) return a.b * 2; }.A { "b":32 };
-)""") {
-  REQUIRE(value == 64);
-}
-
-//
-// MARK: Unary Arithmetic.
-//
-
-ZTEST_CASE("unary_arithmetic", R"""(
-var t = { a = 0 };
-var a0 = t.a++;
-return [a0, t.a];
-)""") {
-  REQUIRE(value == zs::_a(vm, { 0, 1 }));
-}
-
-ZTEST_CASE("unary_arithmetic", R"""(
-var t = { a = 0 };
-var a0 = ++t.a;
-return [a0, t.a];
-)""") {
-  REQUIRE(value == zs::_a(vm, { 1, 1 }));
-}
-
-//
-// ZTEST_CASE("unary_arithmetic", R"""(
-// var t = {
-//  value = 10,
-//
-//  function __pre_incr() {
-//    ++this.value;
-//    return this;
-//  }
-//
-//  function __incr() {
-//    var v = this.value;
-//    this.value = v + 1;
-//    return v;
-//  }
-//};
-//
-// t++;
-// return t;//[t++, t.value];
-//)""") {
-//  zs::print(value);
-////  REQUIRE(value  == zs::_a(vm , {10, 11}));
-//}
-
-ZTEST_CASE("unary_arithmetic", R"""(
-var t = {
-  value = 10,
-
-  function __pre_incr() {
-    this.value = this.value + 1;
-    return this.value;
-  }
-};
-
-var k = ++t;
-return [t, k];
-)""") {
-
-  //  zs::print( value);
-  //  REQUIRE(value  == zs::_a(vm , {11, 11}));
-}
-
-ZTEST_CASE("fhjhkjh222", R"""(
-var t = {
-  value = 10,
-
-  function __pre_incr() {
-    ++this.value;
-    return this;
-  }
-
-  function __incr() {
-    return this.value++;
-  }
-};
-
-var k = t++;
-++t;
-return [k, t.value];
-)""") {
-  REQUIRE(value == zs::_a(vm, { 10, 12 }));
-}
-
-ZTEST_CASE("unary_arithmetic", R"""(
-var arr = [0, 1, 2, 3, 4, 5];
-
-var it = arr.begin();
-var i = it;
-var itt = it++;
-itt = it++;
-return [i.get(), it.get(), itt.get()];
-)""") {
-
-  REQUIRE(value == zs::_a(vm, { 0, 2, 1 }));
-}
-
-ZTEST_CASE("unary_arithmetic", R"""(
-var arr = [0, 1, 2, 3, 4, 5];
-var it = arr.begin();
-
-var i = it;
-var itt = ++it;
-itt = ++it;
-return [i.get(), it.get(), itt.get()];
-)""") {
-  REQUIRE(value == zs::_a(vm, { 0, 2, 2 }));
-}
-
-ZTEST_CASE("copy", R"""(
-var arr = [0, 1, 2, 3, 4, 5];
-var t = {__copy = function(delegate) {
-  return this;
-}, a = 89};
-
-var a = zs::copy(t);
-a.a = 32;
-return [t, a];
-)""") {
-//  zs::print(value);
-  //  REQUIRE(value == zs::_a(vm, { 0, 2, 2 }));
-}
-
-ZTEST_CASE("copy", R"""(
-var arr = [0, 1, 2, 3, 4, 5];
-var t = { a = 89};
-
-var a = zs::copy(t);
-a.a = 32;
-return [t, a];
-)""") {
-//  zs::print(value);
-  //  REQUIRE(value == zs::_a(vm, { 0, 2, 2 }));
-}
-
-ZTEST_CASE("copy", R"""(
-var arr = mutable_string("DSLKDJS");
-
-var t = { a = 89};
-var p  = fs::path("/Alex/sa");
-
-var d = {__typeof = "DD"};
-//zs::set_delegate(arr, d);
-var a = zs::copy(arr);
-//a.a = 32;
-// zs::get_delegate(p),
-// zs::get_delegate(p),
-return [t, a == arr, p == "/Alex/sa",fs::is_path(p), fs::is_path("/Alex/sa")];
-)""") {
-  zs::print(value);
-  //  REQUIRE(value == zs::_a(vm, { 0, 2, 2 }));
-}

@@ -3,23 +3,9 @@
 using namespace utest;
 
 ZTEST_CASE("sys::name", R"""(
- //zs::print(sys::uname());
-
-bool k = true;
-bool k2 = false;
-var arr = 0;
-
-float g = 21.22;
-//zs::print(zs::is_float(g), zs::is_true(arr));
-return [zs::is_bool(k), zs::is_bool(k2), zs::is_bool(true), zs::is_bool(32)];
+  return sys::uname();
 )""") {
-  REQUIRE(value.is_array());
-
-  REQUIRE(value.as_array()[0] == true);
-  REQUIRE(value.as_array()[1] == true);
-  REQUIRE(value.as_array()[2] == true);
-  REQUIRE(value.as_array()[3] == false);
-  //  REQUIRE(std::filesystem::exists(value.get_string_unchecked()));
+  REQUIRE(value.is_table());
 }
 
 ZTEST_CASE("sys::exec", R"""(
