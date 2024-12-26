@@ -254,7 +254,7 @@ namespace {
         , _dist(mean, stddev) {}
 
     static int_t generate(zs::vm_ref vm) {
-      const  object& obj = vm->top();
+      const object& obj = vm->top();
       user_data_object* uobj = obj._udata;
       normal_distribution* nd = uobj->data<normal_distribution>();
       vm->push(nd->_dist(nd->_gen));
@@ -306,7 +306,7 @@ namespace {
 
     static int_t _get(zs::vm_ref vm) {
       object& obj = vm->stack()[-2];
-      const  object& key = vm->top();
+      const object& key = vm->top();
 
       if (key == "mean") {
 
@@ -331,7 +331,7 @@ namespace {
     static int_t _set(zs::vm_ref vm) {
       object& obj = vm->stack()[-3];
       object& key = vm->stack()[-2];
-      const  object& value = vm->top();
+      const object& value = vm->top();
       if (key == "mean") {
 
         float_t f_mean = 0;

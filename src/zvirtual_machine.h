@@ -93,25 +93,25 @@ public:
   void pop(int_t n);
   void remove(int_t n);
   void swap(int_t n1, int_t n2);
-  
+
   ZS_CK_INLINE int_t stack_size() const noexcept { return _stack.stack_size(); }
 
-   ZS_CHECK const object& top() const noexcept;
+  ZS_CHECK const object& top() const noexcept;
 
   ZS_CK_INLINE object& stack_get(int_t idx) { return _stack[idx]; }
   ZS_CK_INLINE const object& stack_get(int_t idx) const { return _stack[idx]; }
- 
+
   ///
-   ZS_CK_INLINE zs::object_stack& stack() noexcept { return _stack; }
+  ZS_CK_INLINE zs::object_stack& stack() noexcept { return _stack; }
 
   /// Get the root table.
   /// @{
-   ZS_CK_INLINE const object& get_root() const noexcept { return _global_table; }
+  ZS_CK_INLINE const object& get_root() const noexcept { return _global_table; }
   /// @}
 
   /// Get the global table.
   /// @{
-   ZS_CK_INLINE const object& get_global() const noexcept { return _global_table; }
+  ZS_CK_INLINE const object& get_global() const noexcept { return _global_table; }
   /// @}
 
   //
@@ -169,7 +169,7 @@ public:
   ZS_CHECK zs::error_result set_if_exists(object& obj, const object& key, const object& value);
   ZS_CHECK zs::error_result contains(const object& obj, const object& key, object& dest);
   ZS_CHECK zs::error_result raw_contains(const object& obj, const object& key, object& dest);
- 
+
   ZS_CHECK zs::error_result compare(object& target, const object& lhs, const object& rhs);
   ZS_CHECK zs::error_result lt(object& target, const object& lhs, const object& rhs);
   ZS_CHECK zs::error_result eq(object& target, const object& lhs, const object& rhs);
@@ -205,7 +205,7 @@ public:
   ZS_CHECK zs::error_result bitwise_and_eq(object& obj, const object& rhs);
   ZS_CHECK zs::error_result bitwise_xor_eq(object& obj, const object& rhs);
   /// @}
- 
+
   //
   // Unsafe.
   //
@@ -300,7 +300,7 @@ public:
   ZS_CK_INLINE zs::error_result load_json_file(std::string_view filepath, object& output) {
     return load_json_file(filepath, nullptr, output);
   }
- 
+
   ZS_CHECK zs::string get_error() const noexcept;
 
   ZS_CK_INLINE const zs::vector<call_info>& get_call_stack() const noexcept { return _call_stack; }
@@ -313,7 +313,7 @@ public:
     set_error(std::string_view(zs::strprint(_engine, std::forward<Args>(args)...)));
   }
 
-  inline void set_error(std::string_view msg) { 
+  inline void set_error(std::string_view msg) {
     handle_error(zs::errc::unknown, { -1, -1 }, msg, ZS_DEVELOPER_SOURCE_LOCATION());
   }
 

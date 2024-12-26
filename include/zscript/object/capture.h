@@ -21,12 +21,11 @@ public:
   ZS_CK_INLINE object* get_value_ptr() const noexcept { return _ptr; }
   ZS_CK_INLINE const object& get_value() const noexcept { return *_ptr; }
 
-private: 
+private:
   capture(object* ptr) noexcept;
 
   object* _ptr = nullptr;
   object _value;
   bool _is_baked = false;
 };
- 
 } // namespace zs.

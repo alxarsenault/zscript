@@ -303,7 +303,7 @@ public:
   reference_counted_object& operator=(const reference_counted_object&) = delete;
 
   virtual bool release() noexcept override;
-  virtual object clone() const noexcept  =0;
+  virtual object clone() const noexcept = 0;
 
 protected:
   virtual ~reference_counted_object() override;

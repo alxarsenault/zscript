@@ -19,7 +19,7 @@ public:
   ZS_CK_INLINE const char* data() const noexcept { return _str; }
 
   ZS_CHECK object clone() const noexcept override;
-  
+
   ZS_CK_INLINE uint64_t hash() const noexcept {
     if (_hash == 0) {
       update_hash();

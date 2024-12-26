@@ -237,8 +237,7 @@ namespace {
     const zs::object& obj = vm[1];
 
     if (!obj.is_table()) {
-      vm->ZS_VM_ERROR(errc::not_a_table,
-          "Invalid table parameter in zs::get_table_keys(this, table)." );
+      vm->ZS_VM_ERROR(errc::not_a_table, "Invalid table parameter in zs::get_table_keys(this, table).");
       return -1;
     }
 
@@ -430,8 +429,7 @@ namespace {
   int_t zslib_set_delegate_impl(zs::vm_ref vm) {
     const int_t nargs = vm.stack_size();
     if (!zb::is_one_of(nargs, 3, 4)) {
-      vm->ZS_VM_ERROR(errc::invalid_parameter_count,
-          "Invalid parameter count (", nargs,
+      vm->ZS_VM_ERROR(errc::invalid_parameter_count, "Invalid parameter count (", nargs,
           ") in zs::set_delegate(this, table, delegate, var use_default_delegate = null), expected 3 or "
           "4.\n");
 
@@ -442,13 +440,14 @@ namespace {
 
     if (!obj.is_delegable()) {
       vm->ZS_VM_ERROR(errc::not_delegable,
-          "Not a delegable type in zs::set_delegate(this, table, delegate, var use_default_delegate = null)." );
+          "Not a delegable type in zs::set_delegate(this, table, delegate, var use_default_delegate = "
+          "null).");
       return -1;
     }
-    
-    if(  obj.as_delegable().is_locked()) {
+
+    if (obj.as_delegable().is_locked()) {
       vm->ZS_VM_ERROR(errc::not_delegable,
-          "Delegate is locked in zs::set_delegate(this, table, delegate, var use_default_delegate = null)." );
+          "Delegate is locked in zs::set_delegate(this, table, delegate, var use_default_delegate = null).");
       return -1;
     }
 
@@ -468,7 +467,7 @@ namespace {
       else {
         vm->ZS_VM_ERROR(errc::not_a_bool,
             "Invalid bool parameter (use_default_delegate) in zs::set_delegate(this, table, delegate, var "
-            "use_default_delegate = null)." );
+            "use_default_delegate = null).");
         return -1;
       }
     }
@@ -550,7 +549,7 @@ namespace {
 
     return vm.push(vm->get_default_table_delegate());
   }
- 
+
   int_t zslib_create_object_impl(zs::vm_ref vm) {
 
     int_t nargs = vm.stack_size();
@@ -839,7 +838,7 @@ zs::object create_zs_lib(zs::vm_ref vm) {
   //  zs_tbl.emplace("create_mutable_string"_ss, zslib_tostring_impl);
 
   zs_tbl.emplace("is_empty"_ss, zslib_is_empty_impl);
-   zs_tbl.emplace("is_array"_ss, +[](zs::vm_ref vm) -> int_t { return vm.push_bool(vm[1].is_array()); });
+  zs_tbl.emplace("is_array"_ss, +[](zs::vm_ref vm) -> int_t { return vm.push_bool(vm[1].is_array()); });
   zs_tbl.emplace("is_true"_ss, +[](zs::vm_ref vm) -> int_t { return vm.push_bool(vm[1].is_if_true()); });
   zs_tbl.emplace("is_null"_ss, +[](zs::vm_ref vm) -> int_t { return vm.push_bool(vm[1].is_null()); });
   zs_tbl.emplace("is_bool"_ss, +[](zs::vm_ref vm) -> int_t { return vm.push_bool(vm[1].is_bool()); });
@@ -900,7 +899,7 @@ zs::object create_zs_lib(zs::vm_ref vm) {
   zs_tbl.emplace("placeholder"_ss, zs::object((void*)&s_placeholder));
 
   zs_tbl.emplace("contains"_ss, zslib_contains_impl);
-   zs_tbl.emplace("create_object", zslib_create_object_impl);
+  zs_tbl.emplace("create_object", zslib_create_object_impl);
 
   zs_tbl.emplace("stable"_ss, zslib_create_stable_impl);
 

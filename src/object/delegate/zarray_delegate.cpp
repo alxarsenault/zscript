@@ -50,7 +50,7 @@ namespace {
       vm->ZS_VM_ERROR(errc::invalid_parameter_count, "Invalid number of parameter in array_iterator._add.\n");
       return -1;
     }
- 
+
     object it_atom = *ps++;
     if (!it_atom.is_atom()) {
       vm->ZS_VM_ERROR(errc::invalid_parameter_count, "Invalid iterator type in array_iterator._add.\n");
@@ -228,7 +228,6 @@ namespace {
 
   static inline int_t array_copy_impl(zs::vm_ref vm) noexcept {
     ZS_ARRAY_BEGIN_IMPL("copy", 1);
- 
     return vm.push(arr.clone());
   }
 
@@ -241,7 +240,7 @@ namespace {
     ZS_ARRAY_BEGIN_IMPL("end", 1);
     return vm.push(create_array_iterator(vm, arr.size(), arr.data() + arr.size()));
   }
- 
+
   static inline int_t array_is_empty_impl(zs::vm_ref vm) noexcept {
 
     if (vm.stack_size() != 1) {
@@ -262,7 +261,7 @@ namespace {
     }
 
     object& obj = vm->stack()[-2];
-    const   object& value = vm->top();
+    const object& value = vm->top();
     array_object* arr = obj._array;
     arr->resize(value._int);
     return vm.push(obj);
@@ -593,18 +592,17 @@ namespace {
     return vm.push(object::create_none());
   }
 
-static inline int_t array_get_delegate_impl(zs::vm_ref vm) noexcept {
-  const int_t count = vm.stack_size();
-  if (count != 1) {
-    zb::print("Error: math.zmath_random_normal (a, b)");
-    return -1;
-  }
+  static inline int_t array_get_delegate_impl(zs::vm_ref vm) noexcept {
+    const int_t count = vm.stack_size();
+    if (count != 1) {
+      zb::print("Error: math.zmath_random_normal (a, b)");
+      return -1;
+    }
 
-  object& obj = vm[0];
- 
- return vm.push(obj.as_array().get_delegate());
-  
-}
+    object& obj = vm[0];
+
+    return vm.push(obj.as_array().get_delegate());
+  }
   static const std::string_view s_is_number_array = "is_number_array";
   static const std::string_view s_is_string_array = "is_string_array";
   static const std::string_view s_is_float_array = "is_float_array";
@@ -615,9 +613,9 @@ zs::object create_array_default_delegate(zs::engine* eng) {
   object obj = object::create_table(eng);
   zs::table_object& t = obj.as_table();
   t.reserve(30);
-  
+
   t.emplace(_ss("get_delegate"), array_get_delegate_impl);
-  
+
   t["size"] = t["length"] = _nf(array_size_impl);
   t["push"] = _nf(array_push_impl);
   t["capacity"] = _nf(array_capacity_impl);

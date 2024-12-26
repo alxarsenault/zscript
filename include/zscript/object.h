@@ -245,8 +245,8 @@ struct object_base {
   ZS_CK_INLINE_CXPR bool is_struct_instance() const noexcept;
   ZS_CK_INLINE_CXPR bool is_table() const noexcept;
   ZS_CK_INLINE_CXPR bool is_user_data() const noexcept;
-  ZS_CK_INLINE  bool is_user_data(const user_data_content* content) const noexcept;
-  ZS_CK_INLINE  bool is_user_data(const object& uid) const noexcept;
+  ZS_CK_INLINE bool is_user_data(const user_data_content* content) const noexcept;
+  ZS_CK_INLINE bool is_user_data(const object& uid) const noexcept;
   ZS_CK_INLINE_CXPR bool is_closure() const noexcept;
   ZS_CK_INLINE_CXPR bool is_instance() const noexcept;
   ZS_CK_INLINE_CXPR bool is_weak_ref() const noexcept;
@@ -1010,7 +1010,7 @@ public:
   //
 
   inline object& with_flags(object_flags_t flags) noexcept {
-    zb::set_flag(_flags, flags); 
+    zb::set_flag(_flags, flags);
     return *this;
   }
 
@@ -1088,8 +1088,7 @@ public:
   object& with_delegate(object delegate) noexcept;
 
   zs::error_result set_delegate(object delegate) noexcept;
- 
- 
+
   //
   // MARK: Weak reference.
   //
@@ -1432,10 +1431,13 @@ namespace literals {
 
 namespace zs {
 
-   bool object_base::is_user_data(const user_data_content* content) const noexcept { return is_user_data() and as_udata().get_content() == content; }
-  bool object_base::is_user_data(const object& uid) const noexcept { return is_user_data() and as_udata().get_uid() == uid; }
- 
- 
+bool object_base::is_user_data(const user_data_content* content) const noexcept {
+  return is_user_data() and as_udata().get_content() == content;
+}
+
+bool object_base::is_user_data(const object& uid) const noexcept {
+  return is_user_data() and as_udata().get_uid() == uid;
+}
 
 ZS_CXPR object::object(const object& obj) noexcept
     : object_base((const object_base&)obj) {

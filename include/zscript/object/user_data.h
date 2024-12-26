@@ -15,7 +15,7 @@ struct user_data_content {
 class user_data_object final : public zs::delegable_object {
 public:
   ZS_OBJECT_CLASS_COMMON;
-  
+
   ZS_CHECK static user_data_object* create(zs::engine* eng, size_t size);
   ZS_CHECK static user_data_object* create(zs::engine* eng, size_t size, const user_data_content* content);
 
@@ -76,9 +76,8 @@ public:
   ZS_CK_INLINE const T& data_ref() const noexcept {
     return *reinterpret_cast<const T*>(data());
   }
- 
 
-  template<class Object>
+  template <class Object>
   inline void set_uid(Object&& uid) {
     ZS_ASSERT(owns_content());
     _content->uid = std::forward<Object>(uid);
@@ -86,12 +85,11 @@ public:
 
   ZS_CK_INLINE const zs::object& get_uid() const noexcept { return _content->uid; }
 
-  template<class Object>
+  template <class Object>
   inline void set_type_id(Object&& tid) {
     ZS_ASSERT(owns_content());
     _content->type_id = std::forward<Object>(tid);
   }
- 
 
   ZS_CK_INLINE const zs::object& get_type_id() const noexcept { return _content->type_id; }
   ZS_CHECK object clone() const noexcept override;
@@ -112,7 +110,6 @@ public:
 private:
   inline user_data_object(zs::engine* eng) noexcept
       : delegable_object(eng, zs::object_type::k_user_data) {}
-
 
   user_data_content* _content = nullptr;
   uint8_t _data[1];

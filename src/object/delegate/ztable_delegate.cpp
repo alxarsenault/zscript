@@ -37,7 +37,7 @@ namespace {
       vm->ZS_VM_ERROR(errc::invalid_parameter_count, "Invalid number of parameter in table_iterator._add.\n");
       return -1;
     }
- 
+
     object it_atom = *ps++;
     if (!it_atom.is_atom()) {
       vm->ZS_VM_ERROR(errc::invalid_parameter_count, "Invalid iterator type in table_iterator._add.\n");
@@ -178,7 +178,7 @@ namespace {
       return -1;
     }
 
-    const  object& obj = vm->top();
+    const object& obj = vm->top();
     table_object* tbl = obj._table;
     tbl->get_map().clear();
     return 0;
@@ -214,37 +214,36 @@ namespace {
     return vm.push(obj.as_table().contains(vm[1]));
   }
 
-static inline int_t table_set_delegate_impl(zs::vm_ref vm) noexcept {
-  const int_t count = vm.stack_size();
-  if (count != 2) {
-    zb::print("Error: math.zmath_random_normal (a, b)");
-    return -1;
+  static inline int_t table_set_delegate_impl(zs::vm_ref vm) noexcept {
+    const int_t count = vm.stack_size();
+    if (count != 2) {
+      zb::print("Error: math.zmath_random_normal (a, b)");
+      return -1;
+    }
+
+    object& obj = vm->stack()[-2];
+    const object& delegate = vm->top();
+
+    if (ZBASE_UNLIKELY(!(delegate.is_table() or delegate.is_null()))) {
+      return -1;
+    }
+
+    table_object* tbl = obj._table;
+    tbl->set_delegate(delegate);
+    return 0;
   }
 
-  object& obj = vm->stack()[-2];
-  const  object& delegate = vm->top();
+  static inline int_t table_get_delegate_impl(zs::vm_ref vm) noexcept {
+    const int_t count = vm.stack_size();
+    if (count != 1) {
+      zb::print("Error: math.zmath_random_normal (a, b)");
+      return -1;
+    }
 
-  if (ZBASE_UNLIKELY(!(delegate.is_table() or delegate.is_null()))) {
-    return -1;
+    object& obj = vm[0];
+
+    return vm.push(obj.as_table().get_delegate());
   }
-
-  table_object* tbl = obj._table;
-  tbl->set_delegate(delegate);
-  return 0;
-}
-
-static inline int_t table_get_delegate_impl(zs::vm_ref vm) noexcept {
-  const int_t count = vm.stack_size();
-  if (count != 1) {
-    zb::print("Error: math.zmath_random_normal (a, b)");
-    return -1;
-  }
-
-  object& obj = vm[0];
- 
- return vm.push(obj.as_table().get_delegate());
-  
-}
 
   static inline int_t table_optset_impl(zs::vm_ref vm) noexcept {
     const int_t count = vm.stack_size();

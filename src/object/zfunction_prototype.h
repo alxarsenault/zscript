@@ -39,7 +39,7 @@ public:
 
   static constexpr std::array<uint8_t, 4> k_compiled_header = { 'Z', 'S', 'C', 'C' };
 
-   ZB_CHECK static object create(zs::engine* eng);
+  ZB_CHECK static object create(zs::engine* eng);
 
   ZS_CHECK static bool is_compiled_data(zb::byte_view content) noexcept {
     return content.subspan(0, 4) == k_compiled_header;
@@ -65,7 +65,7 @@ public:
   bool is_possible_parameter_count(size_t sz) const noexcept;
   bool is_valid_parameters(zs::vm_ref vm, zb::span<const object> params, int_t& n_type_match) const noexcept;
 
-private: 
+private:
   function_prototype_object(zs::engine* eng);
 
 public:

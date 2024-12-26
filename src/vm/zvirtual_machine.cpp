@@ -74,7 +74,6 @@ enum class runtime_code {
 
   handle_error,
   execute,
-//  delegate_get_type_of
 };
 
 using enum runtime_code;
@@ -412,10 +411,10 @@ void virtual_machine::push_root() { _stack.push(_global_table); }
 void virtual_machine::push(const object& obj) { _stack.push(obj); }
 void virtual_machine::push(object&& obj) { _stack.push(std::move(obj)); }
 
- const object& virtual_machine::top() const noexcept { return _stack.top(); }
- 
+const object& virtual_machine::top() const noexcept { return _stack.top(); }
+
 object virtual_machine::start_delegate_chain(const object& obj) {
-  return obj.is_meta_type() ? obj :  get_delegate(obj);
+  return obj.is_meta_type() ? obj : get_delegate(obj);
 }
 
 object virtual_machine::get(const object& obj, const object& key) {
@@ -1212,60 +1211,60 @@ zs::error_result virtual_machine::copy(const object& obj, object& dest) {
   case k_weak_ref:
     return zs::error_code::unimplemented;
 
-    case object_type::k_long_string:
-      dest = zs::_s(_engine, obj.get_long_string_unchecked());
-      return {};
+  case object_type::k_long_string:
+    dest = zs::_s(_engine, obj.get_long_string_unchecked());
+    return {};
 
-    case k_closure:
-      dest = obj.as_closure().clone();
-      return {};
-      
-    case k_native_closure:
-      dest = obj.as_native_closure().clone();
-      return {};
+  case k_closure:
+    dest = obj.as_closure().clone();
+    return {};
+
+  case k_native_closure:
+    dest = obj.as_native_closure().clone();
+    return {};
 
   case k_user_data:
     if (auto err = unary_delegate_operation(meta_method::mt_copy, obj, dest, 0, errc::success)) {
       return err;
     }
-      
-      if (dest.is_null()) {
-        dest = obj.as_udata().clone();
-      }
+
+    if (dest.is_null()) {
+      dest = obj.as_udata().clone();
+    }
     break;
-      
+
   case k_array:
     if (auto err = unary_delegate_operation(meta_method::mt_copy, obj, dest, 0, errc::success)) {
       return err;
     }
-      
+
     if (dest.is_null()) {
       dest = obj.as_array().clone();
     }
     break;
-      
+
   case k_table:
     if (auto err = unary_delegate_operation(meta_method::mt_copy, obj, dest, 0, errc::success)) {
       return err;
     }
-      
+
     if (dest.is_null()) {
-      dest =  obj.as_table().clone();
+      dest = obj.as_table().clone();
     }
     break;
-      
+
   case k_atom:
     if (auto err = unary_delegate_operation(meta_method::mt_copy, obj, dest, 0, errc::success)) {
       return err;
     }
 
     break;
-      
+
   case k_struct_instance:
     if (auto err = unary_delegate_operation(meta_method::mt_copy, obj, dest, 0, errc::success)) {
       return err;
     }
-      
+
     if (dest.is_null()) {
       dest = obj.as_struct_instance().clone();
     }
@@ -1282,23 +1281,20 @@ zs::error_result virtual_machine::copy(const object& obj, object& dest) {
   return {};
 }
 
+zs::object virtual_machine::get_delegate(const object& obj) {
 
-zs::object virtual_machine::get_delegate(const object& obj ) {
- 
- 
-    if (obj.is_atom()) {
-      zs::object delegate;
-      if(auto err = get_delegated_atom_delegates_table().as_table().get((int_t)obj._ex2_delegated_atom_delegate_id, delegate)) {
-        return nullptr;
-      }
-      
-     return delegate;
+  if (obj.is_atom()) {
+    zs::object delegate;
+    if (auto err = get_delegated_atom_delegates_table().as_table().get(
+            (int_t)obj._ex2_delegated_atom_delegate_id, delegate)) {
+      return nullptr;
     }
 
-  return obj.is_delegable() ? obj.as_delegable().get_delegate() : object::create_null();
- 
-}
+    return delegate;
+  }
 
+  return obj.is_delegable() ? obj.as_delegable().get_delegate() : object::create_null();
+}
 
 zs::error_result virtual_machine::type_of(const object& obj, object& dest) {
   ZS_ASSERT(&obj != &dest);
@@ -2369,7 +2365,7 @@ object virtual_machine::exp(const object& lhs, const object& rhs) {
   }
   return obj;
 }
- 
+
 //
 // MARK: Execute
 //

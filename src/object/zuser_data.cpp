@@ -7,8 +7,8 @@ user_data_object* user_data_object::create(zs::engine* eng, size_t size) {
   zb_placement_new(uobj) user_data_object(eng);
 
   uobj->_content = (user_data_content*)uobj->_data;
-  zb_placement_new(  uobj->_content) user_data_content{};
-  
+  zb_placement_new(uobj->_content) user_data_content{};
+
   return uobj;
 }
 
@@ -25,19 +25,17 @@ user_data_object::~user_data_object() {
   user_data_content content = *_content;
   uint8_t* d = data();
 
-  if(owns) {
+  if (owns) {
     user_data_content* ct = _content;
     ct->~user_data_content();
   }
-  
+
   if (content.release_hook) {
     content.release_hook(_engine, d);
   }
 }
 
-object user_data_object::clone() const noexcept {
-  return object((user_data_object*)this, true);
-}
+object user_data_object::clone() const noexcept { return object((user_data_object*)this, true); }
 
 zs::error_result user_data_object::copy_to_type(void* obj, size_t data_size, std::string_view tid) {
   if (_content->copy_fct) {

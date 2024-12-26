@@ -35,7 +35,7 @@ namespace {
       return -1;
     }
 
-    const  object& obj = vm->top();
+    const object& obj = vm->top();
     table_object* tbl = obj._table;
     return vm.push(tbl->get_map().empty());
   }

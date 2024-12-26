@@ -264,7 +264,7 @@ struct_instance_object* struct_object::create_instance() const noexcept {
 
     switch (sitem.value.get_type()) {
     case k_long_string:
-        ivec[i] =  sitem.value.as_string().clone();
+      ivec[i] = sitem.value.as_string().clone();
       break;
 
     case k_closure:
@@ -273,7 +273,7 @@ struct_instance_object* struct_object::create_instance() const noexcept {
       break;
 
     case k_native_closure:
-        ivec[i] = sitem.value.as_native_closure().clone();
+      ivec[i] = sitem.value.as_native_closure().clone();
       break;
 
     case k_weak_ref:
@@ -281,19 +281,19 @@ struct_instance_object* struct_object::create_instance() const noexcept {
       break;
 
     case k_table:
-        ivec[i] =  sitem.value.as_table().clone();
+      ivec[i] = sitem.value.as_table().clone();
       break;
 
     case k_array:
-                         ivec[i] = sitem.value.as_array().clone();
+      ivec[i] = sitem.value.as_array().clone();
       break;
 
     case k_struct:
-                         ivec[i] =  sitem.value.as_struct().clone();
+      ivec[i] = sitem.value.as_struct().clone();
       break;
 
     case k_struct_instance:
-                         ivec[i] =  sitem.value.as_struct_instance().clone();
+      ivec[i] = sitem.value.as_struct_instance().clone();
       break;
 
     case k_user_data:
@@ -332,7 +332,7 @@ object struct_object::clone() const noexcept {
 
     switch (sitem.value.get_type()) {
     case k_long_string:
-      aitem.value =  sitem.value.as_string().clone();
+      aitem.value = sitem.value.as_string().clone();
       break;
 
     case k_closure:
@@ -341,7 +341,7 @@ object struct_object::clone() const noexcept {
       break;
 
     case k_native_closure:
-      aitem.value =  sitem.value.as_native_closure().clone();
+      aitem.value = sitem.value.as_native_closure().clone();
       break;
 
     case k_weak_ref:
@@ -349,19 +349,19 @@ object struct_object::clone() const noexcept {
       break;
 
     case k_table:
-      aitem.value =  sitem.value.as_table().clone();
+      aitem.value = sitem.value.as_table().clone();
       break;
 
     case k_array:
-      aitem.value =  sitem.value.as_array().clone();
+      aitem.value = sitem.value.as_array().clone();
       break;
 
     case k_struct:
-      aitem.value =  sitem.value.as_struct().clone();
+      aitem.value = sitem.value.as_struct().clone();
       break;
 
     case k_struct_instance:
-      aitem.value =  sitem.value.as_struct_instance().clone();
+      aitem.value = sitem.value.as_struct_instance().clone();
       break;
 
     case k_user_data:
@@ -401,7 +401,7 @@ void struct_object::set_member_doc(const object& name, const object& doc) {
     if (!_doc.as_table().contains(key)) {
       _doc.as_table()[key] = zs::_a(_engine, 0);
     }
- 
+
     _doc.as_table()[key].as_array().push_back(
         zs::_t(_engine, { { zs::_ss("name"), name }, { zs::_ss("description"), doc } }));
   }
@@ -414,7 +414,6 @@ void struct_object::set_member_doc(const object& name, const object& doc) {
 
     _doc.as_table()[key].as_array().push_back(
         zs::_t(_engine, { { zs::_ss("name"), name }, { zs::_ss("description"), doc } }));
- 
   }
   else if (auto it = _methods.find_if([&](const auto& n) { return n.name == name; }); it != _methods.end()) {
 
@@ -423,10 +422,10 @@ void struct_object::set_member_doc(const object& name, const object& doc) {
     if (!_doc.as_table().contains(key)) {
       _doc.as_table()[key] = zs::_a(_engine, 0);
     }
- 
+
     _doc.as_table()[key].as_array().push_back(
         zs::_t(_engine, { { zs::_ss("name"), name }, { zs::_ss("description"), doc } }));
- 
+
     if (it->closure.is_closure()) {
       const auto& param_names = it->closure.as_closure().get_proto()._parameter_names;
 
@@ -447,14 +446,12 @@ void struct_object::set_member_doc(const object& name, const object& doc) {
 
             params.as_array().back().as_table()["mask"] = zs::_s(_engine, ss.str());
           }
-
-         }
+        }
       }
       auto& ff = _doc.as_table()[key].as_array().back();
       ff.as_table()["parameters"] = std::move(params);
     }
-   }
-  
+  }
 }
 
 } // namespace zs.

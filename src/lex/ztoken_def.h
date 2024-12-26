@@ -107,6 +107,7 @@ ZS_DECL_TOKEN(eq) // =
 ZS_DECL_TOKEN(lt_eq) // <=
 ZS_DECL_TOKEN(gt_eq) // >=
 ZS_DECL_TOKEN(eq_eq) // ==
+ZS_DECL_TOKEN(compare) // <=>
 ZS_DECL_TOKEN(three_way_compare) // ===
 ZS_DECL_TOKEN(not_eq) // !=
 ZS_DECL_TOKEN(mod) // %

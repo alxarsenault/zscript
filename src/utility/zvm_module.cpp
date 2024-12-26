@@ -127,7 +127,6 @@ zs::error_result compile_or_load_buffer(
 
     return {};
   }
- 
 
   if (auto err = vm->compile_buffer(
           std::string_view((const char*)content.data(), content.size()), filename, output_closure, false)) {

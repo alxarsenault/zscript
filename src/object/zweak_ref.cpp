@@ -22,7 +22,7 @@ weak_ref_object::~weak_ref_object() {
 object weak_ref_object::get_object() const noexcept { return object(_obj, true); }
 
 object weak_ref_object::clone() const noexcept {
-  if(_obj.is_ref_counted()) {
+  if (_obj.is_ref_counted()) {
     return _obj.as_ref_counted().clone();
   }
   return object(_obj, true);

@@ -69,7 +69,7 @@ object closure_object::clone() const noexcept {
 
 object closure_object::copy_with_binded_this(const zs::object& env) const noexcept {
   object cobj = clone();
-  cobj.as_closure(). _this = env;
+  cobj.as_closure()._this = env;
   return cobj;
 }
 } // namespace zs.

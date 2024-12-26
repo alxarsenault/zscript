@@ -13,8 +13,7 @@ namespace {
 
   namespace mustr {
     inline constexpr object uid = _sv("__mutable_string_object__");
-  inline constexpr object  type_id = _sv("mutable_string");
-
+    inline constexpr object type_id = _sv("mutable_string");
     inline constexpr object reg_id = _sv("__mutable_string_delegate__");
 
     inline zs::error_result validate_index(int_t& index, size_t u32_length) {
@@ -81,7 +80,7 @@ namespace {
       vm->ZS_VM_ERROR(errc::invalid_parameter_count, "Invalid number of parameter in mutable_string._add.\n");
       return -1;
     }
- 
+
     object it_atom = *ps++;
     if (!it_atom.is_atom()) {
       vm->ZS_VM_ERROR(errc::invalid_parameter_count, "Invalid iterator type in mutable_string._add.\n");
@@ -130,7 +129,7 @@ namespace {
       vm->ZS_VM_ERROR(errc::invalid_parameter_count, "Invalid iterator type in mutable_string.++.\n");
       return -1;
     }
- 
+
     object it = create_mutable_string_iterator(vm, mutable_string_iterator_ref(it_atom));
     mutable_string_iterator_ref it_ref(it);
 
@@ -205,7 +204,8 @@ namespace {
 
     tbl.emplace("safe_key", [](vm_ref vm) -> int_t {
       mutable_string_iterator_ref it_ref(vm[0]);
-      return mutable_string::as_mutable_string(vm[1]).is_ptr_in_range(it_ref.ptr()) ? vm.push(it_ref.idx()) : vm.push_null();
+      return mutable_string::as_mutable_string(vm[1]).is_ptr_in_range(it_ref.ptr()) ? vm.push(it_ref.idx())
+                                                                                    : vm.push_null();
     });
 
     tbl.emplace("get_key_if_not", [](vm_ref vm) -> int_t {
@@ -463,31 +463,29 @@ namespace {
     return vm.push(vm[0]);
   }
 
-int_t mutable_string_compare_impl(zs::vm_ref vm) noexcept {
-  zs::parameter_stream ps(vm);
-  
-  mutable_string* mstr = nullptr;
-  ZS_RETURN_IF_ERROR(ps.require<mutable_string_parameter>(mstr), -1);
-  
-  
-  std::string_view rhs_str;
-  ZS_RETURN_IF_ERROR(ps.require<string_parameter>(rhs_str), -1);
-  return vm.push(mstr->compare(rhs_str));
- 
-}
+  int_t mutable_string_compare_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
 
-int_t mutable_string_copy_impl(zs::vm_ref vm) noexcept {
-  zs::parameter_stream ps(vm);
-  
-  const object& mobj = *ps;
-  mutable_string* mstr = nullptr;
-  ZS_RETURN_IF_ERROR(ps.require<mutable_string_parameter>(mstr), -1);
-  
-  object obj = mstr->clone();
-   
-  obj.as_udata().set_delegate(mobj.as_udata().get_delegate(), mobj.as_udata().get_use_default_delegate());
-  return vm.push(obj);
-}
+    mutable_string* mstr = nullptr;
+    ZS_RETURN_IF_ERROR(ps.require<mutable_string_parameter>(mstr), -1);
+
+    std::string_view rhs_str;
+    ZS_RETURN_IF_ERROR(ps.require<string_parameter>(rhs_str), -1);
+    return vm.push(mstr->compare(rhs_str));
+  }
+
+  int_t mutable_string_copy_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+
+    const object& mobj = *ps;
+    mutable_string* mstr = nullptr;
+    ZS_RETURN_IF_ERROR(ps.require<mutable_string_parameter>(mstr), -1);
+
+    object obj = mstr->clone();
+
+    obj.as_udata().set_delegate(mobj.as_udata().get_delegate(), mobj.as_udata().get_use_default_delegate());
+    return vm.push(obj);
+  }
 
   zs::object create_mutable_string_delegate(zs::engine* eng) {
     table_object* tbl = table_object::create(eng);
@@ -515,7 +513,7 @@ int_t mutable_string_copy_impl(zs::vm_ref vm) noexcept {
     tbl->emplace("end"_ss, mutable_string_end_impl);
 
     tbl->set_delegate(object::create_none(), false);
-  
+
     return object(tbl, false);
   }
 
@@ -525,8 +523,6 @@ const zs::object& get_mutable_string_delegate(zs::engine* eng) {
   object& obj = eng->get_registry_table_object()[mustr::reg_id];
   return obj.is_table() ? obj : (obj = create_mutable_string_delegate(eng));
 }
-
-  
 
 zs::error_result mutable_string_parameter::parse(
     zs::parameter_stream& s, bool output_error, mutable_string*& value) {
@@ -552,7 +548,6 @@ zs::error_result mutable_string_parameter::parse(
   return zs::errc::invalid_parameter_type;
 }
 
-
 inline constexpr user_data_content k_mutable_string_udata_content
     = { [](zs::engine* eng, zs::raw_pointer_t ptr) { ((mutable_string*)ptr)->~mutable_string(); }, nullptr,
         [](const zs::object_base& obj, std::ostream& stream) -> error_result {
@@ -560,22 +555,21 @@ inline constexpr user_data_content k_mutable_string_udata_content
           return {};
         },
         mustr::uid, mustr::type_id };
-  
 
 template <class... Args>
 inline object create_mutable_string_impl(zs::engine* eng, Args&&... args) {
-  user_data_object* uobj = user_data_object::create(eng, sizeof(mutable_string), &k_mutable_string_udata_content);
+  user_data_object* uobj
+      = user_data_object::create(eng, sizeof(mutable_string), &k_mutable_string_udata_content);
   uobj->construct<mutable_string>(std::forward<Args>(args)..., eng);
   uobj->set_delegate(get_mutable_string_delegate(eng), false);
   return zs::object(uobj, false);
 }
 
-object mutable_string:: clone() const noexcept {
-  
+object mutable_string::clone() const noexcept {
+
   object obj = create_mutable_string_impl(this->get_allocator().get_engine(), *this);
   return obj;
 }
-
 
 mutable_string& mutable_string::as_mutable_string(const object& obj) {
   return obj.as_udata().data_ref<mutable_string>();
@@ -584,7 +578,7 @@ mutable_string& mutable_string::as_mutable_string(const object& obj) {
 bool mutable_string::is_mutable_string(const object_base& obj) noexcept {
   return obj.is_user_data(&k_mutable_string_udata_content);
 }
- 
+
 object mutable_string::create(zs::vm_ref vm) noexcept { return create_mutable_string_impl(vm.get_engine()); }
 
 object mutable_string::create(zs::vm_ref vm, size_t n) noexcept {
@@ -610,7 +604,7 @@ int_t vm_create_mutable_string(zs::vm_ref vm) {
   if (std::string_view svalue; !ps.optional<string_parameter>(svalue)) {
     return vm.push(mutable_string::create(vm, svalue));
   }
-  
+
   if (int_t sz = 0; !ps.optional<integer_parameter>(sz)) {
     return vm.push(mutable_string::create(vm, sz));
   }
@@ -621,7 +615,6 @@ int_t vm_create_mutable_string(zs::vm_ref vm) {
 
   return vm.push(mutable_string::create(vm, ""));
 }
-
 
 // vm[0] should be the mutable string.
 // vm[1] should be the key.
@@ -647,6 +640,5 @@ int_t mutable_string_meta_get_impl(zs::vm_ref vm) noexcept {
 
   return vm.push(mustr::u8_to_char_obj(mstr->data() + u8_index));
 }
- 
 
 } // namespace zs.

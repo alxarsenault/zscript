@@ -135,7 +135,6 @@
   /* Others */                       \
   X(mt_next, "__next")               \
   X(mt_call, "__call")               \
-  X(mt_cloned, "__cloned")           \
   X(mt_delete_slot, "__delete_slot")
 
 namespace zs {
@@ -144,14 +143,18 @@ namespace zs {
 // MARK: Forward declarations
 //
 
-template <class T>
-class allocator;
+enum class object_type : uint8_t;
+enum class object_type_mask : uint32_t;
+enum class exposed_object_type : uint16_t;
+enum class atom_type : uint8_t;
+enum class meta_method : uint32_t;
+enum class object_flags_t : uint8_t;
+enum class delegate_flags_t : uint8_t;
+enum class variable_attribute_t : uint8_t;
 
 struct internal;
 struct object_base;
 class object;
-using var = object;
-
 class engine;
 class virtual_machine;
 class vm;
@@ -172,7 +175,12 @@ class user_data_object;
 class reference_counted_object;
 class capture;
 struct user_data_content;
+struct variable_type_info;
 
+template <class T>
+class allocator;
+
+using var = object;
 using i8 = int8_t;
 using u8 = uint8_t;
 using i16 = int16_t;
@@ -194,9 +202,7 @@ using int_t = int64_t;
 using uint_t = uint64_t;
 using float_t = double;
 using raw_pointer_t = void*;
-
 using function_t = int_t (*)(zs::vm_ref);
-
 using alloc_info_t = uint32_t;
 
 /// Allocate function.
@@ -219,20 +225,19 @@ using native_closure_release_hook_t = void (*)(zs::engine*, zs::raw_pointer_t);
 using user_data_release_hook_t = void (*)(zs::engine*, zs::raw_pointer_t);
 using release_hook_t = int_t (*)(raw_pointer_t, int_t);
 
-//
+///
 using stream_getter_t = std::ostream& (*)(zs::engine*, zs::raw_pointer_t);
 
-//
+///
 using write_function_t = zs::error_result (*)(const uint8_t*, size_t size, void* data);
 
-//
+///
 using copy_user_data_to_type_t = zs::error_result (*)(void*, size_t, std::string_view, void* data);
 
-//
+///
 using to_string_callback_t = zs::error_result (*)(const zs::object_base&, std::ostream&);
 
 ///
-
 using engine_initializer_t = zs::error_result (*)(zs::engine*);
 
 //
@@ -259,70 +264,6 @@ struct config_t {
 
 //
 // MARK: Constants
-//
-
-///
-enum class object_flags_t : uint8_t { //
-  f_none,
-  f_enum_table = 2,
-  f_meta_argument = 4,
-  f_char = 8
-};
-
-//ZBASE_ENUM_CLASS_FLAGS(object_flags_t);
- 
-///
-enum class delegate_flags_t : uint8_t { //
-  df_none,
-  df_use_default = 1,
-  df_locked = 2
-};
-
-//ZBASE_ENUM_CLASS_FLAGS(delegate_flags_t);
-
-///
-enum class variable_attribute_t : uint8_t {
-  va_none,
-  va_const = 1,
-  va_static = 2,
-  va_private = 4,
-  va_mutable = 8,
-  va_doc = 16
-};
-
-// ZBASE_ENUM_CLASS_FLAGS(variable_attribute_t);
-
-struct variable_type_info {
-  using enum variable_attribute_t;
-
-  uint64_t custom_mask = 0;
-  uint32_t mask = 0;
-  variable_attribute_t flags = va_none;
-
-  ZS_CK_INLINE_CXPR bool has_mask() const noexcept { return mask != 0 or custom_mask != 0; }
-  ZS_CK_INLINE_CXPR bool has_custom_mask() const noexcept { return custom_mask != 0; }
-
-  ZS_INLINE_CXPR void set_const(bool value) noexcept { zb::set_flag<va_const>(flags, value); }
-  ZS_INLINE_CXPR void set_static(bool value) noexcept { zb::set_flag<va_static>(flags, value); }
-  ZS_INLINE_CXPR void set_private(bool value) noexcept { zb::set_flag<va_private>(flags, value); }
-  ZS_INLINE_CXPR void set_mutable(bool value) noexcept { zb::set_flag<va_mutable>(flags, value); }
-  ZS_INLINE_CXPR void set_doc(bool value) noexcept { zb::set_flag<va_doc>(flags, value); }
-
-  ZS_INLINE_CXPR void set_const() noexcept { zb::set_flag<va_const>(flags); }
-  ZS_INLINE_CXPR void set_static() noexcept { zb::set_flag<va_static>(flags); }
-  ZS_INLINE_CXPR void set_private() noexcept { zb::set_flag<va_private>(flags); }
-  ZS_INLINE_CXPR void set_mutable() noexcept { zb::set_flag<va_mutable>(flags); }
-  ZS_INLINE_CXPR void set_doc() noexcept { zb::set_flag<va_doc>(flags); }
-
-  ZS_CK_INLINE_CXPR bool is_const() const noexcept { return zb::has_flag<va_const>(flags); }
-  ZS_CK_INLINE_CXPR bool is_static() const noexcept { return zb::has_flag<va_static>(flags); }
-  ZS_CK_INLINE_CXPR bool is_private() const noexcept { return zb::has_flag<va_private>(flags); }
-  ZS_CK_INLINE_CXPR bool is_mutable() const noexcept { return zb::has_flag<va_mutable>(flags); }
-  ZS_CK_INLINE_CXPR bool is_doc() const noexcept { return zb::has_flag<va_doc>(flags); }
-};
-
-//
-// MARK: - Object
 //
 
 /// Atom types.
@@ -353,7 +294,61 @@ enum class meta_method : uint32_t {
 #undef _X
 };
 
-static_assert((uint8_t)object_type::k_user_data < 32, "object_type maximum value should remain under 32");
+static_assert(zb::enum_count<zs::object_type>() < 32, "object_type maximum value should remain under 32");
+
+///
+enum class object_flags_t : uint8_t { //
+  f_none,
+  f_enum_table = 2,
+  f_meta_argument = 4,
+  f_char = 8
+};
+
+///
+enum class delegate_flags_t : uint8_t { //
+  df_none,
+  df_use_default = 1,
+  df_locked = 2
+};
+
+///
+enum class variable_attribute_t : uint8_t {
+  va_none,
+  va_const = 1,
+  va_static = 2,
+  va_private = 4,
+  va_mutable = 8,
+  va_doc = 16
+};
+
+struct variable_type_info {
+  using enum variable_attribute_t;
+
+  uint64_t custom_mask = 0;
+  uint32_t mask = 0;
+  variable_attribute_t flags = va_none;
+
+  ZS_CK_INLINE_CXPR bool has_mask() const noexcept { return mask != 0 or custom_mask != 0; }
+  ZS_CK_INLINE_CXPR bool has_custom_mask() const noexcept { return custom_mask != 0; }
+
+  ZS_INLINE_CXPR void set_const(bool value) noexcept { zb::set_flag<va_const>(flags, value); }
+  ZS_INLINE_CXPR void set_static(bool value) noexcept { zb::set_flag<va_static>(flags, value); }
+  ZS_INLINE_CXPR void set_private(bool value) noexcept { zb::set_flag<va_private>(flags, value); }
+  ZS_INLINE_CXPR void set_mutable(bool value) noexcept { zb::set_flag<va_mutable>(flags, value); }
+  ZS_INLINE_CXPR void set_doc(bool value) noexcept { zb::set_flag<va_doc>(flags, value); }
+
+  ZS_INLINE_CXPR void set_const() noexcept { zb::set_flag<va_const>(flags); }
+  ZS_INLINE_CXPR void set_static() noexcept { zb::set_flag<va_static>(flags); }
+  ZS_INLINE_CXPR void set_private() noexcept { zb::set_flag<va_private>(flags); }
+  ZS_INLINE_CXPR void set_mutable() noexcept { zb::set_flag<va_mutable>(flags); }
+  ZS_INLINE_CXPR void set_doc() noexcept { zb::set_flag<va_doc>(flags); }
+
+  ZS_CK_INLINE_CXPR bool is_const() const noexcept { return zb::has_flag<va_const>(flags); }
+  ZS_CK_INLINE_CXPR bool is_static() const noexcept { return zb::has_flag<va_static>(flags); }
+  ZS_CK_INLINE_CXPR bool is_private() const noexcept { return zb::has_flag<va_private>(flags); }
+  ZS_CK_INLINE_CXPR bool is_mutable() const noexcept { return zb::has_flag<va_mutable>(flags); }
+  ZS_CK_INLINE_CXPR bool is_doc() const noexcept { return zb::has_flag<va_doc>(flags); }
+};
 
 /// Get the object_type name.
 ZB_CK_INLINE_CXPR const char* get_object_type_name(object_type t) noexcept {

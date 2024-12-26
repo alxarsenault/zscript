@@ -50,7 +50,10 @@ public:
   }
 
   ZS_CK_INLINE bool has_delegate() const noexcept { return _delegate.is_table(); }
-  ZS_CK_INLINE bool is_locked() const noexcept { return zb::has_flag( _delegate_flags, delegate_flags_t::df_locked); }
+
+  ZS_CK_INLINE bool is_locked() const noexcept {
+    return zb::has_flag(_delegate_flags, delegate_flags_t::df_locked);
+  }
 
   ZS_CK_INLINE zs::object& get_delegate() noexcept { return _delegate; }
   ZS_CK_INLINE const zs::object& get_delegate() const noexcept { return _delegate; }
@@ -58,16 +61,19 @@ public:
   ZS_INLINE void set_use_default_delegate(bool use_default) noexcept {
     zb::set_flag(_delegate_flags, delegate_flags_t::df_use_default, use_default);
   }
+
   ZS_INLINE void set_locked(bool locked) noexcept {
     zb::set_flag(_delegate_flags, delegate_flags_t::df_locked, locked);
   }
 
-  ZS_CK_INLINE bool get_use_default_delegate() const noexcept { return zb::has_flag(_delegate_flags, delegate_flags_t::df_use_default); }
+  ZS_CK_INLINE bool get_use_default_delegate() const noexcept {
+    return zb::has_flag(_delegate_flags, delegate_flags_t::df_use_default);
+  }
 
 protected:
   zs::object _delegate;
   delegate_flags_t _delegate_flags = delegate_flags_t::df_use_default;
-  
-    void copy_delegate(object& obj) const noexcept ;
+
+  void copy_delegate(object& obj) const noexcept;
 };
 } // namespace zs.

@@ -3,9 +3,9 @@
 
 namespace zs {
 
-void delegable_object:: copy_delegate(object& obj) const noexcept {
- obj.as_delegable()._delegate = _delegate;
- obj.as_delegable()._delegate_flags = _delegate_flags;
+void delegable_object::copy_delegate(object& obj) const noexcept {
+  obj.as_delegable()._delegate = _delegate;
+  obj.as_delegable()._delegate_flags = _delegate_flags;
 }
 
 struct object::helper {
@@ -436,14 +436,13 @@ zs::error_result object::set_delegate(object delegate) noexcept {
     return zs::errc::inaccessible;
   }
 
-  if (ZBASE_UNLIKELY(!delegate.is_type(k_null,k_none, k_table))) {
+  if (ZBASE_UNLIKELY(!delegate.is_type(k_null, k_none, k_table))) {
     return errc::invalid_delegate_type;
   }
 
   as_delegable().set_delegate(delegate);
   return {};
 }
-  
 
 object object::get_weak_ref() const noexcept {
   if (is_ref_counted() and !is_weak_ref()) {

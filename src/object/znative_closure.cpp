@@ -38,7 +38,7 @@ int_t native_closure_object::call(vm_ref vm) {
   }
 }
 
-object  native_closure_object::clone() const noexcept{
+object native_closure_object::clone() const noexcept {
 
   if (_callback.ctype == closure_type::obj) {
     native_closure_object* nc

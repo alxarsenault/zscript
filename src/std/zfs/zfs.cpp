@@ -421,10 +421,7 @@ namespace {
     return vm.push(arr_obj);
   }
 
-
-static int_t zfs_is_path_impl(zs::vm_ref vm) {
-  return vm.push(zs::is_path(vm[1]));
-}
+  static int_t zfs_is_path_impl(zs::vm_ref vm) { return vm.push(zs::is_path(vm[1])); }
 } // namespace.
 
 zs::object create_fs_lib(zs::vm_ref vm) {

@@ -26,22 +26,11 @@ ZS_DECL_RT_ACTION(call_native_function, cobjref_t obj, zs::parameter_list params
 
 // clang-format on
 
-// ZS_DECL_RT_ACTION(invalid_get, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(invalid_set, objref_t obj, cobjref_t key, cobjref_t value);
-
-// String.
-//ZS_DECL_RT_ACTION(delegate_get_type_of, cobjref_t obj, cobjref_t delegate_obj, objref_t dest);
-// ZS_DECL_RT_ACTION(delegate_get, cobjref_t obj, cobjref_t delegate_obj, cobjref_t key, objref_t dest);
-//  ZS_DECL_RT_ACTION(table_get, cobjref_t obj, cobjref_t key, objref_t dest);
-// ZS_DECL_RT_ACTION(table_contains, cobjref_t obj, cobjref_t key, objref_t dest);
-//  ZS_DECL_RT_ACTION(array_get, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(array_set, objref_t obj, cobjref_t key, cobjref_t value);
-
-// ZS_DECL_RT_ACTION(weak_get, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(weak_set, objref_t obj, cobjref_t key, cobjref_t value);
 
 // Struct.
-// ZS_DECL_RT_ACTION(struct_get, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(struct_set, objref_t obj, cobjref_t key, cobjref_t value);
 ZS_DECL_RT_ACTION(struct_new_slot, objref_t obj, cobjref_t key, cobjref_t value, uint32_t mask,
     bool is_static, bool is_private, bool is_const);
@@ -51,9 +40,6 @@ ZS_DECL_RT_ACTION(struct_new_constructor, objref_t obj, cobjref_t value);
 ZS_DECL_RT_ACTION(struct_new_default_constructor, objref_t obj);
 ZS_DECL_RT_ACTION(struct_new_method, objref_t obj, cobjref_t closure, variable_attribute_t decl_flags);
 ZS_DECL_RT_ACTION(struct_call_create, cobjref_t obj, int_t n_params, int_t stack_base, objref_t ret_value);
-
-// Struct instance.
-// ZS_DECL_RT_ACTION(struct_instance_get, cobjref_t obj, cobjref_t key, objref_t dest);
 ZS_DECL_RT_ACTION(struct_instance_set, objref_t obj, cobjref_t key, cobjref_t value);
 
 ZS_DECL_RT_ACTION(delegate_set, objref_t obj, objref_t delegate_obj, cobjref_t key, cobjref_t value);

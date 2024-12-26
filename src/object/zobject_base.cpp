@@ -6,7 +6,7 @@ namespace zs {
 
 zs::error_result object_base::get_bool(bool_t& res) const noexcept {
   if (_type == k_bool) {
-     res = (bool_t)_int;
+    res = (bool_t)_int;
     return {};
   }
 

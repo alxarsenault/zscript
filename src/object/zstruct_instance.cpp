@@ -236,7 +236,7 @@ zs::error_result struct_instance_object::set(
         data()[i] = obj;
         return {};
       }
- 
+
       return zs::errc::inaccessible_private;
     }
   }
@@ -285,5 +285,6 @@ object struct_instance_object::clone() const noexcept {
   using enum object_type;
   struct_instance_object* sobj = (struct_instance_object*)this;
   sobj->retain();
-  return object(sobj, false);}
+  return object(sobj, false);
+}
 } // namespace zs.

@@ -191,9 +191,8 @@ public:
     return map_type::erase(zs::_s(get_engine(), s));
   }
 
-
   ZS_CHECK object clone() const noexcept override;
-  
+
   ZS_CK_INLINE map_type& get_map() noexcept { return *this; }
   ZS_CK_INLINE const map_type& get_map() const noexcept { return *this; }
 

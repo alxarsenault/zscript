@@ -904,7 +904,7 @@ namespace lex_detail {
     zb::eternal::impl::str_hash("next"), //
     zb::eternal::impl::str_hash("minus"), //
     zb::eternal::impl::str_hash("delete_slot"), //
-    zb::eternal::impl::str_hash("cloned") };
+    zb::eternal::impl::str_hash("copy") };
 
   inline constexpr std::array k_meta_strings = { "call", //
     "tostring", //
@@ -913,7 +913,7 @@ namespace lex_detail {
     "next", //
     "minus", //
     "delete_slot", //
-    "cloned" };
+    "copy" };
 
   inline constexpr std::array k_metas = { zs::constants::k_mt_call_string, //
     zs::constants::k_mt_tostring_string, //
@@ -922,7 +922,7 @@ namespace lex_detail {
     zs::constants::k_mt_next_string, //
     zs::constants::k_mt_unary_minus_string, //
     zs::constants::k_mt_delete_slot_string, //
-    zs::constants::k_mt_cloned_string };
+    zs::constants::k_mt_copy_string };
 } // namespace lex_detail.
 
 void lexer::helper::parse_operator(lexer* l) {
@@ -1021,6 +1021,10 @@ void lexer::helper::parse_operator(lexer* l) {
     break;
   case tok_decr:
     operator_value = zs::constants::k_mt_pre_decr_string;
+    break;
+
+  case tok_compare:
+    operator_value = zs::constants::k_mt_compare_string;
     break;
 
   case tok_identifier: {
@@ -1380,12 +1384,16 @@ token_type lexer::lex(bool keep_endl) {
       }
 
       // <<=
-      if (sz >= 3 && c1 == '<' && c2 == '=') {
-        return set_token_and_next(tok_lshift_eq, 3);
+      if (sz >= 3) {
+        if (c1 == '<' && c2 == '=') {
+          return set_token_and_next(tok_lshift_eq, 3);
+        }
+        else if (c1 == '=' && c2 == '>') {
+          return set_token_and_next(tok_compare, 3);
+        }
       }
 
       if (sz >= 2) {
-
         // <=
         if (c1 == '=') {
           return set_token_and_next(tok_lt_eq, 2);

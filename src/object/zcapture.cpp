@@ -19,12 +19,11 @@ capture::capture(object* ptr) noexcept
 capture& capture::as_capture(const object_base& obj) { return obj.as_udata().data_ref<capture>(); }
 
 bool capture::is_capture(const object_base& obj) noexcept {
-  return obj.is_user_data(&k_capture_udata_content); 
+  return obj.is_user_data(&k_capture_udata_content);
 }
 
 object capture::create(zs::engine* eng, object* ptr) {
-  
-  
+
   if (user_data_object* uobj = user_data_object::create(eng, sizeof(capture), &k_capture_udata_content)) {
     zb_placement_new((void*)uobj->data()) capture(ptr);
     uobj->set_delegate(object::create_none(), false);
@@ -42,5 +41,5 @@ void capture::bake() {
   _ptr = &_value;
   _is_baked = true;
 }
- 
+
 } // namespace zs.

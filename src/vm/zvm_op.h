@@ -138,7 +138,7 @@ zs::error_code virtual_machine::exec_op<opcode::op_get>(
   if (auto err = this->get(tbl, key, dst)) {
 
     if (err == zs::error_code::not_found) {
-      if ((inst.flags & get_op_flags_t::gf_look_in_root) != 0) {
+      if (zb::has_flag(inst.flags, get_op_flags_t::gf_look_in_root)) {
         // TODO: Use closure's root.
         if (auto err = this->get(_global_table, key, dst)) {
           zb::print("-------dsljkdjjksadl", key);
@@ -982,7 +982,7 @@ zs::error_code virtual_machine::exec_op<op_get_call>(zs::instruction_iterator& i
   object fct;
 
   if (auto get_err = this->get(tbl, key, fct);
-      get_err == zs::error_code::not_found and (inst.flags & get_op_flags_t::gf_look_in_root) != 0) {
+      get_err == zs::error_code::not_found and zb::has_flag(inst.flags, get_op_flags_t::gf_look_in_root)) {
     // TODO: Use closure's root.
     if (auto err = this->get(_global_table, key, fct)) {
       zb::print("-------dsljkdjjksadl", key);
@@ -1145,21 +1145,48 @@ zs::error_code virtual_machine::exec_op<opcode::op_cmp>(
   //  zb::print("op_cmp", inst.target_idx, inst.lhs_idx, inst.rhs_idx, _stack[inst.lhs_idx] ,
   //  _stack[inst.rhs_idx]);
   switch (inst.cmp_op) {
-  case compare_op::lt:
-    _stack[inst.target_idx] = _stack[inst.lhs_idx] < _stack[inst.rhs_idx];
-    break;
+  case compare_op::lt: {
+    object result;
+    if (auto err = compare(result, _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
+      return err;
+    }
 
-  case compare_op::gt:
-    _stack[inst.target_idx] = _stack[inst.lhs_idx] > _stack[inst.rhs_idx];
+    _stack[inst.target_idx] = result._int == -1;
     break;
+  }
 
-  case compare_op::le:
-    _stack[inst.target_idx] = _stack[inst.lhs_idx] <= _stack[inst.rhs_idx];
-    break;
+  case compare_op::gt: {
+    object result;
+    if (auto err = compare(result, _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
+      return err;
+    }
 
-  case compare_op::ge:
-    _stack[inst.target_idx] = _stack[inst.lhs_idx] >= _stack[inst.rhs_idx];
+    _stack[inst.target_idx] = result._int == 1;
     break;
+  }
+
+  case compare_op::le: {
+    object result;
+    if (auto err = compare(result, _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
+      return err;
+    }
+
+    _stack[inst.target_idx] = result._int <= 0;
+    break;
+  }
+
+  case compare_op::ge: {
+    object result;
+    if (auto err = compare(result, _stack[inst.lhs_idx], _stack[inst.rhs_idx])) {
+      return err;
+    }
+
+    _stack[inst.target_idx] = result._int >= 0;
+    break;
+  }
+
+  case compare_op::compare:
+    return compare(_stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx]);
 
   case compare_op::tw:
     _stack[inst.target_idx] = _stack[inst.lhs_idx].strict_equal(_stack[inst.rhs_idx]);
@@ -1173,9 +1200,6 @@ zs::error_code virtual_machine::exec_op<opcode::op_cmp>(
     _stack[inst.target_idx] = _stack[inst.lhs_idx].strict_equal(_stack[inst.rhs_idx]);
     break;
   }
-
-  //  zb::print("op_cmp_after", _stack[inst.target_idx], _stack[inst.lhs_idx], _stack[inst.rhs_idx],
-  //  ZBASE_VNAME(inst.target_idx), ZBASE_VNAME(inst.lhs_idx),ZBASE_VNAME(inst.rhs_idx));
 
   return zs::error_code::success;
 }

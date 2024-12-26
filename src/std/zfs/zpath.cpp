@@ -2015,7 +2015,7 @@ namespace {
       vm->ZS_VM_ERROR(errc::invalid_parameter_count, "Invalid number of parameter in mutable_string._add.\n");
       return -1;
     }
- 
+
     object it_atom = *ps++;
     if (!it_atom.is_atom()) {
       vm->ZS_VM_ERROR(errc::invalid_parameter_count, "Invalid iterator type in mutable_string._add.\n");
@@ -2140,7 +2140,8 @@ namespace {
 
     tbl.emplace("safe_key", [](vm_ref vm) -> int_t {
       path_iterator_ref it_ref(vm[0]);
-      return mutable_string::as_mutable_string(vm[1]).is_ptr_in_range(it_ref.ptr()) ? vm.push(it_ref.index) : vm.push_null();
+      return mutable_string::as_mutable_string(vm[1]).is_ptr_in_range(it_ref.ptr()) ? vm.push(it_ref.index)
+                                                                                    : vm.push_null();
     });
 
     tbl.emplace("get_key_if_not", [](vm_ref vm) -> int_t {
@@ -2157,7 +2158,7 @@ namespace {
   }
 
   object create_path_iterator(zs::vm_ref vm, int_t index, const char* ptr) {
- 
+
     if (object& obj = vm->get_delegated_atom_delegates_table()
                           .as_table()[(int_t)constants::k_atom_path_iterator_delegate_id];
         !obj.is_table()) {
@@ -2278,23 +2279,25 @@ namespace {
 
 } // namespace.
 
-bool is_path(const object& obj) noexcept { 
-  if(!mutable_string::is_mutable_string(obj)) {
+bool is_path(const object& obj) noexcept {
+  if (!mutable_string::is_mutable_string(obj)) {
     return false;
   }
 
-  zs::object& pdelegate = get_path_delegate(mutable_string::as_mutable_string(obj).get_allocator().get_engine());
+  zs::object& pdelegate
+      = get_path_delegate(mutable_string::as_mutable_string(obj).get_allocator().get_engine());
   object delegate = obj.as_udata().get_delegate();
-  while(delegate.is_table()) {
-    
-    if(delegate == pdelegate) {
+
+  while (delegate.is_table()) {
+
+    if (delegate._table == pdelegate._table) {
       return true;
     }
-   }
-  
-  
+
+    delegate = delegate.as_table().get_delegate();
+  }
+
   return false;
-  
 }
 
 mutable_string& get_path(const object& obj) noexcept { return obj.as_udata().data_ref<mutable_string>(); }

@@ -78,7 +78,7 @@ zs::error_result table_object::serialize_to_json(zs::engine* eng, std::ostream& 
       stream << "<RECURSION>";
     }
     else {
-       zs::serialize_to_json(eng, stream, it.first, idt);
+      zs::serialize_to_json(eng, stream, it.first, idt);
     }
 
     stream << ": ";
@@ -87,7 +87,7 @@ zs::error_result table_object::serialize_to_json(zs::engine* eng, std::ostream& 
       stream << "<RECURSION>";
     }
     else {
-       zs::serialize_to_json(eng, stream, it.second, idt);
+      zs::serialize_to_json(eng, stream, it.second, idt);
     }
 
     stream << ((++count == sz) ? "\n" : ",\n");

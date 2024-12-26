@@ -119,7 +119,7 @@ public:
   const zs::object* get_meta_method(const object& name) const noexcept;
 
   ZS_CHECK object clone() const noexcept override;
-  
+
   inline zb::span<struct_method> get_methods() noexcept;
   inline zb::span<const struct_method> get_methods() const noexcept;
 
@@ -183,7 +183,7 @@ public:
 
   ZS_CHECK struct_instance_object* create_instance() const noexcept;
   ZS_CHECK object clone() const noexcept override;
-  
+
   using method_vector = zs::small_vector<struct_method, 4>;
   ZS_CK_INLINE method_vector& get_methods() noexcept { return _methods; }
   ZS_CK_INLINE const method_vector& get_methods() const noexcept { return _methods; }

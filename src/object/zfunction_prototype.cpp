@@ -367,7 +367,7 @@ function_prototype_object::function_prototype_object(zs::engine* eng)
 object function_prototype_object::create(zs::engine* eng) {
   if (user_data_object* uobj
       = user_data_object::create(eng, sizeof(function_prototype_object), &k_fpo_udata_content)) {
- 
+
     zb_placement_new((void*)uobj->data()) function_prototype_object(eng);
 
     uobj->set_delegate(object::create_none(), false);

@@ -659,6 +659,10 @@ zs::error_result jit_compiler::parse<p_eq_compare>() {
       ZS_COMPILER_CMP_OP(op_ne, op1, op2, false);
     } break;
 
+    case tok_compare: {
+      ZS_COMPILER_CMP_OP(op_cmp, compare_op::compare, op1, op2);
+    } break;
+
     case tok_three_way_compare: {
       ZS_COMPILER_CMP_OP(op_cmp, compare_op::tw, op1, op2);
     } break;

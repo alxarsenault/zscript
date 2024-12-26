@@ -3,8 +3,7 @@
 namespace zs {
 array_object::array_object(zs::engine* eng) noexcept
     : delegable_object(eng, zs::object_type::k_array)
-    , vector_type(zs::allocator<object>(eng, memory_tag::nt_array)) {
- }
+    , vector_type(zs::allocator<object>(eng, memory_tag::nt_array)) {}
 
 array_object* array_object::create(zs::engine* eng, int_t sz) noexcept {
   array_object* arr = zs_new<memory_tag::nt_array, array_object>(eng, eng);
@@ -112,7 +111,7 @@ zs::error_result array_object::push(object&& obj) noexcept {
 object array_object::clone() const noexcept {
   array_object* arr = array_object::create(reference_counted_object::_engine, 0);
   ((vector_type&)*arr) = *this;
-  
+
   object obj(arr, false);
   copy_delegate(obj);
   return obj;

@@ -29,7 +29,7 @@
 
 ZBASE_BEGIN_NAMESPACE
 
-template <class _FlagType >
+template <class _FlagType>
 inline constexpr bool has_flag(_FlagType flags, _FlagType flag_to_verity) noexcept {
   using type = zb::underlying_type_t<_FlagType>;
   return ((type(flags) & (type)flag_to_verity) != (type)0);
@@ -41,55 +41,51 @@ inline constexpr bool has_flag(_FlagType flags) noexcept {
   return ((type(flags) & (type)FlagToVerity) != (type)0);
 }
 
-////
-////
-////
-////  }
-////  else {
-//    return ((flags & flag_to_verity) != 0);
-////  }
-
 template <class _FlagType>
-inline constexpr void set_flag(_FlagType& flags, _FlagType flag_to_set, bool value) noexcept {
+inline constexpr _FlagType& set_flag(_FlagType& flags, _FlagType flag_to_set, bool value) noexcept {
   using type = zb::underlying_type_t<_FlagType>;
 
   if (value) {
     flags = (_FlagType)((type)flags | (type)flag_to_set);
-    return;
+    return flags;
   }
 
   flags = (_FlagType)((type)flags & ~(type)flag_to_set);
+  return flags;
 }
 
 template <class _FlagType>
-inline constexpr void set_flag(_FlagType& flags, _FlagType flag_to_set) noexcept {
+inline constexpr _FlagType& set_flag(_FlagType& flags, _FlagType flag_to_set) noexcept {
   using type = zb::underlying_type_t<_FlagType>;
   flags = (_FlagType)((type)flags | (type)flag_to_set);
+  return flags;
 }
 
 template <class _FlagType>
-inline constexpr void remove_flag(_FlagType& flags, _FlagType flag_to_remove) noexcept {
+inline constexpr _FlagType& remove_flag(_FlagType& flags, _FlagType flag_to_remove) noexcept {
   using type = zb::underlying_type_t<_FlagType>;
   flags = (_FlagType)((type)flags & ~(type)flag_to_remove);
+  return flags;
 }
 
 template <auto FlagToSet, class _FlagType = decltype(FlagToSet)>
-inline constexpr void set_flag(_FlagType& flags, bool value) noexcept {
+inline constexpr _FlagType& set_flag(_FlagType& flags, bool value) noexcept {
   using type = zb::underlying_type_t<_FlagType>;
 
   if (value) {
     flags = (_FlagType)((type)flags | (type)FlagToSet);
-    return;
+    return flags;
   }
 
   flags = (_FlagType)((type)flags & ~(type)FlagToSet);
+  return flags;
 }
 
 template <auto FlagToSet, class _FlagType = decltype(FlagToSet)>
-inline constexpr void set_flag(_FlagType& flags) noexcept {
+inline constexpr _FlagType& set_flag(_FlagType& flags) noexcept {
   using type = zb::underlying_type_t<_FlagType>;
-
   flags = (_FlagType)((type)flags | (type)FlagToSet);
+  return flags;
 }
 
 ///
