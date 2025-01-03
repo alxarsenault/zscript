@@ -1,412 +1,204 @@
 #include <zscript/std/zmath.h>
 #include "zvirtual_machine.h"
+#include "utility/zparameter_stream.h"
 #include <random>
 
 namespace zs {
 
 namespace {
-#define ZMATH_TRIGO(op)                     \
-  int_t zmath_##op(zs::vm_ref vm) {         \
-    zs::float_t res;                        \
-    if (auto err = vm.get_float(-1, res)) { \
-      return -1;                            \
-    }                                       \
-                                            \
-    vm.push_float(std::op(res));            \
-    return 1;                               \
-  }
 
-  int_t zmath_sin(zs::vm_ref vm) {
-    if (zs::optional_result<zs::float_t> res = vm.get_float(-1)) {
-      vm.push_float(std::sin(res.value()));
-      return 1;
+  template <auto Fct>
+  int_t zmath_trigo_impl(zs::vm_ref vm) {
+    zs::parameter_stream ps(vm);
+
+    ++ps;
+
+    float_t value = 0;
+    if (auto err = ps.require<number_parameter>(value)) {
+      vm->ZS_VM_ERROR(err, "A number was expected in math::cos().");
+      return -1;
     }
 
-    return -1;
+    return vm.push_float(Fct(value));
   }
 
-  //  ZMATH_TRIGO(sin)
-  ZMATH_TRIGO(cos)
-  ZMATH_TRIGO(tan)
-  ZMATH_TRIGO(log)
-  ZMATH_TRIGO(log2)
-  ZMATH_TRIGO(log10)
-  ZMATH_TRIGO(abs)
-  ZMATH_TRIGO(sqrt)
-  ZMATH_TRIGO(ceil)
-  ZMATH_TRIGO(floor)
-  ZMATH_TRIGO(round)
+  int_t zmath_min_impl(zs::vm_ref vm) {
+    zs::parameter_stream ps(vm);
+    ++ps;
 
-  int_t zmath_min(zs::vm_ref vm) {
-    int_t count = vm.stack_size();
+    if (ps.has_type(object_type::k_float)) {
 
-    bool has_float = false;
-    for (int_t i = 1; i < count; i++) {
-      const object& obj = vm->stack()[i];
-      if (!obj.is_number()) {
-        return -1;
-      }
+      float_t min_value = (std::numeric_limits<float_t>::max)();
 
-      if (obj.is_float()) {
-        has_float = true;
-      }
-    }
-
-    if (has_float) {
-      zs::float_t vmin = (std::numeric_limits<float_t>::max)();
-      zs::float_t res;
-      for (int_t i = 1; i < count; i++) {
-        if (auto err = vm.get_float(i, res)) {
+      while (ps) {
+        float_t value = 0;
+        if (auto err = ps.require<number_parameter>(value)) {
+          vm->ZS_VM_ERROR(err, "A number was expected in math::min(...).");
           return -1;
         }
 
-        if (res < vmin) {
-          vmin = res;
+        if (value < min_value) {
+          min_value = value;
         }
       }
 
-      vm.push_float(vmin);
-      return 1;
+      return vm.push(min_value);
     }
-    else {
-      zs::int_t vmin = (std::numeric_limits<int_t>::max)();
-      zs::int_t res;
-      for (int_t i = 1; i < count; i++) {
 
-        if (auto err = vm.get_integer(i, res)) {
-          return -1;
-        }
+    int_t min_value = (std::numeric_limits<int_t>::max)();
 
-        if (res < vmin) {
-          vmin = res;
-        }
+    while (ps) {
+      int_t value = 0;
+      if (auto err = ps.require<number_parameter>(value)) {
+        vm->ZS_VM_ERROR(err, "A number was expected in math::min(...).");
+        return -1;
       }
 
-      vm.push_integer(vmin);
-      return 1;
+      if (value < min_value) {
+        min_value = value;
+      }
     }
+
+    return vm.push(min_value);
   }
 
-  int_t zmath_max(zs::vm_ref vm) {
-    int_t count = vm.stack_size();
+  int_t zmath_max_impl(zs::vm_ref vm) {
+    zs::parameter_stream ps(vm);
+    ++ps;
 
-    bool has_float = false;
-    for (int_t i = 1; i < count; i++) {
-      const object& obj = vm->stack()[i];
-      if (!obj.is_number()) {
+    if (ps.has_type(object_type::k_float)) {
+      float_t max_value = -(std::numeric_limits<float_t>::max)();
+
+      while (ps) {
+        float_t value = 0;
+        if (auto err = ps.require<number_parameter>(value)) {
+          vm->ZS_VM_ERROR(err, "A number was expected in math::max(...).");
+          return -1;
+        }
+
+        if (value > max_value) {
+          max_value = value;
+        }
+      }
+
+      return vm.push(max_value);
+    }
+
+    int_t max_value = -(std::numeric_limits<int_t>::max)();
+
+    while (ps) {
+      int_t value = 0;
+      if (auto err = ps.require<number_parameter>(value)) {
+        vm->ZS_VM_ERROR(err, "A number was expected in math::max(...).");
         return -1;
       }
 
-      if (obj.is_float()) {
-        has_float = true;
+      if (value > max_value) {
+        max_value = value;
       }
     }
 
-    if (has_float) {
-      zs::float_t vmax = -(std::numeric_limits<float_t>::max)();
-      zs::float_t res;
-      for (int_t i = 1; i < count; i++) {
-
-        if (auto err = vm.get_float(i, res)) {
-          return -1;
-        }
-
-        if (res > vmax) {
-          vmax = res;
-        }
-      }
-
-      vm.push_float(vmax);
-      return 1;
-    }
-    else {
-
-      zs::int_t vmax = -(std::numeric_limits<int_t>::max)();
-      zs::int_t res;
-      for (int_t i = 1; i < count; i++) {
-
-        if (auto err = vm.get_integer(i, res)) {
-          return -1;
-        }
-
-        if (res > vmax) {
-          vmax = res;
-        }
-      }
-
-      vm.push_integer(vmax);
-      return -1;
-    }
+    return vm.push(max_value);
   }
 
-  static int_t zmath_random_uniform(zs::vm_ref vm) {
-    const int_t count = vm.stack_size();
-    if (count != 3) {
-      zb::print("Error: math.zmath_random_uniform (a, b)");
+  int_t zmath_random_impl(zs::vm_ref vm) {
+
+    zs::parameter_stream ps(vm);
+    ++ps;
+
+    if (!ps) {
+      std::mt19937 gen(std::random_device{}());
+      return vm.push_integer(
+          std::uniform_int_distribution((int_t)0, (std::numeric_limits<int_t>::max)())(gen));
+    }
+
+    int_t a = 0;
+    if (auto err = ps.require<number_parameter>(a)) {
+      vm->ZS_VM_ERROR(err, "A number was expected in math::random(...).");
       return -1;
     }
 
-    const object& a = vm->stack()[-2];
-    const object& b = vm->stack()[-1];
-
-    if (!a.is_number() || !b.is_number()) {
-      zb::print("Error: math.zmath_random_uniform (a, b) - invalid types");
-      return -1;
-    }
-
-    if (a.is_float() || b.is_float()) {
-      // Real distribution.
-      float_t f_a = 0;
-      if (auto err = a.get_float(f_a)) {
-        zb::print("Error: math.zmath_random_uniform - convertion error");
-        return -1;
-      }
-
-      float_t f_b = 0;
-      if (auto err = b.get_float(f_b)) {
-        zb::print("Error: math.zmath_random_uniform - convertion error");
-        return -1;
-      }
-
-      std::random_device rd;
-      std::mt19937 gen(rd());
-      std::uniform_real_distribution<float_t> dis(f_a, f_b);
-
-      vm.push_float(dis(gen));
-      return 1;
-    }
-
-    // Integer distribution.
-    int_t i_a = 0;
-    if (auto err = a.get_integer(i_a)) {
-      zb::print("Error: math.zmath_random_uniform - convertion error");
-      return -1;
-    }
-
-    int_t i_b = 0;
-    if (auto err = b.get_integer(i_b)) {
-      zb::print("Error: math.zmath_random_uniform - convertion error");
-      return -1;
-    }
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int_t> dis(i_a, i_b);
-
-    vm.push_integer(dis(gen));
-    return 1;
+    std::mt19937 gen(std::random_device{}());
+    return vm.push_integer(std::uniform_int_distribution((int_t)0, a)(gen));
   }
 
-  static int_t zmath_random_normal(zs::vm_ref vm) {
-    const int_t count = vm.stack_size();
-    if (count != 3) {
-      zb::print("Error: math.zmath_random_normal (a, b)");
+  int_t zmath_random_uniform_impl(zs::vm_ref vm) {
+    zs::parameter_stream ps(vm);
+    ++ps;
+
+    if (ps.size() != 2) {
+      vm->ZS_VM_ERROR(
+          errc::invalid_parameter_count, "A two number were expected in math::random_uniform(a, b).");
       return -1;
     }
 
-    const object& a = vm->stack()[-2];
-    const object& b = vm->stack()[-1];
+    if (ps.has_type(object_type::k_float)) {
+      float_t a = 0;
+      float_t b = 0;
+      if (auto err = ps.require<number_parameter>(a)) {
+        vm->ZS_VM_ERROR(err, "A number was expected in math::random_uniform(...).");
+        return -1;
+      }
 
-    if (!a.is_number() || !b.is_number()) {
-      zb::print("Error: math.zmath_random_normal (a, b) - invalid types");
+      if (auto err = ps.require<number_parameter>(b)) {
+        vm->ZS_VM_ERROR(err, "A number was expected in math::random_uniform(...).");
+        return -1;
+      }
+
+      std::mt19937 gen(std::random_device{}());
+      return vm.push_float(std::uniform_real_distribution(a, b)(gen));
+    }
+
+    int_t a = 0;
+    int_t b = 0;
+    if (auto err = ps.require<number_parameter>(a)) {
+      vm->ZS_VM_ERROR(err, "A number was expected in math::random_uniform(...).");
       return -1;
     }
 
-    float_t f_mean = 0;
-    if (auto err = a.get_float(f_mean)) {
-      zb::print("Error: math.zmath_random_normal - convertion error");
+    if (auto err = ps.require<number_parameter>(b)) {
+      vm->ZS_VM_ERROR(err, "A number was expected in math::random_uniform(...).");
       return -1;
     }
 
-    float_t f_stddev = 0;
-    if (auto err = b.get_float(f_stddev)) {
-      zb::print("Error: math.zmath_random_normal - convertion error");
-      return -1;
-    }
-
-    if (f_stddev < 0) {
-      zb::print("Error: math.zmath_random_normal - stddev < 0");
-      return -1;
-    }
-
-    // If the standard deviation is zero, let's just return f_mean.
-    if (f_stddev == 0) {
-      vm.push_float(f_mean);
-      return 1;
-    }
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::normal_distribution<float_t> dis(f_mean, f_stddev);
-
-    vm.push_float(dis(gen));
-    return 1;
+    std::mt19937 gen(std::random_device{}());
+    return vm.push_integer(std::uniform_int_distribution(a, b)(gen));
   }
 
-  //
-  // MARK: normal_distribution
-  //
+  int_t zmath_random_normal_impl(zs::vm_ref vm) {
+    zs::parameter_stream ps(vm);
+    ++ps;
 
-  struct normal_distribution {
-
-    inline normal_distribution(float_t mean, float_t stddev)
-        : _gen(std::random_device{}())
-        , _dist(mean, stddev) {}
-
-    static int_t generate(zs::vm_ref vm) {
-      const object& obj = vm->top();
-      user_data_object* uobj = obj._udata;
-      normal_distribution* nd = uobj->data<normal_distribution>();
-      vm->push(nd->_dist(nd->_gen));
-      return 1;
-    }
-
-    static int_t get_mean(zs::vm_ref vm) {
-      const int_t count = vm.stack_size();
-      if (count != 1) {
-        zb::print("Error: math.zmath_random_normal (a, b)");
-        return -1;
-      }
-
-      const object& obj = vm->top();
-      user_data_object* uobj = obj._udata;
-      normal_distribution* nd = uobj->data<normal_distribution>();
-      vm->push(nd->_dist.mean());
-
-      return 1;
-    }
-
-    static int_t set_mean(zs::vm_ref vm) {
-      const int_t count = vm.stack_size();
-      if (count != 2) {
-        zb::print("Error: math.zmath_random_normal (a, b)");
-        return -1;
-      }
-
-      const object& a = vm->stack()[-1];
-
-      if (!a.is_number()) {
-        zb::print("Error: math.zmath_random_normal (a, b) - invalid types");
-        return -1;
-      }
-
-      float_t f_mean = 0;
-      if (auto err = a.get_float(f_mean)) {
-        zb::print("Error: math.zmath_random_normal - convertion error");
-        return -1;
-      }
-
-      object& obj = vm->stack()[-2];
-      user_data_object* uobj = obj._udata;
-      normal_distribution* nd = uobj->data<normal_distribution>();
-      nd->_dist.param(std::normal_distribution<float_t>::param_type{ f_mean, nd->_dist.stddev() });
-
-      return 1;
-    }
-
-    static int_t _get(zs::vm_ref vm) {
-      object& obj = vm->stack()[-2];
-      const object& key = vm->top();
-
-      if (key == "mean") {
-
-        user_data_object* uobj = obj._udata;
-        normal_distribution* nd = uobj->data<normal_distribution>();
-        vm->push(nd->_dist.mean());
-        return 1;
-        ;
-      }
-      else if (key == "stddev") {
-
-        user_data_object* uobj = obj._udata;
-        normal_distribution* nd = uobj->data<normal_distribution>();
-        vm->push(nd->_dist.stddev());
-        return 1;
-        ;
-      }
-
+    if (ps.size() != 2) {
+      vm->ZS_VM_ERROR(
+          errc::invalid_parameter_count, "A two number were expected in math::random_uniform(a, b).");
       return -1;
     }
 
-    static int_t _set(zs::vm_ref vm) {
-      object& obj = vm->stack()[-3];
-      object& key = vm->stack()[-2];
-      const object& value = vm->top();
-      if (key == "mean") {
-
-        float_t f_mean = 0;
-        if (auto err = value.get_float(f_mean)) {
-          zb::print("Error: math.zmath_random_normal - convertion error");
-          return -1;
-        }
-
-        user_data_object* uobj = obj._udata;
-        normal_distribution* nd = uobj->data<normal_distribution>();
-        //      vm->push(nd->_dist.mean());
-        nd->_dist.param(std::normal_distribution<float_t>::param_type{ f_mean, nd->_dist.stddev() });
-
-        return 0;
-      }
-      else if (key == "stddev") {
-        float_t f_stddev = 0;
-        if (auto err = value.get_float(f_stddev)) {
-          zb::print("Error: math.zmath_random_normal - convertion error");
-          return -1;
-        }
-
-        user_data_object* uobj = obj._udata;
-        normal_distribution* nd = uobj->data<normal_distribution>();
-        nd->_dist.param(std::normal_distribution<float_t>::param_type{ nd->_dist.mean(), f_stddev });
-
-        return 0;
-      }
-
+    float_t mean = 0;
+    float_t stddev = 0;
+    if (auto err = ps.require<number_parameter>(mean)) {
+      vm->ZS_VM_ERROR(err, "A number was expected in math::random_uniform(...).");
       return -1;
     }
 
-    std::mt19937 _gen;
-    std::normal_distribution<float_t> _dist;
-  };
-
-  static int_t zmath_create_normal_distribution(zs::vm_ref vm) {
-    const int_t count = vm.stack_size();
-    if (count != 3) {
-      zb::print("Error: math.zmath_create_normal_distribution (a, b)");
+    if (auto err = ps.require<number_parameter>(stddev)) {
+      vm->ZS_VM_ERROR(err, "A number was expected in math::random_uniform(...).");
       return -1;
     }
 
-    zs::engine* eng = vm.get_engine();
-    const object& a = vm->stack()[-2];
-    const object& b = vm->stack()[-1];
-
-    float_t f_mean = 0;
-    if (auto err = a.get_float(f_mean)) {
-      zb::print("Error: math.zmath_random_normal - convertion error");
+    // If stddev is zero, let's return the mean.
+    if (stddev == 0.0) {
+      return vm.push_float(mean);
+    }
+    else if (stddev < 0) {
+      vm->ZS_VM_ERROR(
+          errc::invalid_parameter_range, "Invalid standard deviation in math::random_uniform(...).");
       return -1;
     }
 
-    float_t f_stddev = 0;
-    if (auto err = b.get_float(f_stddev)) {
-      zb::print("Error: math.zmath_random_normal - convertion error");
-      return -1;
-    }
-    object obj = zs::object::create_user_data<normal_distribution>(eng, f_mean, f_stddev);
-    zs::user_data_object* uobj = obj._udata;
-
-    object delegate_obj = object::create_table(eng);
-    table_object* delegate = delegate_obj._table;
-    uobj->set_delegate(delegate_obj);
-
-    object gen = zs::_nc(eng, normal_distribution::generate);
-    delegate->set(zs::_ss("gen"), gen);
-    delegate->set(zs::constants::get<meta_method::mt_call>(), gen);
-    delegate->set(zs::constants::get<meta_method::mt_get>(), zs::_nc(eng, normal_distribution::_get));
-    delegate->set(zs::constants::get<meta_method::mt_set>(), zs::_nc(eng, normal_distribution::_set));
-    delegate->set(zs::_ss("set_mean"), zs::_nc(eng, normal_distribution::set_mean));
-    delegate->set(zs::_ss("get_mean"), zs::_nc(eng, normal_distribution::get_mean));
-
-    vm->push(obj);
-    return 1;
+    std::mt19937 gen(std::random_device{}());
+    return vm.push_float(std::normal_distribution(mean, stddev)(gen));
   }
 
 } // namespace.
@@ -414,32 +206,84 @@ namespace {
 zs::object create_math_lib(zs::vm_ref vm) {
   zs::engine* eng = vm->get_engine();
 
-  zs::object math_table = zs::object::create_table(vm->get_engine());
-  zs::table_object* math_tbl = math_table._table;
-  math_tbl->reserve(20);
+  zs::object math_table = zs::_t(eng);
+  zs::table_object& tbl = math_table.as_table();
+  tbl.reserve(50);
 
-  math_tbl->set(zs::_ss("sin"), zs::_nc(eng, zmath_sin));
-  math_tbl->set(zs::_ss("cos"), zs::_nc(eng, zmath_cos));
-  math_tbl->set(zs::_ss("tan"), zs::_nc(eng, zmath_tan));
-  math_tbl->set(zs::_ss("ln"), zs::_nc(eng, zmath_log));
-  math_tbl->set(zs::_ss("log2"), zs::_nc(eng, zmath_log2));
-  math_tbl->set(zs::_ss("log"), zs::_nc(eng, zmath_log10));
-  math_tbl->set(zs::_ss("abs"), zs::_nc(eng, zmath_abs));
-  math_tbl->set(zs::_ss("sqrt"), zs::_nc(eng, zmath_sqrt));
-  math_tbl->set(zs::_ss("ceil"), zs::_nc(eng, zmath_ceil));
-  math_tbl->set(zs::_ss("floor"), zs::_nc(eng, zmath_floor));
-  math_tbl->set(zs::_ss("round"), zs::_nc(eng, zmath_round));
-  math_tbl->set(zs::_ss("min"), zs::_nc(eng, zmath_min));
-  math_tbl->set(zs::_ss("max"), zs::_nc(eng, zmath_max));
+  tbl.emplace(_ss("min"), zmath_min_impl);
+  tbl.emplace(_ss("max"), zmath_max_impl);
 
-  math_tbl->set(zs::_ss("rand_uniform"), zs::_nc(eng, zmath_random_uniform));
-  math_tbl->set(zs::_ss("rand_normal"), zs::_nc(eng, zmath_random_normal));
+  tbl.emplace(_ss("random"), zmath_random_impl);
+  tbl.emplace(_ss("rand_uniform"), zmath_random_uniform_impl);
+  tbl.emplace(_ss("rand_normal"), zmath_random_normal_impl);
 
-  math_tbl->set(zs::_ss("normal_dist"), zs::_nc(eng, zmath_create_normal_distribution));
+  tbl.emplace(_ss("ceil"), zmath_trigo_impl<std::ceil<float_t>>);
+  tbl.emplace(_ss("floor"), zmath_trigo_impl<std::floor<float_t>>);
+  tbl.emplace(_ss("round"), zmath_trigo_impl<std::round<float_t>>);
+  tbl.emplace(_ss("abs"), zmath_trigo_impl<(float_t(*)(float_t))std::abs>);
 
+  //
+  // Log/Exponential.
+  //
+
+  tbl.emplace(_ss("exp"), zmath_trigo_impl<std::exp<float_t>>);
+  tbl.emplace(_ss("ln"), zmath_trigo_impl<std::log<float_t>>);
+  tbl.emplace(_ss("log2"), zmath_trigo_impl<std::log2<float_t>>);
+  tbl.emplace(_ss("log"), zmath_trigo_impl<std::log10<float_t>>);
+  tbl.emplace(_ss("sqrt"), zmath_trigo_impl<std::sqrt<float_t>>);
+  tbl.emplace(_ss("cbrt"), zmath_trigo_impl<std::cbrt<float_t>>);
+
+  //
+  // Trigo.
+  //
+
+  tbl.emplace(_ss("sin"), zmath_trigo_impl<std::sin<float_t>>);
+  tbl.emplace(_ss("cos"), zmath_trigo_impl<std::cos<float_t>>);
+  tbl.emplace(_ss("tan"), zmath_trigo_impl<std::tan<float_t>>);
+
+  tbl.emplace(_ss("asin"), zmath_trigo_impl<std::asin<float_t>>);
+  tbl.emplace(_ss("acos"), zmath_trigo_impl<std::acos<float_t>>);
+  tbl.emplace(_ss("atan"), zmath_trigo_impl<std::atan<float_t>>);
+
+  tbl.emplace(_ss("sinh"), zmath_trigo_impl<std::sinh<float_t>>);
+  tbl.emplace(_ss("cosh"), zmath_trigo_impl<std::cosh<float_t>>);
+  tbl.emplace(_ss("tanh"), zmath_trigo_impl<std::tanh<float_t>>);
+
+  tbl.emplace(_ss("asinh"), zmath_trigo_impl<std::asinh<float_t>>);
+  tbl.emplace(_ss("acosh"), zmath_trigo_impl<std::acosh<float_t>>);
+  tbl.emplace(_ss("atanh"), zmath_trigo_impl<std::atanh<float_t>>);
+
+  //
   // Constants.
-  math_tbl->set(zs::_ss("pi"), object(zb::pi<float_t>));
-  math_tbl->set(zs::_ss("e"), object(zb::e<float_t>));
+  //
+
+  tbl.emplace(_ss("zero"), zb::zero<float_t>);
+  tbl.emplace(_ss("one"), zb::one<float_t>);
+  tbl.emplace(_ss("minus_one"), zb::minus_one<float_t>);
+  tbl.emplace(_ss("e"), zb::e<float_t>);
+  tbl.emplace(_ss("pi"), zb::pi<float_t>);
+  tbl.emplace(_ss("two_pi"), zb::two_pi<float_t>);
+  tbl.emplace(_ss("four_pi"), zb::four_pi<float_t>);
+  tbl.emplace(_ss("eight_pi"), zb::eight_pi<float_t>);
+  tbl.emplace(_ss("two_pi_squared"), zb::two_pi_squared<float_t>);
+  tbl.emplace(_ss("one_over_pi"), zb::one_over_pi<float_t>);
+  tbl.emplace(_ss("two_over_pi"), zb::two_over_pi<float_t>);
+  tbl.emplace(_ss("four_over_pi"), zb::four_over_pi<float_t>);
+  tbl.emplace(_ss("eight_over_pi"), zb::eight_over_pi<float_t>);
+  tbl.emplace("one_over_pi_squared", zb::one_over_pi_squared<float_t>);
+  tbl.emplace("two_over_pi_squared", zb::two_over_pi_squared<float_t>);
+  tbl.emplace("four_over_pi_squared", zb::four_over_pi_squared<float_t>);
+  tbl.emplace("eight_over_pi_squared", zb::eight_over_pi_squared<float_t>);
+  tbl.emplace(_ss("pi_over_eight"), zb::pi_over_eight<float_t>);
+  tbl.emplace(_ss("pi_over_four"), zb::pi_over_four<float_t>);
+  tbl.emplace(_ss("pi_over_two"), zb::pi_over_two<float_t>);
+  tbl.emplace(_ss("sqrt_2"), zb::sqrt_2<float_t>);
+  tbl.emplace(_ss("sqrt_2_over_2"), zb::sqrt_2_over_2<float_t>);
+  tbl.emplace(_ss("log_2"), zb::log_2<float_t>);
+  tbl.emplace(_ss("log_10"), zb::log_10<float_t>);
+  tbl.emplace(_ss("log_pi"), zb::log_pi<float_t>);
+  tbl.emplace(_ss("log_two_pi"), zb::log_two_pi<float_t>);
+  tbl.emplace("log_sqrt_two_pi", zb::log_sqrt_two_pi<float_t>);
 
   return math_table;
 }

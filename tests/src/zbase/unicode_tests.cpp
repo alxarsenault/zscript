@@ -1,5 +1,5 @@
 #include <catch2.h>
-#include <zbase/strings/unicode.h>
+#include <zscript/base/strings/unicode.h>
 
 namespace common {
 inline constexpr const char* c_string();

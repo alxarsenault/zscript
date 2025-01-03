@@ -15,14 +15,14 @@
   }
 
 #define ZS_COMPILER_ERROR_WITH_LINE_INFO(err, linfo, ...) \
-  handle_error(err, linfo, ZS_DEVELOPER_SOURCE_LOCATION(), __VA_ARGS__)
+  handle_error(err, linfo, zb::source_location::current(), __VA_ARGS__)
 
 #define ZS_COMPILER_ERROR(err, ...) \
-  handle_error(err, get_line_info(), ZS_DEVELOPER_SOURCE_LOCATION(), __VA_ARGS__)
+  handle_error(err, get_line_info(), zb::source_location::current(), __VA_ARGS__)
 
-#define ZS_COMPILER_RETURN_IF_ERROR(X, ...)                                                  \
-  if (zs::error_result err = X) {                                                            \
-    return handle_error(err, get_line_info(), ZS_DEVELOPER_SOURCE_LOCATION(X), __VA_ARGS__); \
+#define ZS_COMPILER_RETURN_IF_ERROR(X, ...)                                                 \
+  if (zs::error_result err = X) {                                                           \
+    return handle_error(err, get_line_info(), zb::source_location::current(), __VA_ARGS__); \
   }
 
 #define ZS_COMPILER_EXPECT_GET(tok, ret)                                      \
@@ -42,99 +42,6 @@ ZS_CK_INLINE static bool is_small_string_identifier(const object& identifier) no
   return identifier.get_string_unchecked().size() <= constants::k_small_string_max_size;
 }
 
-using objref_t = zb::ref_wrapper<object>;
-using cobjref_t = zb::ref_wrapper<const object>;
-
-#define REF(...) zb::wref(__VA_ARGS__)
-#define CREF(...) zb::wcref(__VA_ARGS__)
-
-enum class parse_op : uint8_t {
-
-  //  p_global_function_statement,
-  //  p_export_function_statement,
-
-  p_arrow_lamda,
-  p_function_call_args,
-  p_member_function_call_args,
-  p_function_call_args_template,
-
-  //  p_export,
-  //  p_export_table,
-
-  p_decl_enum,
-  p_enum_table,
-  p_table,
-
-  p_module_info,
-
-  p_for,
-  p_for_auto,
-  p_for_each,
-
-  // 2**n
-  p_exponential,
-
-  // '*', '/', '%'
-  p_mult,
-
-  // '+', '-'.
-  p_plus,
-
-  // '<<', '>>'.
-  p_shift,
-
-  // '>', '<', '>=', '<='.
-  p_compare,
-
-  // '==', '!=', '===', '<-->', '<==>'.
-  p_eq_compare,
-
-  // '&'.
-  p_bitwise_and,
-
-  // 'xor'.
-  p_bitwise_xor,
-
-  // '|'.
-  p_bitwise_or,
-
-  // '&&'.
-  p_and,
-
-  // '||'
-  p_or,
-
-  // '|||'
-  p_triple_or,
-
-  count
-};
-
-enum class module_info_type : uint8_t { module, author, brief, version, date, copyright };
-enum class identifier_type : uint8_t { normal, exports };
-
-inline constexpr const char* module_info_type_to_string(module_info_type mtype) {
-  switch (mtype) {
-  case module_info_type::module:
-    return "@module";
-
-  case module_info_type::author:
-    return "@author";
-
-  case module_info_type::brief:
-    return "@brief";
-
-  case module_info_type::version:
-    return "@version";
-
-  case module_info_type::date:
-    return "@date";
-  case module_info_type::copyright:
-    return "@copyright";
-  }
-
-  return "unknown";
-}
 using enum parse_op;
 using enum object_type;
 
@@ -172,7 +79,7 @@ namespace {
     const char* begin = &(*stream._data.begin());
     const char* end = &(*stream._data.end());
 
-    size_t endl_count = 0;
+    int_t endl_count = 0;
 
     const char* line_it_begin = begin;
     const char* line_it_end = begin;
@@ -198,24 +105,5 @@ namespace {
     return get_line_content(stream);
   }
 } // namespace
-
-//
-// MARK: Parse forward declare.
-//
-
-ZS_JIT_COMPILER_PARSE_OP(p_table);
-
-// Functions.
-ZS_JIT_COMPILER_PARSE_OP(p_arrow_lamda);
-ZS_JIT_COMPILER_PARSE_OP(p_function_call_args, bool rawcall, bool table_call);
-ZS_JIT_COMPILER_PARSE_OP(p_member_function_call_args);
-ZS_JIT_COMPILER_PARSE_OP(p_function_call_args_template, std::string_view meta_code);
-
-// ZS_JIT_COMPILER_PARSE_OP(p_export_function_statement);
-// ZS_JIT_COMPILER_PARSE_OP(p_global_function_statement);
-ZS_JIT_COMPILER_PARSE_OP(p_module_info, module_info_type mtype);
-
-// ZS_JIT_COMPILER_PARSE_OP(p_export);
-// ZS_JIT_COMPILER_PARSE_OP(p_export_table);
 
 } // namespace zs.

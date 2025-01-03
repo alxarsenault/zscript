@@ -92,7 +92,7 @@ int_t closure_compile_state::alloc_stack_pos() {
 target_t closure_compile_state::push_var_target(target_t n) {
   ZS_ASSERT(n <= k_maximum_target_index, "too many targets.");
   ZS_ASSERT(n < _vlocals.size(), "invalid target stack index.");
-  const zs::scoped_local_var_info_t& v = _vlocals[n];
+  //  const zs::scoped_local_var_info_t& v = _vlocals[n];
 
   //  _target_stack.push_back({ n, v._mask, v._custom_mask, v._is_const });
   ZS_ASSERT(n == _vlocals[n].pos);
@@ -296,6 +296,7 @@ void closure_compile_state::set_stack_size(int_t n) {
       _n_capture -= lvi.end_op == k_captured_end_op;
 
       lvi.end_op = get_next_instruction_index() - 1;
+
       _local_var_infos.push_back(std::move(lvi));
     }
   }
@@ -448,7 +449,6 @@ object closure_compile_state::build_function_prototype() {
   fpo->_line_info = std::move(_line_info);
   fpo->_default_params = _default_params;
   fpo->_n_capture = _n_capture;
-  //  fpo->_export_table_target = _export_table_target;
   fpo->_module_info = _sdata._module_info;
   fpo->_has_vargs_params = _has_vargs_params;
 

@@ -137,25 +137,25 @@ var v1 = vec3(1, 2, 3);
 var v3 = vec3(v1);
 var v4 = vec3(23.2);
 
-//zs::print(typeof(v2));
+//io::print(typeof(v2));
 //var v3 = vec3(v1);
 //var v5 = vec3(32.2);
 
 
 var r1 = v1 + v4;
-//zs::print(r1);
+//io::print(r1);
 
 
 var r2 = v1 + vec3(100.0);
-//zs::print(r2);
+//io::print(r2);
 
 var r3 = v1 + 1000.0;
-//zs::print(r3);
+//io::print(r3);
 
 var r4 = v1 * 2;
 
 var r5 = v1 * 2;
-//zs::print("R5", r5);
+//io::print("R5", r5);
 //v1.x = 3.2;
 
 //var gg = v1.cross(vec3(4, 5, 6));

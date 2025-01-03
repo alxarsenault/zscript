@@ -1,15 +1,13 @@
 #include "zjson_parser.h"
 #include "zvirtual_machine.h"
 
-ZBASE_PRAGMA_PUSH()
-ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wswitch")
-ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
+ZBASE_PRAGMA_PUSH_NO_MISSING_SWITCH_WARNING()
 
 #define ZS_JSON_PARSER_HANDLE_ERROR_STREAM(err, ...) \
-  helper::handle_error(this, err, zs::sstrprint(_engine, __VA_ARGS__), ZB_CURRENT_SOURCE_LOCATION())
+  helper::handle_error(this, err, zs::sstrprint(_engine, __VA_ARGS__), zb::source_location::current())
 
 #define ZS_JSON_PARSER_HANDLE_ERROR_STRING(err, msg) \
-  helper::handle_error(this, err, msg, ZB_CURRENT_SOURCE_LOCATION())
+  helper::handle_error(this, err, msg, zb::source_location::current())
 
 namespace zs {
 
@@ -104,7 +102,7 @@ zs::error_result json_parser::parse(zs::virtual_machine* vm, std::string_view co
 
   object ret_value;
   if (auto err = parse_value(ret_value)) {
-    return helper::handle_error(this, err, "invalid token", ZB_CURRENT_SOURCE_LOCATION());
+    return helper::handle_error(this, err, "invalid token", zb::source_location::current());
   }
 
   if (_token == tok_lex_error) {
@@ -211,7 +209,7 @@ zs::error_result json_parser::parse_value(zs::object& value) {
   }
 
   case tok_none:
-    value = zs::object::create_none();
+    value = zs::none();
     lex();
     return {};
 
@@ -324,7 +322,7 @@ zs::error_code json_parser::expect_get(json_token_type tok, object& ret) {
     _error_message
         += zs::strprint(_engine, "invalid token ", zb::quoted<"'">(zs::json_token_to_string(_token)),
             ", expected ", zb::quoted<"'">(zs::json_token_to_string(tok)), _lexer->get_line_info(),
-            ZB_CURRENT_SOURCE_LOCATION());
+            zb::source_location::current());
 
     return zs::error_code::invalid_token;
   }

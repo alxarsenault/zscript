@@ -1,10 +1,3 @@
-@module     "range"
-@brief      "Range struct."
-@author     "Alexandre Arsenault"
-@version    "1.0.0"
-@date       "2024-12-10"
-@copyright  "Meta-Sonic"
-
 struct range {
   constructor() = default;
 

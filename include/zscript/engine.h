@@ -1,8 +1,6 @@
 #pragma once
 
 #include <zscript/common.h>
-#include <zscript/types.h>
-#include <unordered_set>
 
 namespace zs {
 
@@ -25,6 +23,7 @@ class garbage_collector : zs::engine_holder {
 
 class garbage_collector_rc_proxy {
   friend class zs::reference_counted_object;
+
   ZS_INLINE static void add(zs::engine* eng, zs::reference_counted_object* obj) {
     garbage_collector::add(eng, obj);
   }
@@ -35,6 +34,8 @@ class garbage_collector_rc_proxy {
 };
 
 class engine_rc_proxy;
+
+zs::engine* get_engine_from_index(uint8_t idx) noexcept;
 
 /// @class engine
 class engine final {
@@ -96,6 +97,8 @@ public:
   ZS_CHECK object get_registry_object(const zs::object& name) const noexcept;
   ZS_CHECK object get_registry_object(std::string_view name) const noexcept;
 
+  ZS_CK_INLINE uint8_t get_engine_idx() const noexcept { return _engine_idx; }
+
 private:
   allocate_t _allocator;
   raw_pointer_t _user_pointer;
@@ -103,6 +106,7 @@ private:
   stream_getter_t _stream_getter;
   engine_initializer_t _initializer;
   std::array<uint8_t, 2 * constants::k_object_size> _objects;
+  uint8_t _engine_idx;
 
   friend class engine_rc_proxy;
   friend class zs::garbage_collector;

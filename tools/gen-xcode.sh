@@ -18,12 +18,12 @@ cmake -GXcode ..
 
 if [ "$1" ]; then
   if [ "$1" = "open" ]; then
-    open zs.xcodeproj
+    open zscript.xcodeproj
   fi
 fi
 
 if [ "$2" ]; then
   if [ "$2" = "open" ]; then
-    open zs.xcodeproj
+    open zscript.xcodeproj
   fi
 fi

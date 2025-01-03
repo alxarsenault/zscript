@@ -32,6 +32,13 @@ public:
     return *(const instruction_t<Op>*)_data;
   }
 
+  template <opcode Op>
+  [[nodiscard]] inline operator const instruction_t<Op>&() const noexcept {
+    zbase_assert(get_opcode() == Op, "zs::instruction_stream::get - invalid opcode '", opcode_to_string(Op),
+        "' expected '", opcode_to_string(get_opcode()), "'");
+    return *(const instruction_t<Op>*)_data;
+  }
+
   inline instruction_iterator& operator++() noexcept {
     _data += zs::get_instruction_size(get_opcode());
     return *this;
@@ -43,16 +50,16 @@ public:
     return tmp;
   }
 
-  inline instruction_iterator operator+(size_t n) const noexcept {
-    instruction_iterator tmp(*this);
-    while (n--) {
-      tmp._data += zs::get_instruction_size(tmp.get_opcode());
-    }
+  //  inline instruction_iterator operator+(size_t n) const noexcept {
+  //    instruction_iterator tmp(*this);
+  //    while (n--) {
+  //      tmp._data += zs::get_instruction_size(tmp.get_opcode());
+  //    }
+  //
+  //    return tmp;
+  //  }
 
-    return tmp;
-  }
-
-  inline instruction_iterator operator[](size_t n) const noexcept { return operator+(n); }
+  //  inline instruction_iterator operator[](size_t n) const noexcept { return operator+(n); }
 
   [[nodiscard]] inline bool operator==(instruction_iterator rhs) const noexcept { return _data == rhs._data; }
   [[nodiscard]] inline bool operator!=(instruction_iterator rhs) const noexcept { return _data != rhs._data; }
@@ -62,6 +69,7 @@ public:
   [[nodiscard]] inline bool operator>=(instruction_iterator rhs) const noexcept { return _data >= rhs._data; }
 
   [[nodiscard]] inline const uint8_t* data() const noexcept { return _data; }
+  [[nodiscard]] inline const uint8_t*& data_ptr_ref() noexcept { return _data; }
 
   template <class Vec>
   inline size_t get_index(const Vec& inst_vec) const noexcept {

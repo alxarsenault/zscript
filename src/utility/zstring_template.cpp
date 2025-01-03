@@ -15,7 +15,7 @@ static zs::object get_content(zs::vm_ref vm, const zs::object& tbl, std::string_
       return nullptr;
     }
 
-    return zs::_c(vm.get_engine(), std::move(fct_state), vm->get_root());
+    return zs::_c(vm.get_engine(), std::move(fct_state), vm->global());
   }(vm, content);
 
   if (!closure.is_closure()) {

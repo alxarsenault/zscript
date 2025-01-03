@@ -1,12 +1,12 @@
 #include <catch2.h>
-#include <zbase/memory/reference_counted_ptr.h>
+#include <zscript/base/memory/reference_counted_ptr.h>
 
 TEST_CASE("reference_counted") {
 
   static int retain_count = 0;
   static int release_count = 0;
   struct handler {
-    static inline void retain(ZBASE_MAYBE_UNUSED int* ptr) { retain_count++; }
+    static inline void retain(ZB_MAYBE_UNUSED int* ptr) { retain_count++; }
 
     static inline void release(int* ptr) { release_count++; }
   };

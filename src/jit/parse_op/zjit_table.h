@@ -4,13 +4,13 @@
 namespace zs {
 
 // Table.
-ZS_JIT_COMPILER_PARSE_OP(p_table) {
+zs::error_result jit_compiler::parse_table() {
 
   while (is_not(tok_rcrlbracket)) {
     zs::object key;
     bool is_small_string_key = false;
 
-    int_t inst_idx = -1;
+    //    int_t inst_idx = -1;
     int_t nextinst_idx = -1;
 
     switch (_token) {
@@ -35,7 +35,7 @@ ZS_JIT_COMPILER_PARSE_OP(p_table) {
       ZS_COMPILER_EXPECT(tok_rsqrbracket);
       ZS_COMPILER_EXPECT(tok_eq);
 
-      inst_idx = get_instruction_index();
+      //      inst_idx = get_instruction_index();
       nextinst_idx = get_next_instruction_index();
       ZS_RETURN_IF_ERROR(parse_expression());
       break;
@@ -51,7 +51,7 @@ ZS_JIT_COMPILER_PARSE_OP(p_table) {
       }
 
       ZS_COMPILER_EXPECT(tok_colon);
-      inst_idx = get_instruction_index();
+      //      inst_idx = get_instruction_index();
       nextinst_idx = get_next_instruction_index();
       ZS_RETURN_IF_ERROR(parse_expression());
       break;
@@ -66,7 +66,7 @@ ZS_JIT_COMPILER_PARSE_OP(p_table) {
 
       ZS_COMPILER_EXPECT(tok_eq);
 
-      inst_idx = get_instruction_index();
+      //      inst_idx = get_instruction_index();
       nextinst_idx = get_next_instruction_index();
       ZS_RETURN_IF_ERROR(parse_expression());
     }

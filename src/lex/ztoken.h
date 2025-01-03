@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <zbase/zbase.h>
+#include <zscript/base/zbase.h>
 
 namespace zs {
 #define __ZS_TOK_IMPL_LAST(name) zs::token_type::tok_##name
@@ -46,4 +46,45 @@ inline constexpr const char* token_to_string(token_type token) noexcept {
 
   return "unknown";
 }
+
+ZS_CK_INLINE_CXPR bool is_var_decl_tok_no_const(token_type t) noexcept {
+  using enum token_type;
+  switch (t) {
+  case tok_var:
+  case tok_array:
+  case tok_table:
+  case tok_string:
+  case tok_char:
+  case tok_int:
+  case tok_bool:
+  case tok_float:
+  case tok_atom:
+  case tok_number:
+    return true;
+
+  default:
+    return false;
+  }
+  return false;
+}
+
+ZS_CK_INLINE_CXPR bool is_var_decl_tok(token_type t) noexcept {
+  using enum token_type;
+  return t == tok_const or zs::is_var_decl_tok_no_const(t);
+}
+
+ZS_CK_INLINE_CXPR bool is_var_decl_prefix_token(token_type t) noexcept {
+  using enum token_type;
+  switch (t) {
+  case tok_const:
+  case tok_static:
+  case tok_private:
+    return true;
+
+  default:
+    return false;
+  }
+  return false;
+}
+
 } // namespace zs.

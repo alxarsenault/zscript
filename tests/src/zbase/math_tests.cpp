@@ -1,5 +1,5 @@
 #include <catch2.h>
-#include <zbase/utility/math.h>
+#include <zscript/base/utility/math.h>
 
 namespace {
 TEST_CASE("Equation") {

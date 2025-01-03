@@ -1,6 +1,6 @@
 #include <catch2.h>
-#include <zbase/strings/charconv.h>
-#include <zbase/memory/memory.h>
+#include <zscript/base/strings/charconv.h>
+#include <zscript/base/memory/memory.h>
 
 TEST_CASE("charconv", "[core]") {
   char buffer[512] = {};

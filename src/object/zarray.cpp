@@ -1,23 +1,55 @@
 #include <zscript/zscript.h>
 
 namespace zs {
+static_assert(!std::is_polymorphic_v<array_object>, "array_object should not be polymorphic.");
+
 array_object::array_object(zs::engine* eng) noexcept
-    : delegable_object(eng, zs::object_type::k_array)
-    , vector_type(zs::allocator<object>(eng, memory_tag::nt_array)) {}
+    : delegable_object(eng, object_type::k_array)
+    , _vec(nullptr) {}
 
 array_object* array_object::create(zs::engine* eng, int_t sz) noexcept {
-  array_object* arr = zs_new<memory_tag::nt_array, array_object>(eng, eng);
+  array_object* arr = (array_object*)eng->allocate(
+      sizeof(array_object) + sizeof(vector_type), (alloc_info_t)memory_tag::nt_array);
+  zb_placement_new(arr) array_object(eng);
+
+  arr->_vec = (vector_type*)(arr->_data);
+  zb_placement_new(arr->_vec) vector_type(zs::allocator<object>(eng, memory_tag::nt_array));
 
   if (sz) {
-    arr->resize(sz);
+    arr->_vec->resize(sz);
   }
 
   return arr;
 }
 
+void array_object::destroy_callback(zs::engine* eng, reference_counted_object* obj) noexcept {
+  array_object* aobj = (array_object*)obj;
+
+  if (aobj->_vec) {
+    aobj->_vec->~vector_type();
+    aobj->_vec = nullptr;
+  }
+
+  zs_delete(eng, aobj);
+}
+
+object array_object::clone_callback(zs::engine* eng, const reference_counted_object* obj) noexcept {
+  array_object* aobj = (array_object*)obj;
+
+  array_object* arr = array_object::create(eng, 0);
+  *arr->_vec = *aobj->_vec;
+  arr->set_delegate(aobj->get_delegate(), aobj->get_delegate_flags());
+
+  return object(arr, false);
+}
+
+object array_object::create_object(zs::engine* eng, int_t sz) noexcept {
+  return object(array_object::create(eng, sz), false);
+}
+
 zs::error_result array_object::get(int_t idx, object& dst) const noexcept {
 
-  const int_t sz = vector_type::size();
+  const int_t sz = _vec->size();
   zbase_assert(sz, "call array::get on an empty vector");
 
   if (idx < 0) {
@@ -28,7 +60,7 @@ zs::error_result array_object::get(int_t idx, object& dst) const noexcept {
     return errc::out_of_bounds;
   }
 
-  dst = vector_type::operator[](idx);
+  dst = _vec->operator[](idx);
   return {};
 }
 
@@ -36,13 +68,14 @@ zs::error_result array_object::get(const object& key, object& dst) const noexcep
   if (key.is_integer()) {
     return get(key._int, dst);
   }
+
   return errc::inaccessible;
 }
 
 zs::error_result array_object::contains(const object& key, object& dst) const noexcept {
 
   if (key.is_integer()) {
-    const int_t sz = vector_type::size();
+    const int_t sz = _vec->size();
     if (!sz) {
       dst = false;
       return {};
@@ -64,7 +97,7 @@ zs::error_result array_object::contains(const object& key, object& dst) const no
 
 zs::error_result array_object::set(int_t idx, const object& obj) noexcept {
 
-  const int_t sz = vector_type::size();
+  const int_t sz = _vec->size();
   zbase_assert(sz, "call array::set in an empty vector");
 
   if (idx < 0) {
@@ -76,13 +109,13 @@ zs::error_result array_object::set(int_t idx, const object& obj) noexcept {
     return zs::error_code::out_of_bounds;
   }
 
-  vector_type::operator[](idx) = obj;
+  _vec->operator[](idx) = obj;
   return {};
 }
 
 zs::error_result array_object::set(int_t idx, object&& obj) noexcept {
 
-  const int_t sz = vector_type::size();
+  const int_t sz = _vec->size();
   zbase_assert(sz, "call array::set in an empty vector");
 
   if (idx < 0) {
@@ -94,37 +127,41 @@ zs::error_result array_object::set(int_t idx, object&& obj) noexcept {
     return zs::error_code::out_of_bounds;
   }
 
-  vector_type::operator[](idx) = std::move(obj);
+  _vec->operator[](idx) = std::move(obj);
   return {};
 }
 
 zs::error_result array_object::push(const object& obj) noexcept {
-  vector_type::push_back(obj);
+  _vec->push_back(obj);
   return {};
 }
 
 zs::error_result array_object::push(object&& obj) noexcept {
-  vector_type::push_back(std::move(obj));
+  _vec->push_back(std::move(obj));
   return {};
-}
-
-object array_object::clone() const noexcept {
-  array_object* arr = array_object::create(reference_counted_object::_engine, 0);
-  ((vector_type&)*arr) = *this;
-
-  object obj(arr, false);
-  copy_delegate(obj);
-  return obj;
 }
 
 bool array_object::is_number_array() const noexcept { return is_type_mask_array(object_base::k_number_mask); }
 
+bool array_object::is_number_array(bool& has_float) const noexcept {
+  const size_t sz = _vec->size();
+  for (size_t i = 0; i < sz; i++) {
+    if (!_vec->operator[](i).has_type_mask(object_base::k_number_mask)) {
+      return false;
+    }
+
+    has_float = has_float or _vec->operator[](i).is_float();
+  }
+
+  return true;
+}
+
 bool array_object::is_string_array() const noexcept { return is_type_mask_array(object_base::k_string_mask); }
 
 bool array_object::is_type_array(object_type t) const noexcept {
-  const size_t sz = vector_type::size();
+  const size_t sz = _vec->size();
   for (size_t i = 0; i < sz; i++) {
-    if (!vector_type::operator[](i).is_type(t)) {
+    if (!_vec->operator[](i).is_type(t)) {
       return false;
     }
   }
@@ -133,9 +170,9 @@ bool array_object::is_type_array(object_type t) const noexcept {
 }
 
 bool array_object::is_type_mask_array(uint32_t tflags) const noexcept {
-  const size_t sz = vector_type::size();
+  const size_t sz = _vec->size();
   for (size_t i = 0; i < sz; i++) {
-    if (!vector_type::operator[](i).has_type_mask(tflags)) {
+    if (!_vec->operator[](i).has_type_mask(tflags)) {
       return false;
     }
   }
@@ -145,9 +182,9 @@ bool array_object::is_type_mask_array(uint32_t tflags) const noexcept {
 
 uint32_t array_object::get_array_type_mask() const noexcept {
   uint32_t tflags = 0;
-  const size_t sz = vector_type::size();
+  const size_t sz = _vec->size();
   for (size_t i = 0; i < sz; i++) {
-    tflags |= get_object_type_mask(vector_type::operator[](i).get_type());
+    tflags |= get_object_type_mask(_vec->operator[](i).get_type());
   }
 
   return tflags;
@@ -155,7 +192,7 @@ uint32_t array_object::get_array_type_mask() const noexcept {
 
 zs::error_result array_object::serialize_to_json(zs::engine* eng, std::ostream& stream, int idt) {
 
-  size_t sz = this->size();
+  size_t sz = _vec->size();
 
   if (sz == 0) {
     stream << "[]";
@@ -166,10 +203,10 @@ zs::error_result array_object::serialize_to_json(zs::engine* eng, std::ostream& 
     stream << "[";
 
     for (size_t i = 0; i < sz - 1; i++) {
-      zs::serialize_to_json(eng, stream, (*this)[i], idt);
+      zs::serialize_to_json(eng, stream, (*_vec)[i], idt);
       stream << ", ";
     }
-    zs::serialize_to_json(eng, stream, this->back(), idt);
+    zs::serialize_to_json(eng, stream, _vec->back(), idt);
     stream << "]";
     return {};
   }
@@ -179,12 +216,12 @@ zs::error_result array_object::serialize_to_json(zs::engine* eng, std::ostream& 
     stream << zb::indent_t(idt, 4);
     for (size_t i = 0; i < sz - 1; i++) {
 
-      zs::serialize_to_json(eng, stream, (*this)[i], idt);
+      zs::serialize_to_json(eng, stream, (*_vec)[i], idt);
       stream << ",\n";
       stream << zb::indent_t(idt, 4);
     }
 
-    zs::serialize_to_json(eng, stream, this->back(), idt);
+    zs::serialize_to_json(eng, stream, _vec->back(), idt);
     idt--;
     stream << "\n" << zb::indent_t(idt, 4) << "]";
     return {};

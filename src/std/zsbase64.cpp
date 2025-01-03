@@ -1,6 +1,7 @@
 #include <zscript/std/zbase64.h>
+#include <zscript/zscript.h>
 #include "zvirtual_machine.h"
-#include <zbase/crypto/base64.h>
+#include <zscript/base/crypto/base64.h>
 
 namespace zs {
 using namespace zs::literals;

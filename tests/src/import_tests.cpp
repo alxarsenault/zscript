@@ -1,14 +1,13 @@
 #include "unit_tests.h"
 
 using namespace utest;
-#include <zbase/sys/path.h>
+#include <zscript/base/sys/path.h>
 
 ZTEST_CASE("import", R"""(
-  const math = import("math");
-   return 32;
+const math = import("math");
+return math;
 )""") {
-  //  REQUIRE(value.is_float());
-  //  REQUIRE(value == std::pow(zb::pi<zs::float_t>, 2.0) * 2.0);
+  REQUIRE(value.is_table());
 }
 
 ZTEST_CASE("import", R"""(
@@ -43,26 +42,7 @@ return m1;
   REQUIRE(value.as_table()["a"] == 234);
 }
 
-ZTEST_CASE("import", R"""(
-const m1 = import("module_02");
- 
-return struct{};
-)""") {
-  REQUIRE(value.is_struct());
-}
-
-ZTEST_CASE("import", ZSCRIPT_TESTS_RESOURCES_DIRECTORY "/test_01.zs") { /*zb::print(get_test_name());*/ }
-
-ZTEST_CASE("import", R"""(
-return struct{};
-)""") {
-  REQUIRE(value.is_struct());
-}
-
-ZTEST_CASE("import", R"""(
-return struct{};
-)""") {
-  REQUIRE(value.is_struct());
+ZTEST_CASE("import", ZSCRIPT_TESTS_RESOURCES_DIRECTORY "/tests/test_01.zs") { /*zb::print(get_test_name());*/
 }
 
 // TEST_CASE("proto-serialize") {

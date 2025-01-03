@@ -6,15 +6,15 @@ namespace zs {
 
 zs::error_result try_import_module_from_cache(
     zs::vm_ref vm, const zs::object& name, zs::object& output_module) {
-  zs::engine* eng = vm.get_engine();
-  zs::table_object& modules = vm->get_imported_modules().as_table();
+  //  zs::engine* eng = vm.get_engine();
+  zs::table_object& modules = vm->get_imported_modules();
 
   if (const object* obj = modules.get(name)) {
     output_module = *obj;
     return {};
   }
 
-  const zs::table_object& loaders = vm->get_module_loaders().as_table();
+  const zs::table_object& loaders = vm->get_module_loaders();
   if (const object* obj = loaders.get(name)) {
     const object& loader = *obj;
 
@@ -23,7 +23,7 @@ zs::error_result try_import_module_from_cache(
     }
 
     //    object env = vm->create_this_table_from_root();
-    if (auto err = vm->call(loader, vm->get_global(), output_module)) {
+    if (auto err = vm->call(loader, vm->global(), output_module)) {
       return err;
     }
 
@@ -65,13 +65,13 @@ zs::error_result import_module(zs::vm_ref vm, const zs::object& name, zs::object
 
   //  object env = vm->create_this_table_from_root();
 
-  if (auto err = vm->call(module_closure, vm->get_global(), output_module)) {
+  if (auto err = vm->call(module_closure, vm->global(), output_module)) {
     return err;
   }
 
   //  module_closure.as_closure().set_bounded_this(std::move(env));
 
-  vm->get_imported_modules().as_table().emplace(res_file_name, output_module);
+  vm->get_imported_modules().emplace(res_file_name, output_module);
   return {};
 }
 
@@ -85,7 +85,7 @@ zs::error_result compile_or_load_buffer(
       return err;
     }
 
-    output_closure = zs::_c(eng, std::move(fpo), vm->get_root());
+    output_closure = zs::_c(eng, std::move(fpo), vm->global());
 
     return {};
   }
@@ -123,7 +123,7 @@ zs::error_result compile_or_load_buffer(
       return err;
     }
 
-    output_closure = zs::_c(eng, std::move(fpo), vm->get_root());
+    output_closure = zs::_c(eng, std::move(fpo), vm->global());
 
     return {};
   }

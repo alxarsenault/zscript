@@ -45,7 +45,7 @@ ZS_DECL_RT_ACTION(delegate_set, objref_t obj, objref_t delegate_obj, cobjref_t k
   // There was no operator set in this meta table.
   // Let's look deeper into delegates.
   if (delegate->has_delegate()) {
-    object& sub_delegate_obj = delegate->get_delegate();
+    object sub_delegate_obj = delegate->get_delegate();
     //    return helper::delegate_set(vm, obj, sub_delegate_obj, key, value);
     return runtime_action<runtime_code::delegate_set>(obj, REF(sub_delegate_obj), key, value);
   }

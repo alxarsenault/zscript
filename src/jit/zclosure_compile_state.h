@@ -23,7 +23,6 @@
 #pragma once
 
 #include <zscript/zscript.h>
-
 #include "bytecode/zinstruction_vector.h"
 
 namespace zs {
@@ -56,79 +55,41 @@ struct line_info_op_t {
   }
 };
 
-struct scoped_local_var_info_t : variable_type_info {
-  inline scoped_local_var_info_t() = default;
-
-  inline scoped_local_var_info_t(const object& name, int_t scope_id, uint_t start_op, uint_t end_op,
-      uint_t pos, uint32_t mask, uint64_t custom_mask, bool is_const)
-      : variable_type_info{ custom_mask, mask }
-      , name(name)
-      , scope_id(scope_id)
-      , start_op(start_op)
-      , end_op(end_op)
-      , pos(pos) {
-
-    set_const(is_const);
-  }
-
-  ZS_CK_INLINE bool is_named() const noexcept { return name.is_string(); }
-
-  ZS_CK_INLINE bool is_named(const object& rhs_name) const noexcept {
-    return name.is_string() and name.get_string_unchecked() == rhs_name.get_string_unchecked();
-  }
-
-  object name;
-  int_t scope_id = 0;
-  uint_t start_op = 0;
-  uint_t end_op = 0;
-  uint_t pos = 0;
-};
-
-inline std::ostream& operator<<(std::ostream& s, const scoped_local_var_info_t& vinfo) {
-  s << vinfo.name.convert_to_string();
-  return s;
-}
-
-struct local_var_info_t : variable_type_info {
+struct local_var_info_t : named_variable_type_info {
   inline local_var_info_t() = default;
+  inline local_var_info_t(const local_var_info_t&) = default;
 
   inline local_var_info_t(const object& name, uint_t start_op, uint_t end_op, uint_t pos, uint32_t mask,
       uint64_t custom_mask, bool is_const)
-      : variable_type_info{ custom_mask, mask }
-      , name(name)
+      : named_variable_type_info(name, custom_mask, mask)
       , start_op(start_op)
       , end_op(end_op)
       , pos(pos) {
     set_const(is_const);
   }
 
-  inline local_var_info_t(const scoped_local_var_info_t& lvi)
-      : variable_type_info(lvi)
-      , name(lvi.name)
-      , start_op(lvi.start_op)
-      , end_op(lvi.end_op)
-      , pos(lvi.pos) {}
-
-  inline local_var_info_t(scoped_local_var_info_t&& lvi)
-      : variable_type_info(lvi)
-      , name(std::move(lvi.name))
-      , start_op(lvi.start_op)
-      , end_op(lvi.end_op)
-      , pos(lvi.pos) {}
-
-  ZS_CK_INLINE bool is_named() const noexcept { return name.is_string(); }
-
-  ZS_CK_INLINE bool is_named(const object& rhs_name) const noexcept {
-    return name.is_string() and name.get_string_unchecked() == rhs_name.get_string_unchecked();
-  }
-
-  object name;
   uint_t start_op = 0;
   uint_t end_op = 0;
   uint_t pos = 0;
 };
 
 inline std::ostream& operator<<(std::ostream& s, const local_var_info_t& vinfo) {
+  s << vinfo.name.convert_to_string();
+  return s;
+}
+
+struct scoped_local_var_info_t : local_var_info_t {
+  inline scoped_local_var_info_t() = default;
+
+  inline scoped_local_var_info_t(const object& name, int_t scope_id, uint_t start_op, uint_t end_op,
+      uint_t pos, uint32_t mask, uint64_t custom_mask, bool is_const)
+      : local_var_info_t(name, start_op, end_op, pos, mask, custom_mask, is_const)
+      , scope_id(scope_id) {}
+
+  int_t scope_id = 0;
+};
+
+inline std::ostream& operator<<(std::ostream& s, const scoped_local_var_info_t& vinfo) {
   s << vinfo.name.convert_to_string();
   return s;
 }
@@ -396,10 +357,6 @@ public:
   ZB_CHECK zs::error_result push_local_variable(const object& name, int_t scope_id, int_t* ret_pos = nullptr,
       uint32_t mask = 0, uint64_t custom_mask = 0, bool is_const = false);
 
-  //  ZB_CHECK ZB_INLINE zs::error_result push_local_variable(
-  //      const object& name, int_t* ret_pos, const variable_type_info_t& type_info) {
-  //    return push_local_variable(name, ret_pos, type_info.mask, type_info.custom_mask, type_info.is_const);
-  //  }
   /// @}
 
   /// Looks for a literal with the given name or create a new one if it doesn't
@@ -523,8 +480,6 @@ private:
 
   bool _has_vargs_params = false;
 
-  //  int_t _export_table_target = -1;
-
   void mark_local_as_capture(int_t pos);
 
   ZS_CK_INLINE zs::error_result update_total_stack_size() noexcept {
@@ -561,6 +516,7 @@ namespace jit {
     ZS_CK_INLINE target_t new_target(uint32_t mask, uint64_t custom_mask, bool is_const = false) {
       return _ccs->new_target(mask, custom_mask, is_const);
     }
+
     ZS_CK_INLINE target_t new_target(const variable_type_info& vinfo) {
       return _ccs->new_target(vinfo.mask, vinfo.custom_mask, vinfo.is_const());
     }
@@ -642,6 +598,11 @@ namespace jit {
     template <opcode Op>
     ZS_CK_INLINE instruction_t<Op>& get_instruction_ref(size_t index) noexcept {
       return _ccs->_instructions.get_ref<Op>(index);
+    }
+
+    template <opcode Op>
+    ZS_CK_INLINE instruction_t<Op>& get_instruction_ref() noexcept {
+      return _ccs->_instructions.get_ref<Op>(get_instruction_index());
     }
 
     template <opcode Op>

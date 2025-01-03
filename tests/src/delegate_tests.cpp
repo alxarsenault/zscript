@@ -1,19 +1,6 @@
 #include "unit_tests.h"
 
-#include <zbase/strings/parse_utils.h>
-
-ZTEST_CASE("range", ZSCRIPT_TESTS_RESOURCES_DIRECTORY "/range_test_01.zs") {
-  //  zb::print(value);
-}
-
-ZTEST_CASE("array", ZSCRIPT_TESTS_RESOURCES_DIRECTORY "/array_test_01.zs") {
-  //  zb::print(value);
-}
-
-ZTEST_CASE("property", ZSCRIPT_TESTS_RESOURCES_DIRECTORY "/property.zs") {
-  //  zb::print(value);
-  //  REQUIRE(value ==55);
-}
+#include <zscript/base/strings/parse_utils.h>
 
 ZTEST_CASE("delegate", R"""(
 var d = { a = 32 };
@@ -59,7 +46,7 @@ var t = zs::set_delegate({}, d);
  
 t.a = 55;
 var k1 = zs::contains(t, "a");
-//zs::print(k1);
+//io::print(k1);
 // Remove the delegate.
 //zs::set_delegate(t, null);
 
@@ -288,9 +275,9 @@ return [t.a, t.b, t.c];
 // zs::set_delegate(t1, d1);
 //
 // var dd1 = zs::get_delegate(t1);
-// zs::print(dd1);
+// io::print(dd1);
 //
-// zs::print(zs::get_addr(d1), zs::get_addr(dd1));
+// io::print(zs::get_addr(d1), zs::get_addr(dd1));
 // return 32;
 //)""") {
 //  //  zb::print(get_test_name(), "MULEQ", value);
@@ -305,15 +292,15 @@ var d1 = { b = 51};
 zs::set_delegate(t1, d1);
 
 var dd1 = zs::get_delegate(t1);
-//zs::print(dd1);
+//io::print(dd1);
  
 
 
 var dd2 = zs::set_delegate({}, dd1);
-//zs::print(dd2);
+//io::print(dd2);
 
 
-//zs::print(zs::get_addr(d1), zs::get_addr(dd1), zs::get_addr(dd2));
+//io::print(zs::get_addr(d1), zs::get_addr(dd1), zs::get_addr(dd2));
 
 return 32;
 )""") {
@@ -348,7 +335,7 @@ ZTEST_CASE("delegate-meta-get", META_GET_TEST_CASE_CODE "return t.z;") { REQUIRE
 
 ZTEST_CASE("delegate-meta-get", META_GET_TEST_CASE_CODE "return t.c;", utest::call_fail) {}
 
-ZTEST_CASE("dsdsds", R"""(
+ZTEST_CASE("delegate_get", R"""(
 var ccc = mutable_string("ABCD");
 var b = ccc[2];
 return b;
@@ -382,8 +369,8 @@ var delegate = {
 
 zs::set_delegate(a, delegate);
 
-//zs::print(a[0], 'A');
-//zs::print(a.size());
+//io::print(a[0], 'A');
+//io::print(a.size());
 
 
 return a;
@@ -396,7 +383,7 @@ ZTEST_CASE("Alexandre2", R"""(
 var a =  mutable_string("Alex");
 
 var t = zs::set_delegate({}, none);
-//zs::print(t.size());
+//io::print(t.size());
 
 var delegate = {
   __get = t
@@ -404,8 +391,8 @@ var delegate = {
 
 zs::set_delegate(a, delegate);
 
-//zs::print(a[0], 'A');
-//zs::print(a.size());
+//io::print(a[0], 'A');
+//io::print(a.size());
 
 
 return a;
@@ -449,7 +436,7 @@ const tbl_default = zs::get_table_default_delegate();
 
 var proxy_metatable = zs::set_delegate({
   __get = function(key, d) {
-//    zs::print("*access to element", key);
+//    io::print("*access to element", key);
 
     
     if(zs::contains(tbl_default, key)) {
@@ -505,11 +492,11 @@ return k;
 //  c = 12
 //});
 
-//zs::print(zs::contains(zs::get_table_default_delegate(), "emplace"));
+//io::print(zs::contains(zs::get_table_default_delegate(), "emplace"));
 //var kk = gg.size();
 //
 //function abc(a, ...) {
-//  zs::print(a,vargv);
+//  io::print(a,vargv);
 //}
 //
 //zs::apply(abc, this, [1, 2, 3, 4]);

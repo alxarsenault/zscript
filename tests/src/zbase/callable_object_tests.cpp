@@ -1,5 +1,5 @@
 #include <catch2.h>
-#include <zbase/memory/callable_object.h>
+#include <zscript/base/memory/callable_object.h>
 
 TEST_CASE("callable_object") {
   {

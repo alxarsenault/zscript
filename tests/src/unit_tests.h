@@ -3,8 +3,8 @@
 #include <catch2.h>
 #include <fstream>
 
-#include <zbase/sys/file_view.h>
-#include <zbase/utility/print.h>
+#include <zscript/base/sys/file_view.h>
+#include <zscript/base/utility/print.h>
 
 #include <zscript/zscript.h>
 #include "zvirtual_machine.h"
@@ -159,19 +159,19 @@ struct test_case {
     vm.get_engine()->add_import_directory(ZSCRIPT_MODULES_DIRECTORY);
     vm.get_engine()->add_import_directory(ZSCRIPT_TESTS_RESOURCES_DIRECTORY);
 
-    vm->get_root().as_table().set(zs::_s(vm.get_engine(), "ZSCRIPT_TESTS_RESOURCES_DIRECTORY"),
+    vm->global().as_table().set(zs::_s(vm.get_engine(), "ZSCRIPT_TESTS_RESOURCES_DIRECTORY"),
         zs::_s(vm.get_engine(), ZSCRIPT_TESTS_RESOURCES_DIRECTORY));
 
-    vm->get_root().as_table().set(zs::_s(vm.get_engine(), "ZSCRIPT_EXAMPLES_DIRECTORY"),
+    vm->global().as_table().set(zs::_s(vm.get_engine(), "ZSCRIPT_EXAMPLES_DIRECTORY"),
         zs::_s(vm.get_engine(), ZSCRIPT_EXAMPLES_DIRECTORY));
 
-    vm->get_root().as_table().set(zs::_s(vm.get_engine(), "ZSCRIPT_TESTS_OUTPUT_DIRECTORY"),
+    vm->global().as_table().set(zs::_s(vm.get_engine(), "ZSCRIPT_TESTS_OUTPUT_DIRECTORY"),
         zs::_s(vm.get_engine(), ZSCRIPT_TESTS_OUTPUT_DIRECTORY));
 
-    vm->get_root().as_table().set(zs::_s(vm.get_engine(), "ZSCRIPT_MODULES_DIRECTORY"),
+    vm->global().as_table().set(zs::_s(vm.get_engine(), "ZSCRIPT_MODULES_DIRECTORY"),
         zs::_s(vm.get_engine(), ZSCRIPT_MODULES_DIRECTORY));
 
-    vm->get_root().as_table().set(zs::_ss("__zcheck"), check_impl);
+    vm->global().as_table().set(zs::_ss("__zcheck"), check_impl);
 
     if (opts.init) {
       opts.init(vm);
@@ -208,7 +208,7 @@ struct test_case {
 
     //        zb::print(closure.as_closure().get_proto()._module_info.to_json());
     //    zs::object env = vm->create_this_table_from_root();
-    zs::object env = vm->get_root();
+    zs::object env = vm->global();
     if (auto err = vm->call(closure, env, value)) {
       error = err;
       if ((opts.flags & call_good)) {

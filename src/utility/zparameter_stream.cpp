@@ -114,4 +114,75 @@ zs::error_result integer_parameter::parse(parameter_stream& s, bool output_error
   ++s;
   return {};
 }
+
+zs::error_result function_parameter::parse(parameter_stream& s, bool output_error, object& value) {
+  if (!s->is_function()) {
+    s.set_opt_error(output_error, "Invalid function type.");
+    return zs::errc::not_a_function;
+  }
+
+  value = *s;
+  ++s;
+  return {};
+}
+
+zs::error_result function_parameter::parse(
+    parameter_stream& s, bool output_error, zs::closure_object*& value) {
+  if (!s->is_closure()) {
+    s.set_opt_error(output_error, "Invalid closure type.");
+    return zs::errc::not_a_function;
+  }
+
+  value = &s->as_closure();
+  ++s;
+  return {};
+}
+
+zs::error_result function_parameter::parse(
+    parameter_stream& s, bool output_error, const zs::closure_object*& value) {
+  if (!s->is_closure()) {
+    s.set_opt_error(output_error, "Invalid closure type.");
+    return zs::errc::not_a_function;
+  }
+
+  value = &s->as_closure();
+  ++s;
+  return {};
+}
+
+zs::error_result function_parameter::parse(
+    parameter_stream& s, bool output_error, zs::native_closure_object*& value) {
+  if (!s->is_native_closure()) {
+    s.set_opt_error(output_error, "Invalid native closure type.");
+    return zs::errc::not_a_function;
+  }
+
+  value = &s->as_native_closure();
+  ++s;
+  return {};
+}
+
+zs::error_result function_parameter::parse(
+    parameter_stream& s, bool output_error, const zs::native_closure_object*& value) {
+  if (!s->is_native_closure()) {
+    s.set_opt_error(output_error, "Invalid native closure type.");
+    return zs::errc::not_a_function;
+  }
+
+  value = &s->as_native_closure();
+  ++s;
+  return {};
+}
+
+zs::error_result function_parameter::parse(parameter_stream& s, bool output_error, zs::function_t& value) {
+  if (!s->is_native_function()) {
+    s.set_opt_error(output_error, "Invalid native function type.");
+    return zs::errc::not_a_function;
+  }
+
+  value = s->_nfct;
+  ++s;
+  return {};
+}
+
 } // namespace zs.

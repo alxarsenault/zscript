@@ -16,10 +16,6 @@ zs::error_result jit_compiler::parse_variable_prefix(variable_type_info& vinfo) 
       SET_ATTRIBUTE(const);
       break;
 
-    case tok_mutable:
-      SET_ATTRIBUTE(mutable);
-      break;
-
     case tok_static:
       if (vinfo.is_const()) {
         return ZS_COMPILER_ERROR(invalid_token, "static must be place before const in variable declaration");
@@ -31,10 +27,6 @@ zs::error_result jit_compiler::parse_variable_prefix(variable_type_info& vinfo) 
     case tok_private:
       SET_ATTRIBUTE(private);
       break;
-
-      //    case tok_export:
-      //      SET_ATTRIBUTE(export);
-      //      break;
     }
 
     lex();
@@ -98,6 +90,11 @@ zs::error_result jit_compiler::parse_variable(variable_type_info& vinfo) {
     lex();
     break;
 
+  case tok_atom:
+    vinfo.mask |= zs::get_object_type_mask(k_atom);
+    lex();
+    break;
+
   case tok_array:
     vinfo.mask |= zs::get_object_type_mask(k_array);
     lex();
@@ -110,11 +107,6 @@ zs::error_result jit_compiler::parse_variable(variable_type_info& vinfo) {
 
   case tok_string:
     vinfo.mask |= zs::object_base::k_string_mask;
-    lex();
-    break;
-
-  case tok_exttype:
-    vinfo.mask |= zs::get_object_type_mask(k_atom);
     lex();
     break;
 
@@ -151,12 +143,12 @@ zs::error_result jit_compiler::parse_variable(variable_type_info& vinfo) {
         case tok_int:
         case tok_char:
           count++;
-          vinfo.mask |= (uint32_t)zs::object_type_mask::k_integer;
+          vinfo.mask |= (uint32_t)zs::object_type_mask::otm_integer;
           break;
 
         case token_type::tok_float:
           count++;
-          vinfo.mask |= (uint32_t)zs::object_type_mask::k_float;
+          vinfo.mask |= (uint32_t)zs::object_type_mask::otm_float;
           break;
 
         case token_type::tok_number:
@@ -166,7 +158,7 @@ zs::error_result jit_compiler::parse_variable(variable_type_info& vinfo) {
 
         case token_type::tok_bool:
           count++;
-          vinfo.mask |= (uint32_t)zs::object_type_mask::k_bool;
+          vinfo.mask |= (uint32_t)zs::object_type_mask::otm_bool;
           break;
 
         case token_type::tok_string:
@@ -176,31 +168,31 @@ zs::error_result jit_compiler::parse_variable(variable_type_info& vinfo) {
 
         case token_type::tok_array:
           count++;
-          vinfo.mask |= (uint32_t)zs::object_type_mask::k_array;
+          vinfo.mask |= (uint32_t)zs::object_type_mask::otm_array;
           break;
 
         case token_type::tok_table:
           count++;
-          vinfo.mask |= (uint32_t)zs::object_type_mask::k_table;
+          vinfo.mask |= (uint32_t)zs::object_type_mask::otm_table;
           break;
 
         case token_type::tok_null:
           count++;
-          vinfo.mask |= (uint32_t)zs::object_type_mask::k_null;
+          vinfo.mask |= (uint32_t)zs::object_type_mask::otm_null;
           break;
 
-        case token_type::tok_exttype:
+        case token_type::tok_atom:
           count++;
-          vinfo.mask |= (uint32_t)zs::object_type_mask::k_atom;
+          vinfo.mask |= (uint32_t)zs::object_type_mask::otm_atom;
           break;
 
         case token_type::tok_identifier: {
           count++;
 
-          vinfo.mask |= (uint32_t)zs::object_type_mask::k_table;
-          vinfo.mask |= (uint32_t)zs::object_type_mask::k_struct_instance;
-          vinfo.mask |= (uint32_t)zs::object_type_mask::k_user_data;
-          vinfo.mask |= (uint32_t)zs::object_type_mask::k_array;
+          vinfo.mask |= (uint32_t)zs::object_type_mask::otm_table;
+          vinfo.mask |= (uint32_t)zs::object_type_mask::otm_struct_instance;
+          vinfo.mask |= (uint32_t)zs::object_type_mask::otm_user_data;
+          vinfo.mask |= (uint32_t)zs::object_type_mask::otm_array;
 
           object name(_engine, _lexer->get_identifier_value());
           int_t type_index;
@@ -255,16 +247,27 @@ zs::error_result jit_compiler::parse_variable_declaration() {
     if (is(tok_eq)) {
 
       lex();
+
+      int_t pre_var_idx = -1;
+      if (is(tok_lcrlbracket, tok_function, tok_dollar)) {
+        add_new_target_instruction<op_load_null>();
+        pop_target();
+
+        ZS_COMPILER_RETURN_IF_ERROR(
+            add_stack_variable(var_name, &pre_var_idx), "Duplicated local variable name ", var_name, ".\n");
+      }
+
       ZS_TRACE("parse_variable_declaration (var ", var_name, " = ...)");
       ZS_RETURN_IF_ERROR(parse_expression());
 
       bool did_compile_time_type_mask = false;
       opcode last_op = get_instruction_opcode();
 
-      ZS_COMPILER_RETURN_IF_ERROR(check_compile_time_mask(last_op, vinfo, did_compile_time_type_mask),
-          "wrong type mask '", zs::get_exposed_object_type_name(opcode_to_object_type(last_op)),
-          "' expected ", zs::object_type_mask_printer{ vinfo.mask, "'", "'" }, ".");
-
+      if (auto err = check_compile_time_mask(last_op, vinfo, did_compile_time_type_mask)) {
+        return ZS_COMPILER_ERROR(err, "wrong type mask '",
+            zs::get_exposed_object_type_name(opcode_to_object_type(last_op)), "' expected ",
+            zs::object_type_mask_printer{ vinfo.mask, "'", "'" }, ".");
+      }
       target_t src = pop_target();
       target_t dest = new_target(vinfo);
 
@@ -280,11 +283,38 @@ zs::error_result jit_compiler::parse_variable_declaration() {
           add_top_target_instruction<op_check_type_mask>(vinfo.mask);
         }
       }
+
+      if (pre_var_idx != -1) {
+        add_instruction<op_assign>(pre_var_idx, dest);
+      }
+      else {
+        pop_target();
+        ZS_COMPILER_RETURN_IF_ERROR(
+            add_stack_variable(var_name, nullptr, vinfo.mask, vinfo.custom_mask, vinfo.is_const()),
+            "Duplicated local variable name ", var_name, ".\n");
+      }
+
+      if (is_not(tok_comma)) {
+        break;
+      }
+
+      lex();
     }
 
     // @code `var name;`
     else {
       add_new_target_instruction<op_load_null>();
+
+      pop_target();
+      ZS_COMPILER_RETURN_IF_ERROR(
+          add_stack_variable(var_name, nullptr, vinfo.mask, vinfo.custom_mask, vinfo.is_const()),
+          "Duplicated local variable name ", var_name, ".\n");
+
+      if (is_not(tok_comma)) {
+        break;
+      }
+
+      lex();
     }
 
     //    if (vinfo.is_export()) {
@@ -302,16 +332,7 @@ zs::error_result jit_compiler::parse_variable_declaration() {
     //      lex();
     //    }
     //    else {
-    pop_target();
-    ZS_COMPILER_RETURN_IF_ERROR(
-        add_stack_variable(var_name, nullptr, vinfo.mask, vinfo.custom_mask, vinfo.is_const()),
-        "Duplicated local variable name ", var_name, ".\n");
 
-    if (is_not(tok_comma)) {
-      break;
-    }
-
-    lex();
     //    }
   }
 

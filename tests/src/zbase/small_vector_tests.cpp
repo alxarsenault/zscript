@@ -1,5 +1,5 @@
 #include <catch2.h>
-#include <zbase/container/small_vector.h>
+#include <zscript/base/container/small_vector.h>
 #include <string>
 
 TEST_CASE("zb::small_vector") {

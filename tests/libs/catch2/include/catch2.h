@@ -13941,7 +13941,7 @@ namespace Catch {
 
 // @zscript begin.
 #ifdef ZTESTS_MAIN
-#include <zbase/sys/assert.h>
+#include <zscript/base/sys/assert.h>
 
 int main(int argc, char* argv[]) {
   zb::assert_handler.set([]() { return true; });

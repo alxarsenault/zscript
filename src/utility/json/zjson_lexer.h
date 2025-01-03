@@ -25,7 +25,7 @@
 #include <zscript/zscript.h>
 
 #include "zjson_token.h"
-#include <zbase/strings/utf8_span_stream.h>
+#include <zscript/base/strings/utf8_span_stream.h>
 #include <string>
 #include <string_view>
 #include <unordered_map>

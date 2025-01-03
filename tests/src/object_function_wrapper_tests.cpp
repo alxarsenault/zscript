@@ -1,4 +1,6 @@
 #include "unit_tests.h"
+#include "utility/zvm_call.h"
+#include <zscript/utility/object_function_wrapper.h>
 
 using namespace utest;
 
@@ -24,7 +26,7 @@ UTEST_CASE("object_function_wrapper") {
   //                       object& ret_value)
   {
     zs::var rval;
-    REQUIRE(!vm->call(func, { vm->get_root(), p1, p2, zs::_ss(p3) }, rval));
+    REQUIRE(!vm->call(func, { vm->global(), p1, p2, zs::_ss(p3) }, rval));
     REQUIRE(rval == p3);
     REQUIRE(vm.stack_size() == 0);
   }
@@ -33,7 +35,7 @@ UTEST_CASE("object_function_wrapper") {
   //                       bool stack_base_relative = true);
   {
     zs::int_t params_base = vm.stack_size();
-    vm.push_root();
+    vm.push_global();
     vm.push_integer(p1);
     vm.push_float(p2);
     vm.push_string(p3);
@@ -50,7 +52,7 @@ UTEST_CASE("object_function_wrapper") {
   // virtual_machine::call_from_top(const object& closure, int_t n_params, object& ret_value);
   {
     zs::int_t params_base = vm.stack_size();
-    vm.push_root();
+    vm.push_global();
     vm.push_integer(p1);
     vm.push_float(p2);
     vm.push_string(p3);
@@ -59,26 +61,10 @@ UTEST_CASE("object_function_wrapper") {
     REQUIRE(n_params == 4);
 
     zs::var rval;
-    REQUIRE(!vm->call_from_top(func, n_params, rval));
+    REQUIRE(!zs::call_from_top(vm, func, n_params, rval));
     vm->pop(4);
     REQUIRE(vm.stack_size() == 0);
     REQUIRE(rval == p3);
-  }
-
-  // vm_ref::call(int_t n_params, bool returns, bool pop_callable);
-  {
-    vm.push(func);
-    zs::int_t params_base = vm.stack_size();
-    vm.push_root();
-    vm.push_integer(p1);
-    vm.push_float(p2);
-    vm.push_string(p3);
-    zs::int_t n_params = vm.stack_size() - params_base;
-    REQUIRE(n_params == 4);
-
-    REQUIRE(!vm.call(n_params, true, true));
-    REQUIRE(vm->stack().pop_get() == p3);
-    REQUIRE(vm.stack_size() == 0);
   }
 }
 
@@ -96,7 +82,7 @@ UTEST_CASE("object_function_wrapper") {
           });
 
     zs::var rval;
-    REQUIRE(!vm->call(fct, { vm->get_root(), 123, zs::_ss("bacon") }, rval));
+    REQUIRE(!vm->call(fct, { vm->global(), 123, zs::_ss("bacon") }, rval));
     REQUIRE(rval == captured_value + 32);
   }
 
@@ -110,7 +96,7 @@ UTEST_CASE("object_function_wrapper") {
         }));
 
     zs::var rval;
-    REQUIRE(!vm->call(fct, { vm->get_root(), 123, zs::_ss("bacon") }, rval));
+    REQUIRE(!vm->call(fct, { vm->global(), 123, zs::_ss("bacon") }, rval));
     REQUIRE(rval == captured_value + 32);
   }
 
@@ -125,7 +111,7 @@ UTEST_CASE("object_function_wrapper") {
 
     zs::var rval;
     REQUIRE(
-        !vm->call(fct, { vm->get_root(), zs::_a(eng, { zs::_ss("A"), zs::_ss("B"), zs::_ss("C") }) }, rval));
+        !vm->call(fct, { vm->global(), zs::_a(eng, { zs::_ss("A"), zs::_ss("B"), zs::_ss("C") }) }, rval));
     REQUIRE(rval.is_array());
     REQUIRE(rval == zs::_a(eng, { zs::_ss("A"), zs::_ss("B"), zs::_ss("C"), zs::_ss("D"), zs::_ss("E") }));
   }
@@ -153,7 +139,7 @@ UTEST_CASE("KKLKKK") {
               return 32 + ksd;
             });
 
-        vm.push_root();
+        vm.push_global();
         vm.push_integer(123);
         vm.push_string("bacon");
 
@@ -175,7 +161,7 @@ UTEST_CASE("KKLKKK") {
               return 32 + ksd;
             });
 
-        vm.push_root();
+        vm.push_global();
         vm.push_integer(123);
         vm.push_string("bacon");
 
@@ -197,7 +183,7 @@ UTEST_CASE("KKLKKK") {
               return 32 + ksd;
             }));
 
-        vm.push_root();
+        vm.push_global();
         vm.push_integer(123);
         vm.push_string("bacon");
 
@@ -230,7 +216,7 @@ UTEST_CASE("KKLKKK") {
 
     {
       zs::vm vm(&eng);
-      vm.push_root();
+      vm.push_global();
       vm.push_integer(33);
       vm.push_float(12.12);
 
@@ -252,7 +238,7 @@ UTEST_CASE("KKLKKK") {
             return 11;
           });
 
-      vm.push_root();
+      vm.push_global();
 
       zs::var rval;
       REQUIRE(!vm->call(b, 1, vm.stack_size() - 1, rval));
@@ -269,7 +255,7 @@ UTEST_CASE("KKLKKK") {
             return 11;
           });
 
-      vm.push_root();
+      vm.push_global();
 
       zs::var rval;
       REQUIRE(!vm->call(c, 1, vm.stack_size() - 1, rval));
@@ -291,7 +277,7 @@ UTEST_CASE("KKLKKK") {
           });
 
       zs::int_t np = vm.stack_size();
-      vm.push_root();
+      vm.push_global();
       vm.push_integer(55);
       zs::var obj = zs::_a(&eng, 3);
       auto& vec = *obj.get_array_internal_vector();

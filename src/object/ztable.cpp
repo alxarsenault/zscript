@@ -1,70 +1,75 @@
 #include <zscript/zscript.h>
 #include "object/zfunction_prototype.h"
+
 namespace zs {
 
 table_object::table_object(zs::engine* eng)
-    : delegable_object(eng, zs::object_type::k_table)
-    , map_type((zs::unordered_map_allocator<object, object>(eng, zs::memory_tag::nt_table))) {}
+    : delegable_object(eng, object_type::k_table)
+    , _map(nullptr) {}
 
 table_object* table_object::create(zs::engine* eng) noexcept {
-  table_object* tbl = internal::zs_new<memory_tag::nt_table, table_object>(eng, eng);
+
+  table_object* tbl = (table_object*)eng->allocate(
+      sizeof(table_object) + sizeof(map_type), (alloc_info_t)memory_tag::nt_table);
+  zb_placement_new(tbl) table_object(eng);
+
+  tbl->_map = (map_type*)(tbl->_data);
+  zb_placement_new(tbl->_map)
+      map_type((zs::unordered_map_allocator<object, object>(eng, zs::memory_tag::nt_table)));
+
   return tbl;
 }
 
-const zs::object* table_object::get(const object& key) const noexcept {
-  auto it = map_type::find(key);
-  return it == map_type::end() ? nullptr : &it->second;
+void table_object::destroy_callback(zs::engine* eng, reference_counted_object* obj) noexcept {
+  table_object* tbl = (table_object*)obj;
+
+  if (tbl->_map) {
+    tbl->_map->~map_type();
+    tbl->_map = nullptr;
+  }
+
+  zs_delete(eng, tbl);
 }
 
-zs::object* table_object::get(const object& key) noexcept {
-  auto it = map_type::find(key);
-  return it == map_type::end() ? nullptr : &it->second;
+object table_object::clone_callback(zs::engine* eng, const reference_counted_object* obj) noexcept {
+  table_object* tbl = (table_object*)obj;
+
+  table_object* out_tbl = table_object::create(eng);
+  *out_tbl->_map = *tbl->_map;
+  out_tbl->set_delegate(tbl->get_delegate(), tbl->get_delegate_flags());
+  return object(out_tbl, false);
+}
+
+object table_object::create_object(zs::engine* eng) noexcept {
+  return object(table_object::create(eng), false);
 }
 
 zs::error_result table_object::get(const object& key, object& dst) const noexcept {
-  auto it = map_type::find(key);
-
-  if (it == map_type::end()) {
-    return zs::error_code::not_found;
+  if (auto it = _map->find(key); it != _map->end()) {
+    dst = it->second;
+    return {};
   }
 
-  dst = it->second;
-  return {};
+  dst = nullptr;
+  return errc::not_found;
 }
 
-zs::error_result table_object::contains(const object& key, object& dst) const noexcept {
-  dst = map_type::contains(key);
-  return {};
-}
-
-bool table_object::contains(const object& key) const noexcept { return map_type::contains(key); }
-
-zs::object table_object::get_opt(const object& key, const object& opt) const noexcept {
-  auto it = map_type::find(key);
-
-  if (it == map_type::end()) {
-    return opt;
+bool table_object::contains_all(const table_object& tbl) const noexcept {
+  for (const auto& item : tbl) {
+    if (!this->contains(item.first)) {
+      return false;
+    }
   }
 
-  return it->second;
+  return true;
 }
 
 zs::error_result table_object::erase(const object& key) noexcept {
-  map_type::erase(key);
+  _map->erase(key);
   return {};
 }
 
-object table_object::clone() const noexcept {
-  table_object* tbl = table_object::create(_engine);
-  ((map_type&)*tbl) = *this;
-
-  object obj(tbl, false);
-  copy_delegate(obj);
-  return obj;
-}
-
 zs::error_result table_object::serialize_to_json(zs::engine* eng, std::ostream& stream, int idt) {
-
   stream << "{\n";
 
   const size_t sz = this->size();

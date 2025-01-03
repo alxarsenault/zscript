@@ -1,5 +1,5 @@
-#include <zbase/sys/path.h>
-#include <zbase/sys/assert.h>
+#include <zscript/base/sys/path.h>
+#include <zscript/base/sys/assert.h>
 
 #if !defined(ZBASE_PATH_UNIX) \
     && (defined(unix) || defined(__unix__) || defined(__unix) || defined(__APPLE__) || defined(BSD))

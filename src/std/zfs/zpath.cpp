@@ -1,10 +1,10 @@
 #include "std/zfs/zpath.h"
 #include <zscript/std/zfs.h>
-#include <zbase/sys/path.h>
+#include <zscript/base/sys/path.h>
 #include "zvirtual_machine.h"
 #include "utility/zparameter_stream.h"
-#include <zbase/strings/unicode.h>
-#include <zbase/strings/stack_string.h>
+#include <zscript/base/strings/unicode.h>
+#include <zscript/base/strings/stack_string.h>
 #include <stdlib.h>
 
 #if !defined(ZS_UNIX) \
@@ -43,32 +43,32 @@
 
 namespace zs::path_library {
 
-inline static constexpr const char* file_type_to_string(std::filesystem::file_type ft) noexcept {
-  switch (ft) {
-  case std::filesystem::file_type::none:
-    return "unknown";
-  case std::filesystem::file_type::not_found:
-    return "not_found";
-  case std::filesystem::file_type::regular:
-    return "regular";
-  case std::filesystem::file_type::directory:
-    return "directory";
-  case std::filesystem::file_type::symlink:
-    return "symlink";
-  case std::filesystem::file_type::block:
-    return "block";
-  case std::filesystem::file_type::character:
-    return "character";
-  case std::filesystem::file_type::fifo:
-    return "fifo";
-  case std::filesystem::file_type::socket:
-    return "socket";
-  case std::filesystem::file_type::unknown:
-    return "unknown";
-  }
-
-  return "unknown";
-}
+// inline static constexpr const char* file_type_to_string(std::filesystem::file_type ft) noexcept {
+//   switch (ft) {
+//   case std::filesystem::file_type::none:
+//     return "unknown";
+//   case std::filesystem::file_type::not_found:
+//     return "not_found";
+//   case std::filesystem::file_type::regular:
+//     return "regular";
+//   case std::filesystem::file_type::directory:
+//     return "directory";
+//   case std::filesystem::file_type::symlink:
+//     return "symlink";
+//   case std::filesystem::file_type::block:
+//     return "block";
+//   case std::filesystem::file_type::character:
+//     return "character";
+//   case std::filesystem::file_type::fifo:
+//     return "fifo";
+//   case std::filesystem::file_type::socket:
+//     return "socket";
+//   case std::filesystem::file_type::unknown:
+//     return "unknown";
+//   }
+//
+//   return "unknown";
+// }
 
 bool path_is_root(std::string_view path) {
 #if ZS_UNIX
@@ -1627,9 +1627,9 @@ namespace {
   zs::object create_path_delegate(zs::engine* eng);
   zs::object& get_path_delegate(zs::engine* eng);
 
-  inline constexpr object s_path_uid = _sv("__fs_path_object__");
+  //  inline constexpr object s_path_uid = _sv("__fs_path_object__");
   inline constexpr object s_path_reg_id = _sv("__fs_path_delegate__");
-  inline constexpr object s_path_iterator_reg_id = _sv("__fs_path_iterator_delegate__");
+  //  inline constexpr object s_path_iterator_reg_id = _sv("__fs_path_iterator_delegate__");
   inline constexpr object k_path_method_list_recursive = _sv("list_recursive");
 
   int_t path_get_filename_impl(zs::vm_ref vm) {
@@ -1807,7 +1807,7 @@ namespace {
     const size_t nargs = vm.stack_size();
 
     if (nargs >= 2 and vm[1].is_array() and !vm[1]._array->empty()) {
-      const zs::vector<zs::object>& ext_arr = vm[1].as_array();
+      const auto& ext_arr = vm[1].as_array().to_vec();
 
       const auto is_in_ext_vec = [&](std::string_view p) {
         if (p.empty()) {
@@ -1889,7 +1889,7 @@ namespace {
     std::string_view ext_str;
 
     if (nargs >= 2 and vm[1].is_array() and !vm[1]._array->empty()) {
-      const zs::vector<zs::object>& ext_arr = vm[1].as_array();
+      const auto& ext_arr = vm[1].as_array().to_vec();
       data = &ext_arr;
 
       is_valid_extension = [](std::string_view ext, const void* data) {
@@ -1973,7 +1973,7 @@ namespace {
     ZS_RETURN_IF_ERROR(ps.require<mutable_string_parameter>(mstr), -1);
 
     int_t index = 0;
-    ZS_RETURN_IF_ERROR(ps.optional<integer_parameter>(index), vm.push(object::create_none()));
+    ZS_RETURN_IF_ERROR(ps.optional<integer_parameter>(index), vm.push(zs::none()));
     std::string_view s = path_library::path_get_component(*mstr, index);
 
     if (s.empty()) {
@@ -1989,7 +1989,7 @@ namespace {
 
   struct path_iterator_ref {
     inline path_iterator_ref(object& obj) noexcept
-        : index(obj._ex1_atom_it_index)
+        : index(obj._ex1_u32)
         , pointer(obj._pointer) {}
 
     uint32_t& index;
@@ -2152,10 +2152,10 @@ namespace {
     return obj;
   }
 
-  const zs::object& get_path_iterator_delegate(zs::engine* eng) {
-    object& obj = eng->get_registry_table_object()[s_path_iterator_reg_id];
-    return obj.is_table() ? obj : (obj = create_path_iterator_delegate(eng));
-  }
+  //  const zs::object& get_path_iterator_delegate(zs::engine* eng) {
+  //    object& obj = eng->get_registry_table_object()[s_path_iterator_reg_id];
+  //    return obj.is_table() ? obj : (obj = create_path_iterator_delegate(eng));
+  //  }
 
   object create_path_iterator(zs::vm_ref vm, int_t index, const char* ptr) {
 
@@ -2167,10 +2167,10 @@ namespace {
 
     object it;
     it._type = object_type::k_atom;
-    it._atom_type = atom_type::atom_custom;
+    it._atom_type = atom_type::atom_path_iterator;
     it._pointer = (void*)ptr;
-    it._ex1_atom_it_index = (uint32_t)index;
-    it._ex2_delegated_atom_delegate_id = constants::k_atom_path_iterator_delegate_id;
+    it._ex1_u32 = (uint32_t)index;
+    it._ex2_delegate_id = constants::k_atom_path_iterator_delegate_id;
     return it;
   }
 
@@ -2267,7 +2267,7 @@ namespace {
     //
     //          { zs::constants::get<meta_method::mt_get>(), path_get_impl }, //
     //          { zs::constants::get<meta_method::mt_set>(), path_set_impl } //
-    tbl->set_delegate(get_mutable_string_delegate(eng), false);
+    tbl->set_delegate(get_mutable_string_delegate(eng), delegate_flags_t::df_none);
 
     return object(tbl, false);
   }

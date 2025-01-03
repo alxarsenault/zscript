@@ -8,57 +8,27 @@ using enum arithmetic_op;
 
 struct virtual_machine::proxy {
 
-  inline static error_result string_raw_get_internal(
-      virtual_machine* vm, std::string_view s, int_t index, object& dest) {
+  inline static error_result string_raw_get_internal(std::string_view s, int_t u32_index, object& dest) {
 
-    const int_t sz = (int_t)s.size();
+    // Length of the mutable string in u32.
+    const size_t u32_length = zb::unicode::length(s);
 
-    if (index < 0) {
-      index += sz;
+    if (u32_index < 0) {
+      u32_index += u32_length;
     }
 
-    if (index >= 0 && index < sz) {
-      dest = (int_t)s[index];
-      return {};
+    if (u32_index < 0 or u32_index >= (int_t)u32_length) {
+      return errc::out_of_bounds;
     }
 
-    return zs::errc::out_of_bounds;
-  }
-
-  template <object_type SType>
-  inline static error_result string_raw_get(
-      virtual_machine* vm, const object& obj, const object& key, object& dest) {
-
-    if (!key.is_integer()) {
-      return errc::inaccessible;
+    // Find the u8 index from the u32 input index.
+    size_t u8_index = zb::unicode::u32_index_to_u8_index(s, u32_index, u32_length);
+    if (u8_index == std::string_view::npos) {
+      return errc::out_of_bounds;
     }
 
-    return string_raw_get_internal(vm, obj.get_string_unchecked<SType>(), key._int, dest);
-  }
-
-  template <object_type SType>
-  inline static error_result string_raw_contains(
-      virtual_machine* vm, const object& obj, const object& key, object& dest) {
-
-    if (!key.is_integer()) {
-      dest = false;
-      return {};
-    }
-
-    std::string_view s = obj.get_string_unchecked<SType>();
-    const int_t sz = (int_t)s.size();
-    int_t index = key._int;
-
-    if (index < 0) {
-      index += sz;
-    }
-
-    if (index >= 0 && index < sz) {
-      dest = true;
-      return {};
-    }
-
-    dest = false;
+    uint32_t u32_char = zb::unicode::next_u8_to_u32_s(s.data() + u8_index);
+    dest = object::create_char(u32_char);
     return {};
   }
 
@@ -67,36 +37,6 @@ struct virtual_machine::proxy {
 
   static zs::error_result get(virtual_machine* vm, const object& obj, const object& key,
       const object& delegate, object& dest, bool use_meta_get = true);
-
-  template <object_type OType>
-  inline static error_result get(virtual_machine* vm, const object& obj, const object& key, object& dest) {
-    vm->set_error("Can't get a value from '", zs::get_object_type_name(obj.get_type()), "'.\n");
-    dest.reset();
-    return errc::inaccessible;
-  }
-
-  template <object_type OType>
-  inline static error_result raw_get(
-      virtual_machine* vm, const object& obj, const object& key, object& dest) {
-    vm->set_error("Can't raw_get a value from '", zs::get_object_type_name(obj.get_type()), "'.\n");
-    dest.reset();
-    return errc::inaccessible;
-  }
-
-  template <object_type OType>
-  inline static error_result raw_contains(
-      virtual_machine* vm, const object& obj, const object& key, object& dest) {
-    vm->set_error("Can't raw_contains a value from '", zs::get_object_type_name(obj.get_type()), "'.\n");
-
-    dest = false;
-    return errc::inaccessible;
-  }
-
-  //  static error_result arith_float_float(
-  //      virtual_machine* vm, arithmetic_op op, float_t lhs, float_t rhs, object& dest);
-  //
-  //  static error_result arith_int_int(
-  //      virtual_machine* vm, arithmetic_op op, int_t lhs, int_t rhs, object& dest);
 };
 
 } // namespace zs.
@@ -190,7 +130,7 @@ zs::error_result virtual_machine::proxy::get(virtual_machine* vm, const object& 
   }
 
   if (delegate.is_null()) {
-    if (obj.is_delegable() and !obj.as_delegable().get_use_default_delegate()) {
+    if (obj.is_delegable() and !obj.as_delegable().is_use_default()) {
       return errc::inaccessible;
     }
 
@@ -227,7 +167,7 @@ zs::error_result virtual_machine::proxy::get(virtual_machine* vm, const object& 
 
   if (!delegate.is_delegable()) {
 
-    if (obj.is_delegable() and !obj.as_delegable().get_use_default_delegate()) {
+    if (obj.is_delegable() and !obj.as_delegable().is_use_default()) {
       return errc::inaccessible;
     }
 
@@ -239,7 +179,7 @@ zs::error_result virtual_machine::proxy::get(virtual_machine* vm, const object& 
 
   ZS_ASSERT(delegate.is_delegable(), zs::get_object_type_name(delegate.get_type()));
 
-  zs::object& dobj = delegate.as_delegable().get_delegate();
+  zs::object dobj = delegate.as_delegable().get_delegate();
 
   if (dobj.is_none()) {
     return errc::inaccessible;
@@ -247,7 +187,7 @@ zs::error_result virtual_machine::proxy::get(virtual_machine* vm, const object& 
 
   if (dobj.is_null()) {
 
-    if (obj.is_delegable() and !obj.as_delegable().get_use_default_delegate()) {
+    if (obj.is_delegable() and !obj.as_delegable().is_use_default()) {
       return errc::inaccessible;
     }
 

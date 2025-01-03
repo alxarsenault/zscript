@@ -1,4 +1,4 @@
-#include <zbase/sys/zip.h>
+#include <zscript/base/sys/zip.h>
 #include "zip_file.h"
 
 ZBASE_BEGIN_NAMESPACE

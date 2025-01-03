@@ -1,8 +1,8 @@
-#include <zbase/sys/file_view.h>
+#include <zscript/base/sys/file_view.h>
 
 #include <errno.h>
 #include <stdio.h>
-#include <zbase/utility/print.h>
+#include <zscript/base/utility/print.h>
 
 // FSX_PRAGMA_PUSH()
 // FSX_PRAGMA_DISABLE_WARNING_CLANG("-Wunused-macros")

@@ -1,11 +1,9 @@
 #include "zjson_lexer.h"
-#include <zbase/strings/charconv.h>
-#include <zbase/container/constexpr_map.h>
-#include <zbase/strings/parse_utils.h>
+#include <zscript/base/strings/charconv.h>
+#include <zscript/base/container/constexpr_map.h>
+#include <zscript/base/strings/parse_utils.h>
 
-ZBASE_PRAGMA_PUSH()
-ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wswitch")
-ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
+ZBASE_PRAGMA_PUSH_NO_MISSING_SWITCH_WARNING()
 
 namespace zs {
 
@@ -554,7 +552,7 @@ void json_lexer::init(std::string_view code) {
 zs::object json_lexer::get_value() const {
   switch (_current_token) {
   case tok_none:
-    return zs::object::create_none();
+    return zs::none();
   case tok_null:
     return nullptr;
   case tok_integer_value:

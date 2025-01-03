@@ -1,5 +1,5 @@
 #include <catch2.h>
-#include <zbase/crypto/base64.h>
+#include <zscript/base/crypto/base64.h>
 
 TEST_CASE("Base64 : get_encoded_size") {
   REQUIRE(zb::base64::encoded_size(1) == 4);

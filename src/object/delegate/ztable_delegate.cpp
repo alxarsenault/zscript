@@ -5,26 +5,26 @@
 namespace zs {
 namespace {
 
-  static_assert(std::is_trivially_destructible_v<zs::object_unordered_map<object>::iterator>, "");
-  static_assert(std::is_trivially_copyable_v<zs::object_unordered_map<object>::iterator>, "");
+  static_assert(std::is_trivially_destructible_v<zs::object_map::iterator>, "");
+  static_assert(std::is_trivially_copyable_v<zs::object_map::iterator>, "");
 
   struct table_iterator_ref {
 
     inline table_iterator_ref(object& obj)
         : pointer(obj._atom.table_it.get()) {}
 
-    zs::object_unordered_map<zs::object>::iterator& pointer;
+    zs::object_map::iterator& pointer;
 
     inline const object& key() const noexcept { return pointer->first; }
 
-    inline zs::object_unordered_map<zs::object>::iterator& ptr() const noexcept { return pointer; }
-    inline zs::object_unordered_map<zs::object>::iterator itptr() const noexcept { return pointer; }
+    inline zs::object_map::iterator& ptr() const noexcept { return pointer; }
+    inline zs::object_map::iterator itptr() const noexcept { return pointer; }
 
     inline bool operator==(const table_iterator_ref& it) const noexcept { return ptr() == it.ptr(); }
     inline bool operator!=(const table_iterator_ref& it) const noexcept { return ptr() != it.ptr(); }
   };
 
-  object create_table_iterator(zs::vm_ref vm, zs::object_unordered_map<zs::object>::iterator ptr);
+  object create_table_iterator(zs::vm_ref vm, zs::object_map::iterator ptr);
 
   inline object create_table_iterator(zs::vm_ref vm, table_iterator_ref it_ref) {
     return create_table_iterator(vm, it_ref.ptr());
@@ -123,7 +123,7 @@ namespace {
     return obj;
   }
 
-  object create_table_iterator(zs::vm_ref vm, zs::object_unordered_map<zs::object>::iterator ptr) {
+  object create_table_iterator(zs::vm_ref vm, zs::object_map::iterator ptr) {
     if (object& obj = vm->get_delegated_atom_delegates_table()
                           .as_table()[(int_t)constants::k_atom_table_iterator_delegate_id];
         !obj.is_table()) {
@@ -132,9 +132,9 @@ namespace {
 
     object it;
     it._type = object_type::k_atom;
-    it._atom_type = atom_type::atom_custom;
+    it._atom_type = atom_type::atom_table_iterator;
     it._atom.table_it.construct(ptr);
-    it._ex2_delegated_atom_delegate_id = constants::k_atom_table_iterator_delegate_id;
+    it._ex2_delegate_id = constants::k_atom_table_iterator_delegate_id;
     return it;
   }
 
@@ -142,7 +142,7 @@ namespace {
 
     const int_t nargs = vm.stack_size();
     if (nargs != 1) {
-      vm->handle_error(errc::invalid_parameter_count, { -1, -1 }, ZS_DEVELOPER_SOURCE_LOCATION(),
+      vm->handle_error(errc::invalid_parameter_count, { -1, -1 }, zb::source_location::current(),
           "Invalid parameter count (", nargs, ") in table.size(), expected 1.\n");
       return -1;
     }
@@ -151,7 +151,7 @@ namespace {
 
     const table_object* tbl_obj = nullptr;
     if (auto err = ps.optional<table_parameter>(tbl_obj)) {
-      vm->handle_error(errc::not_a_table, { -1, -1 }, ZS_DEVELOPER_SOURCE_LOCATION(),
+      vm->handle_error(errc::not_a_table, { -1, -1 }, zb::source_location::current(),
           "Invalid table parameter in table.size().\n");
       return -1;
     }
@@ -408,8 +408,7 @@ zs::object create_table_default_delegate(zs::engine* eng) {
   tbl["to_pairs_array"] = _nf(table_to_pairs_array_impl);
   tbl["to_sorted_pairs_array"] = _nf(table_to_sorted_pairs_array_impl);
 
-  tbl.set_delegate(zs::object::create_none());
-  tbl.set_use_default_delegate(false);
+  tbl.set_no_default_none();
 
   return obj;
 }

@@ -24,7 +24,7 @@
 
 // #include <zscript/zscript.h>
 #include <zscript/object.h>
-#include <zbase/container/stack.h>
+#include <zscript/base/container/stack.h>
 
 namespace zs {
 class object_stack : public zb::execution_stack<object, zs::allocator<object>> {

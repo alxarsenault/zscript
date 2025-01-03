@@ -103,15 +103,15 @@ ZTEST_CASE("raw_call", R"""(
 
 var f2 = $(a) return a + 2;
 var f3 = (a)=> a + 12
-//zs::print(f3(12));
-//zs::print(f2(32));
+//io::print(f3(12));
+//io::print(f2(32));
 
 var g3 = (j)=> {
 return j + 90;
 }
 
 var dd = (u)=> u + 8;
-//zs::print(g3(10), dd(670), ((u)  => u + 8;)(89));
+//io::print(g3(10), dd(670), ((u)  => u + 8;)(89));
 
 var t1 = {
   a = 1,
@@ -203,7 +203,7 @@ var John = this.john;
 var delegate = {
   __call = function(a) {
     John(a);
-//    zs::print(a, "DFLSKDJSKJLDS", this);
+//    io::print(a, "DFLSKDJSKJLDS", this);
   }
 }
  
@@ -226,7 +226,7 @@ f4(5);
 )""",
     [](zs::vm_ref vm) {
       static int counter = 0;
-      vm->get_root()._table->emplace("john", [](zs::vm_ref vm) -> zs::int_t {
+      vm->global()._table->emplace("john", [](zs::vm_ref vm) -> zs::int_t {
         REQUIRE(vm[1] == ++counter);
         return 0;
       });
@@ -234,7 +234,7 @@ f4(5);
 
 ZTEST_CASE("CASE1", R"""(
 function A(... = 32 ) {
-//  zs::print(vargv);
+//  io::print(vargv);
   return 32;
 }
 return A(1, 2, 3, 4);
@@ -244,7 +244,7 @@ return A(1, 2, 3, 4);
 
 ZTEST_CASE("CASE2", R"""(
 function A(k ... = 32 ) {
-//  zs::print(k);
+//  io::print(k);
   return 32;
 }
 return A(1, 2, 3, 4);
@@ -254,7 +254,7 @@ return A(1, 2, 3, 4);
 
 ZTEST_CASE("CASE3", R"""(
 function A(var k ... = 32 ) {
-//  zs::print(k);
+//  io::print(k);
   return 32;
 }
 return A(1, 2, 3, 4);
@@ -264,7 +264,7 @@ return A(1, 2, 3, 4);
 
 ZTEST_CASE("CASE3", R"""(
 function A(k ... = [8, 9] ) {
-//  zs::print(k);
+//  io::print(k);
   return 32;
 }
 return A(1, 2, 3, 4);
@@ -274,7 +274,7 @@ return A(1, 2, 3, 4);
 
 ZTEST_CASE("CASE3", R"""(
 function A(k = ...) {
-//  zs::print(k);
+//  io::print(k);
   return 32;
 }
 return A(1, 2, 3, 4);
@@ -284,7 +284,7 @@ return A(1, 2, 3, 4);
 
 ZTEST_CASE("CASE4", R"""(
 function A(var b ... = []) {
-//  zs::print(b);
+//  io::print(b);
   return 32;
 }
 
@@ -444,11 +444,155 @@ return A();
 
 ZTEST_CASE("all_truekk", R"""(
 function A(... = 32 ) {
-//  zs::print(vargv);
+//  io::print(vargv);
   return 32;
 }
 
 return A(1, 2, 3, {});
 )""") {
   REQUIRE(value == 32);
+}
+
+ZTEST_CASE("tail-call", R"""(
+var gg = function(n = 0) {
+//  io::print(zs::to_string(this));
+  if(n == 0) {
+    return 0;
+  }
+
+  return gg(n - 1);
+}
+
+ gg(3)
+
+var t = { g = gg};
+
+t.g(3);
+)""") {}
+
+uint64_t tail_recursion_fib(uint64_t n, uint64_t a = 0, uint64_t b = 1) {
+  if (n == 0)
+    return a;
+  if (n == 1)
+    return b;
+  return tail_recursion_fib(n - 1, b, a + b);
+}
+
+ZTEST_CASE("tail-call", R"""(
+
+
+var fib = function(var n, var a = 0, var b = 1) {
+  if (n == 0) {
+    return a;
+  }
+
+  if (n == 1) {
+    return b;
+  }
+
+  return fib(n - 1, b, a + b);
+}
+
+function itfib(var n) {
+  var x0 = 0, x1 = 1, x2 = 0;
+  for(var i = 2; i <= n; i++) {
+    x0 = x2 + x1;
+    x2 = x1;
+    x1 = x0;
+  }
+
+  return x0;
+}
+
+var rfib = function(var n) {
+  return n < 2 ? n : rfib(n - 2) + rfib(n - 1);
+}
+//
+//io::print(fib.get_instructions_size());
+//io::print(itfib.get_instructions_size());
+//io::print(rfib.get_instructions_size());
+//
+//io::print(fib.get_stack_size());
+//io::print(itfib.get_stack_size());
+//io::print(rfib.get_stack_size());
+
+//var insts = fib.print_instructions();
+//io::print(zs::to_json(insts));
+
+return fib(500);
+)""") {
+  REQUIRE(value == tail_recursion_fib(500));
+}
+
+// TEST_CASE("Fibonacci") {
+//   std::string_view code  = R"""(
+//
+//   var fib = function(int n, int a = 0, int b = 1)
+//   {
+//       if (n == 0)
+//   return a;
+//
+//       if (n == 1)
+//   return b;
+//
+//       return fib(n - 1, b, a + b);
+//   }
+//
+// return fib(35);
+//   )""";
+//     BENCHMARK("Fibonacci 35") {
+//         return tail_recursion_fib(35);
+//     };
+//
+//   BENCHMARK_ADVANCED("advanced")(Catch::Benchmark::Chronometer meter) {
+////      set_up();
+//    meter.measure([] { return tail_recursion_fib(35);});
+//  };
+//
+//  zs::vm vm;
+//  zs::object closure;
+//  if (auto err = vm->compile_buffer(code, "test_name", closure)) {
+//  }
+//  zs::var root = vm->get_root();
+//  zs::var value;
+//  BENCHMARK_ADVANCED("asasa")(Catch::Benchmark::Chronometer meter) {
+//
+//
+//      meter.measure([&] {  vm->call(closure, root, value);
+//
+//        return value._int;});
+//  };
+//}
+
+ZTEST_CASE("tail-call", R"""(
+ 
+
+var t =
+{
+  function gg(n = 0) {
+//    io::print(zs::to_string(this));
+    if(n == 0) {
+      return 0;
+    }
+
+    var gg_name = "gg";
+    return this[gg_name](n - 1);
+  }
+}
+
+t.gg(3);
+)""") {}
+
+ZTEST_CASE("vargs", R"""(
+function A(a, b, c = 11, d = 3, e... = [1, 2, 3]) {
+  return e;
+}
+
+function B(a, b, c = 11, d = 3, e... = [1, 2, 3]) {
+  return A(a, b, c, d, e);
+}
+
+return B(12, 12, 13, 14, [15, 16]);
+)""") {
+  REQUIRE(value == zs::_a(vm, { 15, 16 }));
 }

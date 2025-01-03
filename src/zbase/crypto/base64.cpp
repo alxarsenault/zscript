@@ -1,5 +1,5 @@
-#include <zbase/crypto/base64.h>
-#include <zbase/sys/assert.h>
+#include <zscript/base/crypto/base64.h>
+#include <zscript/base/sys/assert.h>
 
 ZBASE_BEGIN_SUB_NAMESPACE(base64)
 //

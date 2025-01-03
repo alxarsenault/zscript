@@ -24,7 +24,7 @@
 
 #include <zscript/zscript.h>
 #include "jit/zclosure_compile_state.h"
-#include <zbase/container/byte.h>
+#include <zscript/base/container/byte.h>
 
 namespace zs {
 
@@ -64,6 +64,7 @@ public:
   int_t get_minimum_required_parameters_count() const noexcept;
   bool is_possible_parameter_count(size_t sz) const noexcept;
   bool is_valid_parameters(zs::vm_ref vm, zb::span<const object> params, int_t& n_type_match) const noexcept;
+  ZS_CK_INLINE bool has_variadic_parameters() const noexcept { return _has_vargs_params; }
 
 private:
   function_prototype_object(zs::engine* eng);

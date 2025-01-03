@@ -178,10 +178,6 @@ auto jit_compiler::create_local_lambda<parse_struct_method>() {
 
     add_top_target_instruction<op_new_struct_method>(get_last_function_index(), vinfo.flags);
 
-    if (vinfo.is_doc()) {
-      add_struct_doc_member_instruction(top_target(), identifier);
-    }
-
     // Optional semi-colon.
     lex_if(tok_semi_colon);
 
@@ -228,10 +224,6 @@ auto jit_compiler::create_local_lambda<parse_struct_member>() {
         add_top_target_instruction<op_new_struct_slot>(pop_target(), val, vinfo.mask, vinfo.flags);
       }
 
-      if (vinfo.is_doc()) {
-        add_struct_doc_member_instruction(top_target(), identifier);
-      }
-
       if (is_not(tok_comma)) {
         break;
       }
@@ -256,9 +248,6 @@ zs::error_result jit_compiler::parse_struct_statement() {
   expr_state es = _estate;
   _estate.no_get = true;
 
-  bool had_doc = _has_doc_block;
-  _has_doc_block = false;
-
   // Check if the struct is declared as `struct var_name {` or `struct something.var_name`.
   const bool is_local = is(tok_identifier) and _lexer->peek() == tok_lcrlbracket;
 
@@ -266,10 +255,6 @@ zs::error_result jit_compiler::parse_struct_statement() {
     zs::object var_name;
     ZS_COMPILER_EXPECT_GET(tok_identifier, var_name);
     ZS_RETURN_IF_ERROR(parse_struct(&var_name));
-
-    if (had_doc) {
-      add_struct_doc_instruction(top_target());
-    }
 
     pop_target();
 
@@ -289,10 +274,6 @@ zs::error_result jit_compiler::parse_struct_statement() {
       ZS_RETURN_IF_ERROR(parse_struct(nullptr));
 
       add_top_target_instruction<op_set_struct_name>(up_target(-2));
-
-      if (had_doc) {
-        add_struct_doc_instruction(top_target());
-      }
 
       target_t struct_idx = pop_target();
       target_t key_idx = pop_target();
@@ -336,21 +317,11 @@ zs::error_result jit_compiler::parse_struct(const object* struct_name) {
   //  [[maybe_unused]] int_t nitems = 0;
 
   while (!is(tok_rcrlbracket)) {
-    bool had_doc = is(tok_doc_block);
-    size_t doc_count = _doc_blocks.size();
-    if (had_doc) {
-      std::string_view val = zb::strip_leading_and_trailing_endlines(_lexer->get_escaped_string_value());
-      _has_doc_block = false;
-      _doc_blocks.push_back(zs::_s(_engine, val));
-      lex();
-    }
-
     if (is(tok_constructor)) {
       ZS_RETURN_IF_ERROR(call_local_lambda<parse_struct_constructor>(sparser));
     }
     else {
       variable_type_info vinfo;
-      vinfo.set_doc(had_doc);
       ZS_RETURN_IF_ERROR(parse_variable_prefix(vinfo));
 
       if (is(tok_function)) {
@@ -359,10 +330,6 @@ zs::error_result jit_compiler::parse_struct(const object* struct_name) {
       else {
         ZS_RETURN_IF_ERROR(call_local_lambda<parse_struct_member>(sparser, vinfo));
       }
-    }
-
-    if (had_doc and doc_count != _doc_blocks.size()) {
-      _doc_blocks.pop_back();
     }
     //    nitems++;
   }

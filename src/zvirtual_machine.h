@@ -66,7 +66,7 @@ struct call_info {
   friend std::ostream& operator<<(std::ostream& s, const call_info& ci);
 };
 
-#define ZS_VM_ERROR(err, ...) handle_error(err, { -1, -1 }, ZS_DEVELOPER_SOURCE_LOCATION(), __VA_ARGS__)
+#define ZS_VM_ERROR(err, ...) handle_error(err, { -1, -1 }, zb::source_location::current(), __VA_ARGS__)
 
 /// Backend virtual machine.
 class virtual_machine final : public engine_holder {
@@ -82,82 +82,86 @@ public:
   ZS_CHECK static virtual_machine* create(virtual_machine* vm, size_t stack_size, bool same_global);
 
   //
-  // MARK: Stack.
+  // MARK: Stack operations.
   //
 
-  void push(const object& obj);
-  void push(object&& obj);
-  void push_null();
-  void push_root();
-  void pop();
-  void pop(int_t n);
-  void remove(int_t n);
-  void swap(int_t n1, int_t n2);
-
+  /// @brief Get the current relative stack size.
+  /// For absolute stack size and other low level stack operations,
+  /// the object_stack can be accessed with the `stack()` method.
   ZS_CK_INLINE int_t stack_size() const noexcept { return _stack.stack_size(); }
 
+  /// @brief Access the object at the given index relative to the stack base.
+  /// @param idx The relative index to access.
+  /// @return A reference to the object at the given index.
+  ZS_CK_INLINE object& stack_get(int_t idx) noexcept { return _stack[idx]; }
+  ZS_CK_INLINE const object& stack_get(int_t idx) const noexcept { return _stack[idx]; }
+
+  /// @brief Access the top object from the stack.
+  /// Equivalent to `stack_get(stack_size() - 1)`.
   ZS_CHECK const object& top() const noexcept;
 
-  ZS_CK_INLINE object& stack_get(int_t idx) { return _stack[idx]; }
-  ZS_CK_INLINE const object& stack_get(int_t idx) const { return _stack[idx]; }
-
-  ///
+  /// @brief Get the object stack.
   ZS_CK_INLINE zs::object_stack& stack() noexcept { return _stack; }
 
-  /// Get the root table.
+  /// @brief Push an object to the stack.
   /// @{
-  ZS_CK_INLINE const object& get_root() const noexcept { return _global_table; }
+  void push(object&& obj);
+  void push(const object& obj);
+  void push(std::span<const object> objs);
   /// @}
 
-  /// Get the global table.
+  /// @brief Push a null object to the stack.
+  void push_null();
+
+  /// @brief Push `n` null objects to the stack.
+  void push_nulls(size_t n);
+
+  /// @brief Push the global table to the stack.
+  void push_global();
+
+  /// @brief Pop the top object from the stack.
   /// @{
-  ZS_CK_INLINE const object& get_global() const noexcept { return _global_table; }
+  void pop() noexcept;
+  ZS_CHECK object pop_get() noexcept;
   /// @}
 
+  /// @brief Pop the first `n` objects from the stack.
+  void pop(int_t n) noexcept;
+
+  /// @brief Remove the stack object at the given index.
+  void remove(int_t idx);
+
+  /// @brief Swap two objects in the stack at the given indexes.
+  void swap(int_t idx1, int_t idx2);
+
   //
+  // MARK: Global table.
   //
+
+  /// @brief Get the global object.
+  ZS_CK_INLINE const object& global() const noexcept { return _global_table; }
+
+  /// @brief Get the global table object.
+  ZS_CK_INLINE table_object& global_table() const noexcept { return _global_table.as_table(); }
+
+  /// @brief Get a reference to the imported modules table object.
+  ZS_CHECK table_object& get_imported_modules() noexcept;
+
+  /// @brief Get a reference to the module loaders table object.
+  ZS_CHECK table_object& get_module_loaders() noexcept;
+
+  //
+  // MARK: Calls.
   //
 
-  ZS_CHECK object& get_imported_modules() noexcept;
-  ZS_CHECK object& get_module_loaders() noexcept;
-
-  //
-  // MARK: Call.
-  //
-  ZS_CHECK zs::error_result pcall(const object& closure, int_t n_params, int_t stack_base, object& ret_value,
-      bool stack_base_relative = true);
-
-  ZS_CHECK zs::error_result pcall(const object& closure, zs::parameter_list params, object& ret_value);
-
-  ZS_CK_INLINE zs::error_result pcall(
-      const object& closure, std::initializer_list<const object> params, object& ret_value) {
-    zs::parameter_list sparams(std::data(params), params.size());
-    return pcall(closure, sparams, ret_value);
-  }
-
-  ZS_CHECK zs::error_result call(const object& closure, int_t n_params, int_t stack_base, object& ret_value,
-      bool stack_base_relative = true);
-
-  ZS_CHECK zs::error_result call(const object& closure, zs::parameter_list params, object& ret_value);
+  ZS_CHECK zs::error_result call(const object& closure, zs::parameter_list params, object& ret_value,
+      bool is_protected_call = false) noexcept;
 
   ZS_CK_INLINE zs::error_result call(
-      const object& closure, std::initializer_list<const object> params, object& ret_value) {
-    zs::parameter_list sparams(std::data(params), params.size());
-    return call(closure, sparams, ret_value);
-  }
+      const object& closure, const object& param, object& ret_value, bool is_protected_call = false) noexcept;
 
-  ZS_CK_INLINE zs::error_result call(const object& closure, const object& param, object& ret_value) {
-    zs::parameter_list sparams(&param, 1);
-    return call(closure, sparams, ret_value);
-  }
-
-  ZS_CK_INLINE zs::error_result call_from_top(const object& closure, int_t n_params, object& ret_value) {
-    return call(closure, n_params, _stack.stack_size() - n_params, ret_value);
-  }
-
-  ZS_CHECK zs::optional_result<zs::object> call_from_top_opt(const object& closure, int_t n_params = 0);
-
-  ZS_CHECK zs::error_result call_from_top(const object& closure, int_t n_params = 0);
+  ZS_CK_INLINE zs::error_result call(const object& closure, int_t n_params, int_t stack_base,
+      object& ret_value, bool stack_base_relative = true, bool is_protected_call = false) noexcept;
 
   //
   // MARK: Get/Set.
@@ -167,18 +171,18 @@ public:
   ZS_CHECK zs::error_result raw_get(const object& obj, const object& key, object& dest);
   ZS_CHECK zs::error_result set(object& obj, const object& key, const object& value);
   ZS_CHECK zs::error_result set_if_exists(object& obj, const object& key, const object& value);
-  ZS_CHECK zs::error_result contains(const object& obj, const object& key, object& dest);
-  ZS_CHECK zs::error_result raw_contains(const object& obj, const object& key, object& dest);
+  ZS_CHECK zs::error_result has(const object& obj, const object& key, object& dest);
+  ZS_CHECK zs::error_result raw_has(const object& obj, const object& key, object& dest);
 
   ZS_CHECK zs::error_result compare(object& target, const object& lhs, const object& rhs);
   ZS_CHECK zs::error_result lt(object& target, const object& lhs, const object& rhs);
   ZS_CHECK zs::error_result eq(object& target, const object& lhs, const object& rhs);
 
   /// Get the typeof of obj.
-  ZS_CHECK zs::error_result type_of(const object& obj, object& dest);
+  ZS_CHECK zs::error_result type_of(const object obj, object& dest);
   ZS_CHECK zs::error_result to_string(const object& obj, object& dest);
   ZS_CHECK zs::error_result copy(const object& obj, object& dest);
-  ZS_CHECK zs::object get_delegate(const object& obj);
+  ZS_CHECK zs::object get_delegate(const object& obj, bool with_defaults = false);
 
   /// @{
   ZS_CHECK zs::error_result add(object& dest, const object& lhs, const object& rhs);
@@ -219,7 +223,7 @@ public:
   ZS_CHECK object mod(const object& lhs, const object& rhs);
   ZS_CHECK object exp(const object& lhs, const object& rhs);
 
-  /// Compile a code buffer.
+  /// @brief Compile a code buffer.
   /// On success, the `closure_result` is a closure object.
 
   ZS_CHECK zs::error_result compile_buffer(
@@ -235,7 +239,7 @@ public:
     return compile_buffer(content, zs::_s(_engine, source_name), closure_result, with_vargs);
   }
 
-  /// Compile a code buffer.
+  /// @brief Compile a code buffer.
   /// On success, the `closure_result` is a closure object.
   /// @{
   ZS_CHECK zs::error_result compile_file(const char* filepath, std::string_view source_name,
@@ -261,78 +265,29 @@ public:
   ZS_CHECK zs::error_result call_buffer(std::string_view content, std::string_view source_name,
       zs::object& this_table, zs::object& ret_value, std::span<const object> args, bool with_vargs = false);
 
-  ///
-  ZS_CHECK zs::error_result load_buffer_as_value(
-      std::string_view content, std::string_view source_name, zs::object& value);
+  ZS_CK_INLINE const zs::vector<call_info>& get_call_stack() const noexcept { return _call_stack; }
 
-  ///
-  ZS_CHECK zs::error_result load_buffer_as_array(
-      std::string_view content, std::string_view source_name, zs::object& value, std::string_view sep = ",");
-
-  ///
-  ZS_CHECK zs::error_result load_file_as_value(
-      const char* filepath, std::string_view source_name, zs::object& result_value);
-
-  ZS_CK_INLINE zs::error_result load_file_as_value(
-      const std::filesystem::path& filepath, std::string_view source_name, zs::object& result_value) {
-    return load_file_as_value(filepath.c_str(), source_name, result_value);
-  }
-
-  ///
-  ZS_CHECK zs::error_result load_file_as_array(const char* filepath, std::string_view source_name,
-      zs::object& result_value, std::string_view sep = ",");
-
-  ZS_CK_INLINE zs::error_result load_file_as_array(const std::filesystem::path& filepath,
-      std::string_view source_name, zs::object& result_value, std::string_view sep = ",") {
-    return load_file_as_array(filepath.c_str(), source_name, result_value, sep);
-  }
-
-  ZS_CHECK zs::error_result load_json_table(std::string_view content, const object& table, object& output);
-
-  ZS_CHECK zs::error_result load_json_file(const char* filepath, const object& table, object& output);
-
-  ZS_CK_INLINE zs::error_result load_json_file(const char* filepath, object& output) {
-    return load_json_file(filepath, nullptr, output);
-  }
-
-  ZS_CHECK zs::error_result load_json_file(std::string_view filepath, const object& table, object& output);
-
-  ZS_CK_INLINE zs::error_result load_json_file(std::string_view filepath, object& output) {
-    return load_json_file(filepath, nullptr, output);
-  }
+  //
+  // MARK: Errors.
+  //
 
   ZS_CHECK zs::string get_error() const noexcept;
 
-  ZS_CK_INLINE const zs::vector<call_info>& get_call_stack() const noexcept { return _call_stack; }
-
-  // An enum, is an empty table with the data in it's delegate.
-  ZS_CHECK zs::error_result make_enum_table(object& obj);
+  inline void set_error(std::string_view msg);
 
   template <class... Args>
-  inline void set_error(Args&&... args) {
-    set_error(std::string_view(zs::strprint(_engine, std::forward<Args>(args)...)));
-  }
+  inline void set_error(Args&&... args);
 
-  inline void set_error(std::string_view msg) {
-    handle_error(zs::errc::unknown, { -1, -1 }, msg, ZS_DEVELOPER_SOURCE_LOCATION());
-  }
-
-  zs::error_result handle_error(zs::error_code ec, const zs::line_info& linfo, std::string_view msg,
-      const zs::developer_source_location& loc);
+  zs::error_result handle_error(
+      zs::error_code ec, const zs::line_info& linfo, std::string_view msg, const zb::source_location& loc);
 
   template <class... Args>
-  inline zs::error_result handle_error(zs::error_code ec, const zs::line_info& linfo,
-      const zs::developer_source_location& loc, const Args&... args) {
-    if constexpr (sizeof...(Args) == 1
-        and zb::is_string_view_convertible_v<std::tuple_element_t<0, std::tuple<Args...>>>) {
-      return handle_error(ec, linfo, std::string_view(args...), loc);
-    }
-    else {
-      return handle_error(ec, linfo, std::string_view(zs::strprint(_engine, args...)), loc);
-    }
-  }
+  inline zs::error_result handle_error(
+      zs::error_code ec, const zs::line_info& linfo, const zb::source_location& loc, const Args&... args);
 
-  inline table_object& globals() const noexcept { return _global_table.as_table(); }
+  //
+  // MARK: Default delegates.
+  //
 
   const object& get_default_table_delegate() const noexcept;
   const object& get_default_number_delegate() const;
@@ -353,11 +308,11 @@ private:
   friend class vm_ref;
 
   object _global_table;
+  std::array<object, 8> _registers;
   zs::object_stack _stack;
   zs::vector<call_info> _call_stack;
   zs::vector<object> _open_captures;
 
-  zs::string _error_message;
   zs::error_stack _errors;
 
   bool _owns_engine;
@@ -398,8 +353,17 @@ private:
   zs::error_result delegate_table_contains(
       const object& obj, const object& key, const object& delegate, object& dest, bool use_meta_get = true);
 
-  zs::error_result call_closure(const object& cobj, int_t n_params, int_t absolute_stack_base,
-      object& ret_value, bool is_pcall = false);
+  ZS_CHECK zs::error_result call_closure(
+      const object& closure, zs::parameter_list params, object& ret_value, bool is_protected_call = false);
+
+  zs::error_result tail_call_closure(const object& closure_obj, zs::parameter_list params, object& ret_value,
+      bool is_protected_call = false);
+
+  zs::error_result close_captures(const object* stack_ptr);
+  zs::error_result leave_function_call();
+  void reset_protected_call_stack(size_t call_stack_index);
+
+  zs::error_result new_closure(uint32_t fct_idx, uint8_t bounded_target, object& dest);
 
   //
   // MARK: Arithmetics.
@@ -420,4 +384,35 @@ private:
       meta_method alt = meta_method::mt_none);
 };
 
+template <class... Args>
+void virtual_machine::set_error(Args&&... args) {
+  set_error(std::string_view(zs::strprint(_engine, std::forward<Args>(args)...)));
+}
+
+void virtual_machine::set_error(std::string_view msg) {
+  handle_error(zs::errc::unknown, { -1, -1 }, msg, zb::source_location::current());
+}
+
+template <class... Args>
+zs::error_result virtual_machine::handle_error(
+    zs::error_code ec, const zs::line_info& linfo, const zb::source_location& loc, const Args&... args) {
+  if constexpr (sizeof...(Args) == 1
+      and zb::is_string_view_convertible_v<std::tuple_element_t<0, std::tuple<Args...>>>) {
+    return handle_error(ec, linfo, std::string_view(args...), loc);
+  }
+  else {
+    return handle_error(ec, linfo, std::string_view(zs::strprint(_engine, args...)), loc);
+  }
+}
+
+zs::error_result virtual_machine::call(
+    const object& closure, const object& param, object& ret_value, bool is_protected_call) noexcept {
+  return call(closure, zs::parameter_list(&param, 1), ret_value, is_protected_call);
+}
+
+zs::error_result virtual_machine::call(const object& closure, int_t n_params, int_t local_stack_base,
+    object& ret_value, bool stack_base_relative, bool is_protected_call) noexcept {
+  const int_t stack_base = local_stack_base + (stack_base_relative ? _stack.get_stack_base() : 0);
+  return call(closure, _stack.get_absolute_subspan(stack_base, n_params), ret_value, is_protected_call);
+}
 } // namespace zs.

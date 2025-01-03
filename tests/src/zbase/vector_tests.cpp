@@ -1,6 +1,6 @@
 #include <catch2.h>
-#include <zbase/container/vector.h>
-#include <zbase/crypto/hash.h>
+#include <zscript/base/container/vector.h>
+#include <zscript/base/crypto/hash.h>
 
 TEST_CASE("zb::vector") {
   zb::vector<int> vec = { 1, 2, 3, 4, 5 };

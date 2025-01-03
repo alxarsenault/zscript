@@ -12,21 +12,37 @@ native_closure_object* native_closure_object::create(zs::engine* eng, zs::functi
 }
 
 native_closure_object::native_closure_object(zs::engine* eng, callback_type cb) noexcept
-    : reference_counted_object(eng, zs::object_type::k_native_closure)
-    , _restricted_types(zs::allocator<zs::object>(eng))
+    : reference_counted_object(eng, object_type::k_native_closure)
+    , _callback(cb)
     , _default_params(zs::allocator<zs::object>(eng))
     , _parameter_names(zs::allocator<zs::named_variable_type_info>(eng))
-    , _callback(cb) {}
+    , _restricted_types(zs::allocator<zs::object>(eng)) {}
 
-native_closure_object::~native_closure_object() {
+void native_closure_object::destroy_callback(zs::engine* eng, reference_counted_object* obj) noexcept {
+  native_closure_object* nc = (native_closure_object*)obj;
 
-  if (_release_hook) {
-    (*_release_hook)(_engine, _user_pointer);
+  if (nc->_release_hook) {
+    (*nc->_release_hook)(eng, nc->_user_pointer);
   }
 
-  if (_callback.ctype == closure_type::obj) {
-    _callback.closure->release();
+  if (nc->_callback.ctype == closure_type::obj) {
+    nc->_callback.closure->release();
   }
+
+  zs_delete(eng, nc);
+}
+
+object native_closure_object::clone_callback(zs::engine* eng, const reference_counted_object* obj) noexcept {
+  native_closure_object* nc = (native_closure_object*)obj;
+
+  if (nc->_callback.ctype == closure_type::obj) {
+    native_closure_object* out_nc = native_closure_object::create(eng, nc->_callback.closure);
+    out_nc->_callback.closure->retain();
+    return object(out_nc, false);
+  }
+
+  native_closure_object* out_nc = native_closure_object::create(eng, nc->_callback.fct);
+  return object(out_nc, false);
 }
 
 int_t native_closure_object::call(vm_ref vm) {
@@ -38,17 +54,9 @@ int_t native_closure_object::call(vm_ref vm) {
   }
 }
 
-object native_closure_object::clone() const noexcept {
-
-  if (_callback.ctype == closure_type::obj) {
-    native_closure_object* nc
-        = native_closure_object::create(reference_counted_object::_engine, _callback.closure);
-    nc->_callback.closure->retain();
-    return object(nc, false);
-  }
-
-  native_closure_object* nc = native_closure_object::create(reference_counted_object::_engine, _callback.fct);
-  return object(nc, false);
+function_parameter_interface native_closure_object::get_parameter_interface() const noexcept {
+  return function_parameter_interface{ _default_params, &_this, get_parameters_count(),
+    get_default_parameters_count(), has_variadic_parameters() };
 }
 
 bool native_closure_object::is_valid_parameters(

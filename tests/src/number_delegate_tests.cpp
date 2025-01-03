@@ -72,7 +72,7 @@ return t.a >> 1;
 ZTEST_CASE("zslib", R"""(
 var a = 0;
 var b = a ? a : 55;
-var c = a ?: 55;
+var c = a !> 55;
 return zs::all_equals(b, c, 55);
 )""") {
   REQUIRE(value == true);
@@ -106,40 +106,8 @@ ZTEST_CASE("gkloo", R"""(
 
 global.set("k", 90);
 global.k = 89;
-//zs::print(global);
+//io::print(global);
 return 445;
 )""") {
   REQUIRE(value == 445);
-}
-
-ZTEST_CASE("float_array", R"""(
-var arr = np.array([1, 2, 3, -4, 5]);
-var s  = np.ramp(0, 5);
-
-arr[2] = 12.12;
-arr[2] = 123.12;
-
-function john() {
-}
-
-john();
-
-//var a = arr;
-//a[2] = 89.12;
-
-//a.push(1232.2);
-
-//zs::print(89, arr.size(), 78, arr[2], 99, arr, 777, typeof(arr), 88, arr.min(),   789);
-
-//for(int i = 0; i < s.size(); i++) {
-//    zs::print(s[i]);
-//}
-
-return arr;
-)""") {
-
-  zs::object f = vm->get_global().as_table().get_delegate().as_table()["np"].as_table()["ramp"];
-  //  zs::print(f);
-
-  REQUIRE(!vm->call(f, { vm->get_global(), zs::object(0), 10, 10 }, value));
 }

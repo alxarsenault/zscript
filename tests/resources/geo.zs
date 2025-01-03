@@ -1,5 +1,4 @@
-@module geo
-
+/// @module geo
 
 struct Point {
  var x = 0;

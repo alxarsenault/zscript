@@ -1,5 +1,5 @@
 #include <catch2.h>
-#include <zbase/memory/ref_wrapper.h>
+#include <zscript/base/memory/ref_wrapper.h>
 
 namespace {
 

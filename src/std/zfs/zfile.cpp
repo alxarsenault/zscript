@@ -158,7 +158,7 @@ static int_t file_get_impl(zs::vm_ref vm) {
 
 static void set_file_delegate_methods(zs::vm_ref vm, zs::object& file_delegate,
     const std::initializer_list<std::pair<zs::object, zs::function_t>>& list) {
-  zs::engine* eng = vm->get_engine();
+  //  zs::engine* eng = vm->get_engine();
   zs::table_object* tbl = file_delegate._table;
 
   for (auto& n : list) {
@@ -171,7 +171,7 @@ static zs::object create_file_delegate(zs::vm_ref vm) {
 
   zs::object delegate_key = zs::_sv(k_file_delegate_name);
 
-  zs::object_unordered_map<zs::object>& registry_map = eng->get_registry_table()._table->get_map();
+  zs::object_map& registry_map = eng->get_registry_table()._table->get_map();
   if (auto it = registry_map.find(delegate_key); it != registry_map.end()) {
     return it->second;
   }
@@ -201,8 +201,7 @@ zs::object create_file(zs::vm_ref vm, std::string_view path, int_t openmode) {
   zs::object file_obj = zs::object::create_user_data(eng, sizeof(zfile));
   zb_placement_new(file_obj._udata->data()) zfile(eng, path, openmode);
 
-  file_obj.set_user_data_release_hook(
-      [](zs::engine* eng, zs::raw_pointer_t ptr) { ((zfile*)ptr)->~zfile(); });
+  file_obj._udata->set_release_hook([](zs::engine* eng, zs::raw_pointer_t ptr) { ((zfile*)ptr)->~zfile(); });
 
   file_obj._udata->set_to_string_callback(
       [](const object_base& obj, std::ostream& stream) -> zs::error_result {

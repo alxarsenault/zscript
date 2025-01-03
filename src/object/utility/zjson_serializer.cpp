@@ -116,7 +116,7 @@ zs::error_result serialize_to_json(zs::engine* eng, std::ostream& stream, const 
 
   default:
     // @Alex
-    //    std::format_to(std::ostream_iterator<char>{ stream }, "{:#016x}", obj._value);
+    //    std::format_to(std::ostream_iterator<char>{ stream }, "{:#016x}", obj._lvalue);
     //      stream;
   }
   //  return stream;

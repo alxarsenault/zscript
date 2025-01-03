@@ -1,5 +1,5 @@
 #include <catch2.h>
-#include <zbase/strings/stack_string.h>
+#include <zscript/base/strings/stack_string.h>
 
 TEST_CASE("zb::stack_string") {
   zb::stack_string<32> str = "Alexandre";

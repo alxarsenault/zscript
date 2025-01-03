@@ -1,5 +1,5 @@
-#include <zbase/memory/memory.h>
-#include <zbase/sys/assert.h>
+#include <zscript/base/memory/memory.h>
+#include <zscript/base/sys/assert.h>
 
 ZBASE_BEGIN_NAMESPACE
 

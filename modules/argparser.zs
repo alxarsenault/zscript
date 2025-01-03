@@ -1,4 +1,4 @@
-@module argparser
+// @module argparser
 
 /// Flag.
 struct flag {
@@ -128,21 +128,21 @@ struct argparser {
   }
 
   function print_help() {
-    zs::print("HELP", this.name, this.description);
+    io::print("HELP", this.name, this.description);
 
     for(int i = 0; i < this.arguments.size(); i++) {
       const arg = this.arguments[i];
-      zs::write(arg.name, " : ", arg.description, "\n");
+      io::write(arg.name, " : ", arg.description, "\n");
     }
 
     for(int i = 0; i < this.options.size(); i++) {
       const opt = this.options[i];
-      zs::write(opt.name, " : ", opt.cmd, " ", opt.description, "\n");
+      io::write(opt.name, " : ", opt.cmd, " ", opt.description, "\n");
     }
 
     for(int i = 0; i < this.flags.size(); i++) {
       const flg = this.flags[i];
-      zs::write(flg.name, " : ", flg.cmd, " ", flg.description, "\n");
+      io::write(flg.name, " : ", flg.cmd, " ", flg.description, "\n");
     }
   }
 
@@ -161,7 +161,6 @@ struct argparser {
       opt = option_obj_or_name;
     }
 
-    //opt.parser = zs::toweak(this);
     this.options.push(opt);
     return opt;
   }
@@ -183,7 +182,7 @@ struct argparser {
 
     for(int i = 0; i < this.arguments.size(); i++) {
       if(!this.arguments[i].count ) {
-        zs::print("Can't have multiple arguments with multiple");
+        io::print("Can't have multiple arguments with multiple");
         return null;
       }
     }
@@ -205,7 +204,6 @@ struct argparser {
       flg = flag_obj_or_name;
     }
 
-    //flg.parser = zs::toweak(this);
     this.flags.push(flg);
     return flg;
   }
@@ -222,49 +220,13 @@ struct argparser {
       }
 
       print_error = function() {
-        zs::print(this._error);
+        io::print(this._error);
       }
 
       print_help = function() {
         self.print_help();
       }
     }, true);
-
-
-    //var result = zs::set_delegate(
-    //  {},
-    //  zs::create_table_with_default_delegate({
-    //    _error = null,
-//
-    //    has_error = function() {
-    //      return typeof(this._error) != "null";
-    //    }
-//
-    //    print_error = function() {
-    //      zs::print(this._error);
-    //    }
-//
-    //    print_help = function() {
-    //      self.print_help();
-    //    }
-    //  })
-    //);
-
-    //var result = zs::set_delegate({}, zs::set_delegate({
-    //  _error = null,
-//
-    //  has_error = function() {
-    //    return typeof(this._error) != "null";
-    //  }
-//
-    //  print_error = function() {
-    //    zs::print(this._error);
-    //  }
-//
-    //  print_help = function() {
-    //    self.print_help();
-    //  }
-    //}, zs::get_table_default_delegate()));
 
     if(!_process_flags(args, result)) {
       return result;
@@ -278,7 +240,7 @@ struct argparser {
       return result;
     }
 
-    // zs::print("unprocessed_args", args);
+    // io::print("unprocessed_args", args);
 
     return result;
   }

@@ -239,7 +239,7 @@ void serialize_table_object(Stream& stream, object& obj, size_t max_size) {
   stream.text1b(str, max_size);
 
   zs::json_parser jparser(eng);
-  zs::error_result err = jparser.parse(nullptr, str, nullptr, obj);
+  [[maybe_unused]] zs::error_result err = jparser.parse(nullptr, str, nullptr, obj);
 
   //  obj = zs::_s(eng, str);
 }
@@ -331,7 +331,6 @@ inline constexpr user_data_content k_fpo_udata_content
     = { [](zs::engine* eng, zs::raw_pointer_t ptr) {
          ((function_prototype_object*)ptr)->~function_prototype_object();
        },
-        nullptr,
         [](const zs::object_base& obj, std::ostream& stream) -> error_result {
           stream << "function prototype object";
           return {};
@@ -370,7 +369,7 @@ object function_prototype_object::create(zs::engine* eng) {
 
     zb_placement_new((void*)uobj->data()) function_prototype_object(eng);
 
-    uobj->set_delegate(object::create_none(), false);
+    uobj->set_no_default_none();
     return object(uobj, false);
   }
 
@@ -558,28 +557,4 @@ zs::error_result function_prototype_object::load(zb::byte_view buffer) {
 
   return {};
 }
-
-//
-// zs::error_result function_prototype_object::serialize(zb::byte_vector& buffer) {
-////  zs::engine* eng = _engine;
-////  zs::object stable = zs::object::create_table(eng);
-////  zs::object_unordered_map<zs::object>& sbl = stable._table->get_map();
-////
-////  sbl[zs::_ss("source_name")] = _source_name;
-////  sbl[zs::_ss("name")] = _name;
-////  sbl[zs::_ss("stack_size")] = _stack_size;
-////  sbl[zs::_ss("literals")] = zs::object::create_array(eng, _literals);
-////  sbl[zs::_s(eng, "default_params")] = zs::object::create_array(eng, _default_params);
-////  sbl[zs::_s(eng, "parameter_names")] = zs::object::create_array(eng, _parameter_names);
-////  sbl[zs::_s(eng, "restricted_types")] = zs::object::create_array(eng, _restricted_types);
-////
-////  sbl[zs::_ss("n_capture")] = _n_capture;
-////
-////  size_t sz = 0;
-////  if (auto err = stable.to_binary(buffer, sz, 0)) {
-////    return err;
-////  }
-//
-//  return {};
-//}
 } // namespace zs.

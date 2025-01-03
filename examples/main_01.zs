@@ -8,8 +8,11 @@ var a = 123;
 
 //zs::print(vargs);
 
-export function main(args) {
+function main(args) {
   zs::print("Main", fs.exe_path(),"PWD", fs.pwd());
 
   return 0;
 }
+
+
+return { main = main };

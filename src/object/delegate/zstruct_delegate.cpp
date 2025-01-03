@@ -26,9 +26,7 @@ namespace {
 zs::object create_struct_default_delegate(zs::engine* eng) {
   object obj = object::create_table(eng);
   zs::table_object& t = obj.as_table();
-  t.set_delegate(object::create_none());
-  t.set_use_default_delegate(false);
-
+  t.set_no_default_none();
   return obj;
 }
 } // namespace zs.

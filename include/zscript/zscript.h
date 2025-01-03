@@ -23,58 +23,33 @@
 #pragma once
 
 #include <zscript/common.h>
-#include <zscript/error.h>
 #include <zscript/object.h>
 #include <zscript/engine.h>
 #include <zscript/vm.h>
-#include <zscript/object_function_wrapper.h>
 
-#include <zbase/container/byte.h>
-#include <zbase/sys/file_view.h>
-#include <zbase/strings/string_view.h>
-#include <zbase/utility/print.h>
-#include <zbase/utility/traits.h>
+#include <zscript/base/container/byte.h>
+#include <zscript/base/sys/file_view.h>
+#include <zscript/base/strings/string_view.h>
+#include <zscript/base/utility/print.h>
+#include <zscript/base/utility/traits.h>
 
 #include <filesystem>
 #include <string>
 #include <stdexcept>
 
-#define ZS_FUNCTION_DEF +[](zs::vm_ref vm) -> int_t
-
 namespace zs {
 
-#define ZS_DEVELOPER_SOURCE_LOCATION(...) \
-  zs::developer_source_location { __FILE__, __func__, __LINE__, ZBASE_STRINGIFY(__VA_ARGS__) }
-
-struct developer_source_location {
-  std::string_view _filename;
-  std::string_view _function_name;
-  std::uint_least32_t _line;
-  std::string_view _line_content;
-
-  ZS_CK_INLINE std::string_view file_name() const noexcept { return _filename; }
-  ZS_CK_INLINE std::string_view function_name() const noexcept { return _function_name; }
-  ZS_CK_INLINE std::uint_least32_t line() const noexcept { return _line; }
-  ZS_CK_INLINE std::string_view line_content() const noexcept { return _line_content; }
-
-  inline friend std::ostream& operator<<(std::ostream& stream, const developer_source_location& loc) {
-    stream << "\ndeveloper:\nfile: '" << loc.file_name() << "'\nfunction: '" << loc.function_name()
-           << "'\nline: " << loc.line() << "\n";
-
-    if (!loc.line_content().empty()) {
-      stream << "content: '" << loc.line_content() << "'\n";
-    }
-
-    return stream;
-  }
-};
+inline std::ostream& operator<<(std::ostream& stream, const zb::source_location& loc) {
+  return stream << "\nsource_location:\nfile: '" << loc.file_name() << "'\nfunction: '" << loc.function_name()
+                << "'\nline: " << loc.line() << "\n";
+}
 
 enum class error_source { compiler, virtual_machine };
 
 struct error_message {
   template <class Message, class Filename, class Code>
   inline error_message(zs::engine* eng, error_source esrc, zs::error_code ec, Message&& message,
-      Filename&& filename, Code&& code, zs::line_info line, const zs::developer_source_location& loc)
+      Filename&& filename, Code&& code, zs::line_info line, const zb::source_location& loc)
       : ec(ec)
       , err_source(esrc)
       , message(std::forward<Message>(message), eng)
@@ -110,12 +85,7 @@ struct error_message {
       stream << "'''" << code << "\n\n'''\n";
     }
 
-    stream << "\ndeveloper:\n  file: '" << loc.file_name() << "'\n  function: '" << loc.function_name()
-           << "'\n  line: " << loc.line() << "\n";
-
-    if (!loc.line_content().empty()) {
-      stream << "  content: '" << loc.line_content() << "'\n";
-    }
+    stream << loc;
 
     return stream << "\n";
   }
@@ -126,7 +96,7 @@ struct error_message {
   zs::string filename;
   zs::string code;
   zs::line_info line;
-  zs::developer_source_location loc;
+  zb::source_location loc;
   size_t _uid = 0;
 
   static size_t next_uid_counter() {
@@ -138,6 +108,8 @@ struct error_message {
 struct error_stack : zs::vector<error_message> {
   inline error_stack(zs::engine* eng)
       : zs::vector<error_message>((zs::allocator<error_message>(eng))) {}
+
+  inline void append(const error_stack& errs) { this->insert(this->begin(), errs.begin(), errs.end()); }
 
   inline std::ostream& print(std::ostream& stream) const {
     for (auto it = this->rbegin(); it != this->rend(); ++it) {
@@ -180,239 +152,6 @@ bool object_table_equal_to::operator()(const object_base& lhs, std::string_view 
 
 bool object_table_equal_to::operator()(std::string_view lhs, const object_base& rhs) const noexcept {
   return this->operator()(zs::_sv(lhs), rhs);
-}
-
-template <class T>
-object_type object::get_value_conv_obj_type() noexcept {
-
-  using value_type = std::remove_cvref_t<T>;
-
-  if constexpr (std::is_same_v<T, object>) {
-    return object_type::k_null;
-  }
-
-  else if constexpr (std::is_same_v<bool_t, value_type>) {
-    return object_type::k_bool;
-  }
-  else if constexpr (std::is_same_v<std::nullptr_t, value_type>) {
-    return object_type::k_null;
-  }
-  else if constexpr (std::is_same_v<std::string, T>) {
-    return object_type::k_small_string;
-  }
-  else if constexpr (std::is_constructible_v<std::string_view, T>) {
-    return object_type::k_small_string;
-  }
-  else if constexpr (std::is_floating_point_v<value_type>) {
-    return object_type::k_float;
-  }
-  else if constexpr (std::is_integral_v<value_type>) {
-    return object_type::k_integer;
-  }
-
-  else if constexpr (zb::is_contiguous_container_v<value_type>) {
-    return object_type::k_array;
-  }
-  else if constexpr (zb::is_map_type_v<value_type>) {
-    return object_type::k_table;
-  }
-  else {
-    zb_static_error("invalid type");
-    return object_type::k_null;
-  }
-}
-
-template <class T>
-constexpr const char* object::get_value_conv_obj_name() noexcept {
-
-  using value_type = std::remove_cvref_t<T>;
-
-  if constexpr (std::is_same_v<T, object>) {
-    return "object";
-  }
-  else if constexpr (std::is_same_v<bool_t, value_type>) {
-    return "bool";
-  }
-  else if constexpr (std::is_same_v<std::nullptr_t, value_type>) {
-    return "null";
-  }
-  else if constexpr (std::is_same_v<std::string, T>) {
-    return "string";
-  }
-  else if constexpr (std::is_constructible_v<std::string_view, T>) {
-    return "string";
-  }
-  else if constexpr (std::is_floating_point_v<value_type>) {
-    return "float";
-  }
-  else if constexpr (std::is_integral_v<value_type>) {
-    return "integer";
-  }
-  else if constexpr (zb::is_contiguous_container_v<value_type>) {
-    return "array";
-  }
-  else if constexpr (zb::is_map_type_v<value_type>) {
-    return "table";
-  }
-  else {
-    //    zb_static_error("invalid type");
-    return "unknown";
-  }
-}
-
-template <class T>
-inline zs::error_result object::get_value(T& value) const noexcept {
-
-  using value_type = std::remove_cvref_t<T>;
-
-  if constexpr (std::is_same_v<T, object>) {
-    value = *this;
-    return {};
-  }
-  else if constexpr (std::is_same_v<bool_t, value_type>) {
-    return get_bool(value);
-  }
-  else if constexpr (std::is_same_v<std::nullptr_t, value_type>) {
-    return {};
-  }
-  else if constexpr (std::is_same_v<std::string, T>) {
-    std::string_view s;
-    if (auto err = get_string(s)) {
-      value = convert_to_string();
-      return {};
-    }
-
-    value = value_type(s);
-    return {};
-  }
-  else if constexpr (std::is_constructible_v<std::string_view, decltype(std::forward<T>(value))>) {
-    return get_string(value);
-  }
-  else if constexpr (std::is_floating_point_v<value_type>) {
-    float_t f = 0;
-
-    if (auto err = get_float(f)) {
-      return err;
-    }
-
-    value = (value_type)f;
-    return {};
-  }
-  else if constexpr (std::is_integral_v<value_type>) {
-    int_t i = 0;
-
-    if (auto err = get_integer(i)) {
-      return err;
-    }
-
-    value = (value_type)i;
-    return {};
-  }
-  else if constexpr (zb::is_contiguous_container_v<value_type>) {
-    if (get_type() != k_array) {
-      return zs::error_code::invalid_type;
-    }
-    using containter_value_type = zb::container_value_type_t<value_type>;
-
-    if constexpr (zb::has_push_back_v<value_type>) {
-
-      if constexpr (zb::is_string_view_convertible_v<containter_value_type>) {
-
-        const auto& vec = *get_array_internal_vector();
-        for (size_t i = 0; i < vec.size(); i++) {
-          value.push_back(vec[i].get_value<containter_value_type>());
-        }
-      }
-      else {
-
-        const auto& vec = *get_array_internal_vector();
-        for (size_t i = 0; i < vec.size(); i++) {
-          value.push_back(vec[i].get_value<containter_value_type>());
-        }
-      }
-
-      return {};
-    }
-    else if constexpr (zb::is_array_v<value_type>) {
-
-      const auto& vec = *get_array_internal_vector();
-
-      if (zb::array_size_v<value_type> >= vec.size()) {
-        for (size_t i = 0; i < vec.size(); i++) {
-          value[i] = vec[i].get_value<containter_value_type>();
-        }
-
-        return {};
-      }
-      else {
-        for (size_t i = 0; i < zb::array_size_v<value_type>; i++) {
-          value[i] = vec[i].get_value<containter_value_type>();
-        }
-
-        return {};
-      }
-    }
-    else {
-      zb_static_error("invalid type no push_back");
-      return zs::error_code::invalid_type;
-    }
-    return {};
-  }
-
-  else if constexpr (zb::is_map_type_v<value_type>) {
-    if (get_type() != k_table) {
-      return zs::error_code::invalid_type;
-    }
-
-    using key_type = typename value_type::key_type;
-    using mapped_type = typename value_type::mapped_type;
-
-    const auto& map = *get_table_internal_map();
-    for (auto obj : map) {
-      value[obj.first.get_value<key_type>()] = obj.second.get_value<mapped_type>();
-    }
-    return {};
-  }
-
-  else {
-    if (get_type() == k_user_data) {
-      return copy_user_data_to_type((void*)&value, sizeof(T), typeid(T).name());
-    }
-
-    return zs::error_code::invalid_type;
-  }
-}
-
-template <class T>
-T object::get_value() const {
-  T value;
-  if (auto err = get_value(value)) {
-    zs::throw_error(zs::error_code::invalid_type);
-  }
-
-  return value;
-}
-
-template <class T>
-T object::get_value(const T& opt_value) const {
-  T value;
-  if (auto err = get_value(value)) {
-    return opt_value;
-  }
-
-  return value;
-}
-
-template <class VectorType>
-zs::error_result object::to_binary(VectorType& buffer, size_t& write_size, uint32_t flags) const {
-  return to_binary(
-      (write_function_t)[](const uint8_t* content, size_t size, void* udata)->zs::error_result {
-        VectorType& vec = *(VectorType*)udata;
-
-        vec.insert(vec.end(), content, content + size);
-        return zs::error_code::success;
-      },
-      write_size, &buffer, flags);
 }
 
 std::ostream& operator<<(std::ostream& stream, const zs::object_base& obj) {
@@ -467,7 +206,7 @@ namespace constants {
 /// Default file loader.
 class default_file_loader {
 public:
-  ZS_INLINE default_file_loader(ZBASE_MAYBE_UNUSED zs::engine* eng) noexcept {}
+  ZS_INLINE default_file_loader(ZB_MAYBE_UNUSED zs::engine* eng) noexcept {}
 
   ZS_CHECK zs::error_result open(const char* filepath) noexcept;
 
@@ -507,10 +246,54 @@ ZS_CHECK virtual_machine* create_virtual_machine(zs::engine* eng, size_t stack_s
 
 void close_virtual_machine(virtual_machine* v);
 
-/// Call a callable.
-ZS_CHECK ZS_API zs::error_result zs_call(virtual_machine* v, int_t n_params, bool returns, bool pop_callable);
+//
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// MARK: - Implementation
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
-ZS_API void zs_push(virtual_machine* v);
+template <class Fct>
+object object::create_native_closure(zs::engine* eng, Fct&& fct) {
+
+  if constexpr (std::is_convertible_v<Fct, int_t (*)(virtual_machine*)>
+      or std::is_convertible_v<Fct, int_t (*)(const virtual_machine*)>) {
+    zb_static_error("Invalid native closure function");
+    return 0;
+  }
+  else if constexpr (std::is_convertible_v<Fct, zs::function_t>) {
+    return create_native_closure(eng, (zs::function_t)fct);
+  }
+  else {
+    struct closure_type : native_closure {
+
+      inline closure_type(zs::engine* eng, Fct&& fct)
+          : native_closure(eng)
+          , _fct(std::forward<Fct>(fct)) {}
+
+      virtual ~closure_type() override = default;
+
+      virtual int_t call(zs::vm_ref vm) override {
+        if constexpr (std::is_invocable_v<Fct, vm_ref>) {
+          return _fct(vm);
+        }
+        else if constexpr (std::is_invocable_v<Fct>) {
+          return _fct();
+        }
+        else {
+          zb_static_error("can't call function");
+          return 0;
+        }
+      }
+
+      Fct _fct;
+    };
+
+    closure_type* nc = (closure_type*)allocate(eng, sizeof(closure_type));
+    nc = zb_placement_new(nc) closure_type(eng, std::forward<Fct>(fct));
+    return create_native_closure(eng, (zs::native_closure*)nc);
+  }
+}
 
 //
 // MARK: Convert to std::string
@@ -587,108 +370,4 @@ ZS_CK_INLINE bool operator>=(const zs::string& lhs, const std::string& rhs) noex
 ZS_CK_INLINE bool operator>=(const std::string& lhs, const zs::string& rhs) noexcept {
   return std::string_view(lhs) >= (const std::string&)rhs;
 }
-
-//
-// -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
-// MARK: - Implementation
-// -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
-
-template <class Fct>
-object object::create_native_closure(zs::engine* eng, Fct&& fct) {
-
-  if constexpr (std::is_convertible_v<Fct, int_t (*)(virtual_machine*)>
-      or std::is_convertible_v<Fct, int_t (*)(const virtual_machine*)>) {
-    zb_static_error("Invalid native closure function");
-    return 0;
-  }
-  else if constexpr (std::is_convertible_v<Fct, zs::function_t>) {
-    return create_native_closure(eng, (zs::function_t)fct);
-  }
-  else {
-    struct closure_type : native_closure {
-
-      inline closure_type(zs::engine* eng, Fct&& fct)
-          : native_closure(eng)
-          , _fct(std::forward<Fct>(fct)) {}
-
-      virtual ~closure_type() override = default;
-
-      virtual int_t call(zs::vm_ref vm) override {
-        if constexpr (std::is_invocable_v<Fct, vm_ref>) {
-          return _fct(vm);
-        }
-        else if constexpr (std::is_invocable_v<Fct>) {
-          return _fct();
-        }
-        else {
-          zb_static_error("can't call function");
-          return 0;
-        }
-      }
-
-      Fct _fct;
-    };
-
-    closure_type* nc = (closure_type*)allocate(eng, sizeof(closure_type));
-    nc = zb_placement_new(nc) closure_type(eng, std::forward<Fct>(fct));
-    return create_native_closure(eng, (zs::native_closure*)nc);
-  }
-}
-
-template <class Fct>
-zs::error_result vm_ref::new_closure(Fct&& fct) {
-
-  struct closure_type : native_closure {
-
-    inline closure_type(zs::engine* eng, Fct&& fct)
-        : native_closure(eng)
-        , _fct(std::forward<Fct>(fct)) {}
-
-    virtual ~closure_type() override = default;
-
-    virtual int_t call(zs::vm_ref vm) override {
-      if constexpr (std::is_invocable_v<Fct, vm_ref>) {
-        return _fct(vm);
-      }
-      else if constexpr (std::is_invocable_v<Fct>) {
-        return _fct();
-      }
-      else {
-        zb_static_error("can't call function");
-        return -1;
-      }
-    }
-
-    Fct _fct;
-  };
-
-  closure_type* nc = (closure_type*)zs::allocate(get_engine(), sizeof(closure_type));
-  nc = zb_placement_new(nc) closure_type(get_engine(), std::forward<Fct>(fct));
-  return new_closure((zs::native_closure*)nc);
-}
-
-//
-////
-//// MARK: Shortcut aliases.
-////
-//
-
-template <class T>
-object& object_unordered_map<T>::operator[](std::string_view s) {
-  return base_type::operator[](zs::_s(base_type::get_allocator().get_engine(), s));
-}
-
-template <class T>
-object& object_unordered_map<T>::operator[](const char* s) {
-  return base_type::operator[](zs::_s(base_type::get_allocator().get_engine(), s));
-}
-
-template <class T>
-template <size_t N>
-object& object_unordered_map<T>::operator[](const char (&s)[N]) noexcept {
-  return base_type::operator[](zs::_ss(s));
-}
-
 } // namespace zs.

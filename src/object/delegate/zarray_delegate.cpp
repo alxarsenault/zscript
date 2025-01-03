@@ -1,5 +1,6 @@
 #include "zarray_delegate.h"
 #include "zvirtual_machine.h"
+#include "object/zfunction_prototype.h"
 #include "utility/zparameter_stream.h"
 
 namespace zs {
@@ -25,7 +26,7 @@ namespace {
   struct array_iterator_ref {
 
     inline array_iterator_ref(object& obj) noexcept
-        : index(obj._ex1_atom_it_index)
+        : index(obj._ex1_u32)
         , pointer(obj._pointer) {}
 
     uint32_t& index;
@@ -176,27 +177,45 @@ namespace {
 
     object it;
     it._type = object_type::k_atom;
-    it._atom_type = atom_type::atom_custom;
+    it._atom_type = atom_type::atom_array_iterator;
     it._pointer = (void*)ptr;
-    it._ex1_atom_it_index = (uint32_t)index;
-    it._ex2_delegated_atom_delegate_id = constants::k_atom_array_iterator_delegate_id;
+    it._ex1_u32 = (uint32_t)index;
+    it._ex2_delegate_id = constants::k_atom_array_iterator_delegate_id;
     return it;
   }
 
   static inline int_t array_size_impl(zs::vm_ref vm) noexcept {
-    ZS_ARRAY_BEGIN_IMPL("size", 1);
-    return vm.push(arr.size());
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.size().");
+      return -1;
+    }
+
+    return vm.push(arr_ptr->size());
   }
 
   static inline int_t array_capacity_impl(zs::vm_ref vm) noexcept {
-    ZS_ARRAY_BEGIN_IMPL("capacity", 1);
-    return vm.push(arr.capacity());
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.capacity().");
+      return -1;
+    }
+
+    return vm.push(arr_ptr->capacity());
   }
 
   static inline int_t array_clear_impl(zs::vm_ref vm) noexcept {
-    ZS_ARRAY_BEGIN_IMPL("clear", 1);
-    arr.clear();
-    return vm.push(obj);
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.clear().");
+      return -1;
+    }
+
+    arr_ptr->clear();
+    return vm.push(vm[0]);
   }
 
   static inline int_t array_pop_impl(zs::vm_ref vm) noexcept {
@@ -227,30 +246,46 @@ namespace {
   }
 
   static inline int_t array_copy_impl(zs::vm_ref vm) noexcept {
-    ZS_ARRAY_BEGIN_IMPL("copy", 1);
-    return vm.push(arr.clone());
-  }
-
-  static inline int_t array_begin_impl(zs::vm_ref vm) noexcept {
-    ZS_ARRAY_BEGIN_IMPL("begin", 1);
-    return vm.push(create_array_iterator(vm, 0, arr.data()));
-  }
-
-  static inline int_t array_end_impl(zs::vm_ref vm) noexcept {
-    ZS_ARRAY_BEGIN_IMPL("end", 1);
-    return vm.push(create_array_iterator(vm, arr.size(), arr.data() + arr.size()));
-  }
-
-  static inline int_t array_is_empty_impl(zs::vm_ref vm) noexcept {
-
-    if (vm.stack_size() != 1) {
-      vm.set_error("Invalid array argument in array::is_empty().");
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.copy().");
       return -1;
     }
 
-    const object& obj = vm->top();
-    array_object* arr = obj._array;
-    return vm.push(arr->empty());
+    return vm.push(arr_ptr->clone());
+  }
+
+  static inline int_t array_begin_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.begin().");
+      return -1;
+    }
+
+    return vm.push(create_array_iterator(vm, 0, arr_ptr->data()));
+  }
+
+  static inline int_t array_end_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.end().");
+      return -1;
+    }
+
+    return vm.push(create_array_iterator(vm, arr_ptr->size(), arr_ptr->data() + arr_ptr->size()));
+  }
+
+  static inline int_t array_is_empty_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.is_empty().");
+      return -1;
+    }
+    return vm.push(arr_ptr->empty());
   }
 
   static inline int_t array_resize_impl(zs::vm_ref vm) noexcept {
@@ -289,14 +324,14 @@ namespace {
 
     if (!value.is_type(object_type::k_integer, object_type::k_bool)) {
       vm->handle_error(zs::errc::invalid_type, { -1, -1 }, "Invalid index type in 'array.get()'.",
-          ZS_DEVELOPER_SOURCE_LOCATION());
+          zb::source_location::current());
       return -1;
     }
 
     object dst;
     if (auto err = arr.get(value._int, dst)) {
       vm->handle_error(err, { -1, -1 }, "Could not get value from array in 'array.get()'.",
-          ZS_DEVELOPER_SOURCE_LOCATION());
+          zb::source_location::current());
       return -1;
     }
 
@@ -327,6 +362,7 @@ namespace {
     arr.erase(arr.begin() + pos._int);
     return vm.push(pos._int);
   }
+
   static inline int_t array_erase_get_impl(zs::vm_ref vm) noexcept {
 
     if (vm.stack_size() != 2) {
@@ -375,7 +411,7 @@ namespace {
       const zs::array_object& arr_indices = indices_start_obj.as_array();
       indices.resize(arr_indices.size());
 
-      for (size_t i = 0; i < arr_indices.size(); i++) {
+      for (int_t i = 0; i < arr_indices.size(); i++) {
         int_t index = -1;
         if (auto err = arr_indices[i].get_integer(index)) {
           vm.set_error("Parameter 1 should be an array of indices");
@@ -386,7 +422,7 @@ namespace {
       }
     }
     else if (indices_start_obj.is_integer()) {
-      for (size_t i = 1; i < nargs; i++) {
+      for (int_t i = 1; i < nargs; i++) {
         int_t index = -1;
         if (auto err = vm[i].get_integer(index)) {
           vm.set_error("Parameter 1 should be an array of indices");
@@ -421,7 +457,7 @@ namespace {
     const object& erval = vm[1];
 
     if (erval.is_function()) {
-      size_t n = std::erase_if(arr, [&](const object& e) {
+      size_t n = std::erase_if(arr.to_vec(), [&](const object& e) {
         object ret;
 
         if (auto err = vm->call(erval, { obj, e }, ret)) {
@@ -434,7 +470,7 @@ namespace {
       return vm.push(n);
     }
 
-    size_t n = std::erase(arr, erval);
+    size_t n = std::erase(arr.to_vec(), erval);
     return vm.push(n);
   }
 
@@ -474,19 +510,34 @@ namespace {
   }
 
   template <object_type Obj>
-  static inline int_t array_is_type_array_impl(zs::vm_ref vm) noexcept {
-    ZS_ARRAY_BEGIN_IMPL("is_type_array", 1);
-    return vm.push(arr.is_type_array(Obj));
+  int_t array_delegate_is_type_array_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.is_type_array().");
+      return -1;
+    }
+    return vm.push(arr_ptr->is_type_array(Obj));
   }
 
-  static inline int_t array_is_number_array_impl(zs::vm_ref vm) noexcept {
-    ZS_ARRAY_BEGIN_IMPL("is_number_array", 1);
-    return vm.push(arr.is_number_array());
+  int_t array_delegate_is_number_array_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.is_number_array().");
+      return -1;
+    }
+    return vm.push(arr_ptr->is_number_array());
   }
 
-  static inline int_t array_is_string_array_impl(zs::vm_ref vm) noexcept {
-    ZS_ARRAY_BEGIN_IMPL("is_string_array", 1);
-    return vm.push(arr.is_string_array());
+  int_t array_is_string_array_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.is_string_array().");
+      return -1;
+    }
+    return vm.push(arr_ptr->is_string_array());
   }
 
   static inline int_t array_push_impl(zs::vm_ref vm) noexcept {
@@ -589,7 +640,7 @@ namespace {
       return -1;
     }
 
-    return vm.push(object::create_none());
+    return vm.push(zs::none());
   }
 
   static inline int_t array_get_delegate_impl(zs::vm_ref vm) noexcept {
@@ -603,49 +654,238 @@ namespace {
 
     return vm.push(obj.as_array().get_delegate());
   }
-  static const std::string_view s_is_number_array = "is_number_array";
-  static const std::string_view s_is_string_array = "is_string_array";
-  static const std::string_view s_is_float_array = "is_float_array";
-  static const std::string_view s_is_integer_array = "is_integer_array";
+
+  int_t array_min_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array::min(...).");
+      return -1;
+    }
+
+    array_object& arr = *arr_ptr;
+
+    bool has_float = false;
+    if (!arr.is_number_array(has_float)) {
+      vm->ZS_VM_ERROR(errc::invalid_parameter_type, "A number array was expected in array.min().");
+      return -1;
+    }
+
+    if (has_float) {
+      float_t min_value = arr[0].convert_to_float_unchecked();
+      for (const object& elem : arr) {
+        if (float_t value = elem.convert_to_float_unchecked(); value < min_value) {
+          min_value = value;
+        }
+      }
+
+      return vm.push_float(min_value);
+    }
+
+    int_t min_value = arr[0].convert_to_integer_unchecked();
+    for (const object& elem : arr) {
+      if (float_t value = elem.convert_to_integer_unchecked(); value < min_value) {
+        min_value = value;
+      }
+    }
+
+    return vm.push_integer(min_value);
+  }
+
+  int_t array_max_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array::max(...).");
+      return -1;
+    }
+
+    array_object& arr = *arr_ptr;
+
+    bool has_float = false;
+    if (!arr.is_number_array(has_float)) {
+      vm->ZS_VM_ERROR(errc::invalid_parameter_type, "A number array was expected in array.max().");
+      return -1;
+    }
+
+    if (has_float) {
+      float_t max_value = arr[0].convert_to_float_unchecked();
+      for (const object& elem : arr) {
+        if (float_t value = elem.convert_to_float_unchecked(); value > max_value) {
+          max_value = value;
+        }
+      }
+
+      return vm.push_float(max_value);
+    }
+
+    int_t max_value = arr[0].convert_to_integer_unchecked();
+    for (const object& elem : arr) {
+      if (float_t value = elem.convert_to_integer_unchecked(); value > max_value) {
+        max_value = value;
+      }
+    }
+
+    return vm.push_integer(max_value);
+  }
+
+  int_t array_index_range_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.index_range(...).");
+      return -1;
+    }
+
+    array_object& arr = *arr_ptr;
+    return vm.push(zs::_a(vm, { (int_t)0, arr.empty() ? 0 : arr.size() - 1 }));
+  }
+
+  int_t array_value_range_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.value_range(...).");
+      return -1;
+    }
+
+    array_object& arr = *arr_ptr;
+
+    bool has_float = false;
+    if (!arr.is_number_array(has_float)) {
+      vm->ZS_VM_ERROR(errc::invalid_parameter_type, "A number array was expected in array.value_range().");
+      return -1;
+    }
+
+    if (has_float) {
+      float_t min_value = arr[0].convert_to_float_unchecked();
+      float_t max_value = min_value;
+
+      for (const object& elem : arr) {
+        float_t value = elem.convert_to_float_unchecked();
+
+        if (value < min_value) {
+          min_value = value;
+        }
+
+        if (value > max_value) {
+          max_value = value;
+        }
+      }
+
+      return vm.push(zs::_a(vm, { min_value, max_value }));
+    }
+
+    int_t min_value = arr[0].convert_to_integer_unchecked();
+    int_t max_value = min_value;
+    for (const object& elem : arr) {
+      int_t value = elem.convert_to_integer_unchecked();
+
+      if (value < min_value) {
+        min_value = value;
+      }
+
+      if (value > max_value) {
+        max_value = value;
+      }
+    }
+
+    return vm.push(zs::_a(vm, { min_value, max_value }));
+  }
+
+  static inline int_t array_visit_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+
+    const object& obj = *ps;
+
+    array_object* arr_ptr = nullptr;
+    if (auto err = ps.require<array_parameter>(arr_ptr)) {
+      vm->ZS_VM_ERROR(err, "An array was expected in array.visit(...).");
+      return -1;
+    }
+
+    array_object& arr = *arr_ptr;
+
+    object fct;
+    if (auto err = ps.require<function_parameter>(fct)) {
+      vm->ZS_VM_ERROR(err, "A closure was expected in array.visit(...).");
+      return -1;
+    }
+
+    const size_t sz = arr.size();
+    object ret_value;
+
+    std::array<object, 3> params_array = { obj, nullptr, 0 };
+    const bool has_3_params = fct.get_parameter_interface().get_parameters_count() == 3;
+    const int_t n_params = 2 + has_3_params;
+
+    object& index = params_array[1];
+    object& item = params_array[n_params - 1];
+    zs::parameter_list params(params_array.data(), n_params);
+
+    for (size_t i = 0; i < sz; i++) {
+      index = (int_t)i;
+      item = arr[i];
+      if (auto err = vm->call(fct, params, ret_value)) {
+        vm->ZS_VM_ERROR(err, "Invalid visit call in array.visit(...).");
+        return -1;
+      }
+
+      if (ret_value.is_bool() and ret_value._int == true) {
+        return 0;
+      }
+    }
+
+    return 0;
+  }
+
+  inline constexpr object k_is_number_array_name = zs::_sv("is_number_array");
+  inline constexpr object k_is_string_array_name = zs::_sv("is_string_array");
+  inline constexpr object k_is_float_array_name = zs::_sv("is_float_array");
+  inline constexpr object k_is_integer_array_name = zs::_sv("is_integer_array");
+
 } // namespace
 
-zs::object create_array_default_delegate(zs::engine* eng) {
+zs::object create_array_delegate(zs::engine* eng) {
   object obj = object::create_table(eng);
   zs::table_object& t = obj.as_table();
   t.reserve(30);
 
+  t.emplace(zs::_sv(constants::k_mt_get_string), array_delegate_get_impl);
+
   t.emplace(_ss("get_delegate"), array_get_delegate_impl);
+  t.emplace(_ss("size"), array_size_impl);
+  t.emplace(_ss("length"), array_size_impl);
+  t.emplace(_ss("push"), array_push_impl);
+  t.emplace(_ss("capacity"), array_capacity_impl);
+  t.emplace(_ss("is_empty"), array_is_empty_impl);
+  t.emplace(_ss("resize"), array_resize_impl);
+  t.emplace(_ss("reserve"), array_reserve_impl);
+  t.emplace(_ss("get"), array_get_impl);
+  t.emplace(_ss("erase"), array_erase_impl);
+  t.emplace(_ss("erase_get"), array_erase_get_impl);
+  t.emplace(_ss("erase_indices"), array_erase_indices_impl);
+  t.emplace(_ss("insert"), array_insert_impl);
+  t.emplace(_ss("clear"), array_clear_impl);
+  t.emplace(_ss("pop"), array_pop_impl);
+  t.emplace(_ss("append"), array_append_impl);
+  t.emplace(_ss("erase_if"), array_erase_if_impl);
+  t.emplace(_ss("sort"), array_sort_impl);
+  t.emplace(_ss("copy"), array_copy_impl);
+  t.emplace(_ss("begin"), array_begin_impl);
+  t.emplace(_ss("end"), array_end_impl);
+  t.emplace(_ss("min"), array_min_impl);
+  t.emplace(_ss("max"), array_max_impl);
+  t.emplace(_ss("index_range"), array_index_range_impl);
+  t.emplace(_ss("value_range"), array_value_range_impl);
+  t.emplace(_ss("visit"), array_visit_impl);
 
-  t["size"] = t["length"] = _nf(array_size_impl);
-  t["push"] = _nf(array_push_impl);
-  t["capacity"] = _nf(array_capacity_impl);
-  t["is_empty"] = _nf(array_is_empty_impl);
-  t["resize"] = _nf(array_resize_impl);
-  t["reserve"] = _nf(array_reserve_impl);
-  t["get"] = _nf(array_get_impl);
-  t["erase"] = _nf(array_erase_impl);
-  t["erase_get"] = _nf(array_erase_get_impl);
-  t["erase_indices"] = _nf(array_erase_indices_impl);
+  t.emplace(k_is_number_array_name, array_delegate_is_number_array_impl);
+  t.emplace(k_is_string_array_name, array_is_string_array_impl);
+  t.emplace(k_is_float_array_name, array_delegate_is_type_array_impl<object_type::k_float>);
+  t.emplace(k_is_integer_array_name, array_delegate_is_type_array_impl<object_type::k_integer>);
 
-  t["insert"] = _nf(array_insert_impl);
-  t["clear"] = _nf(array_clear_impl);
-  t["pop"] = _nf(array_pop_impl);
-  t["append"] = _nf(array_append_impl);
-  t["erase_if"] = _nf(array_erase_if_impl);
-  t["sort"] = _nf(array_sort_impl);
-  t["copy"] = _nf(array_copy_impl);
-  t["begin"] = _nf(array_begin_impl);
-  t["end"] = _nf(array_end_impl);
-  //  t["swap"] = _nf(array_swap_impl);
-  t[zs::_sv(constants::k_mt_get_string)] = _nf(array_delegate_get_impl);
-
-  t.set(_sv(s_is_number_array), _nf(array_is_number_array_impl));
-  t.set(_sv(s_is_string_array), _nf(array_is_string_array_impl));
-  t.set(_sv(s_is_float_array), _nf(array_is_type_array_impl<object_type::k_float>));
-  t.set(_sv(s_is_integer_array), _nf(array_is_type_array_impl<object_type::k_integer>));
-
-  t.set_delegate(object::create_none());
-  t.set_use_default_delegate(false);
+  t.set_no_default_none();
   return obj;
 }
 } // namespace zs.

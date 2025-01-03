@@ -1,6 +1,1 @@
-
-var t = {
-  a = 234
-};
-
-return t;
+return { a = 234 };

@@ -1,6 +1,6 @@
 #include "znumber_delegate.h"
 #include "zvirtual_machine.h"
-#include <zbase/strings/unicode.h>
+#include <zscript/base/strings/unicode.h>
 
 namespace zs {
 
@@ -102,8 +102,7 @@ zs::object create_number_default_delegate(zs::engine* eng) {
   tbl.emplace(zs::_ss("is_inf"), number_delegate_is_inf_impl);
   tbl.emplace(zs::_ss("is_neg"), number_delegate_is_neg_impl);
 
-  tbl.set_delegate(object::create_none());
-  tbl.set_use_default_delegate(false);
+  tbl.set_no_default_none();
   return obj;
 }
 

@@ -75,58 +75,63 @@ ZS_DECL_OPCODE(load_root, ZS_INSTRUCTION_LOAD_ROOT)
 #define ZS_INSTRUCTION_LOAD_GLOBAL(X) X(u8, target_idx)
 ZS_DECL_OPCODE(load_global, ZS_INSTRUCTION_LOAD_GLOBAL)
 
-/// op_set_meta_argument.
-#define ZS_INSTRUCTION_SET_META_ARGUMENT(X) X(u8, idx)
-ZS_DECL_OPCODE(set_meta_argument, ZS_INSTRUCTION_SET_META_ARGUMENT)
-
 /// op_call.
 #define ZS_INSTRUCTION_CALL(X) \
   X(u8, target_idx)            \
   X(u8, closure_idx)           \
-  X(u8, this_idx)              \
-  X(u8, n_params)              \
-  X(u64, stack_base)
+  X(u8, stack_base)            \
+  X(u8, n_params)
 ZS_DECL_OPCODE(call, ZS_INSTRUCTION_CALL)
 
-/// op_get_call.
-#define ZS_INSTRUCTION_GET_CALL(X) \
-  X(u8, target_idx)                \
-  X(u8, table_idx)                 \
-  X(u8, key_idx)                   \
-  X(get_op_flags_t, flags)         \
-  X(u8, n_params)                  \
-  X(u64, stack_base)
-ZS_DECL_OPCODE(get_call, ZS_INSTRUCTION_GET_CALL)
+/// op_set_register.
+#define ZS_INSTRUCTION_SET_REGISTER(X) \
+  X(u8, value_idx)                     \
+  X(u8, reg_idx)
+ZS_DECL_OPCODE(set_register, ZS_INSTRUCTION_SET_REGISTER)
+
+/// op_load_register.
+#define ZS_INSTRUCTION_LOAD_REGISTER(X) \
+  X(u8, target_idx)                     \
+  X(u8, reg_idx)
+ZS_DECL_OPCODE(load_register, ZS_INSTRUCTION_LOAD_REGISTER)
+
+/// op_tail_call.
+#define ZS_INSTRUCTION_TAIL_CALL(X) \
+  X(u8, target_idx)                 \
+  X(u8, closure_idx)                \
+  X(u8, stack_base)                 \
+  X(u8, n_params)
+ZS_DECL_OPCODE(tail_call, ZS_INSTRUCTION_TAIL_CALL)
 
 /// op_move.
 #define ZS_INSTRUCTION_MOVE(X) \
   X(u8, target_idx)            \
-  X(u8, idx)
+  X(u8, value_idx)
 ZS_DECL_OPCODE(move, ZS_INSTRUCTION_MOVE)
 
 /// op_to_bool.
 #define ZS_INSTRUCTION_TO_BOOL(X) \
   X(u8, target_idx)               \
-  X(u8, idx)
+  X(u8, value_idx)
 ZS_DECL_OPCODE(to_bool, ZS_INSTRUCTION_TO_BOOL)
 
 /// op_assign.
 #define ZS_INSTRUCTION_ASSIGN(X) \
   X(u8, target_idx)              \
-  X(u8, idx)
+  X(u8, value_idx)
 ZS_DECL_OPCODE(assign, ZS_INSTRUCTION_ASSIGN)
 
 /// op_assign_w_mask.
 #define ZS_INSTRUCTION_ASSIGN_W_MASK(X) \
   X(u8, target_idx)                     \
-  X(u8, idx)                            \
+  X(u8, value_idx)                      \
   X(u32, mask)
 ZS_DECL_OPCODE(assign_w_mask, ZS_INSTRUCTION_ASSIGN_W_MASK)
 
 /// op_assign_custom.
 #define ZS_INSTRUCTION_ASSIGN_CUSTOM(X) \
   X(u8, target_idx)                     \
-  X(u8, idx)                            \
+  X(u8, value_idx)                      \
   X(u32, mask)                          \
   X(u64, custom_mask)
 ZS_DECL_OPCODE(assign_custom, ZS_INSTRUCTION_ASSIGN_CUSTOM)
@@ -182,21 +187,20 @@ ZS_DECL_OPCODE(rawset_ss, ZS_INSTRUCTION_RAWSET_SS)
   X(get_op_flags_t, flags)
 ZS_DECL_OPCODE(get, ZS_INSTRUCTION_GET)
 
-/// op_eq.
-#define ZS_INSTRUCTION_EQUALS(X) \
-  X(u8, target_idx)              \
-  X(u8, lhs_idx)                 \
-  X(u32, rhs_idx)                \
-  X(bool, is_literal)
-ZS_DECL_OPCODE(eq, ZS_INSTRUCTION_EQUALS) // ==
+/// op_cmp.
+#define ZS_INSTRUCTION_CMP(X) \
+  X(u8, target_idx)           \
+  X(compare_op, cmp_op)       \
+  X(u8, lhs_idx)              \
+  X(u8, rhs_idx)
+ZS_DECL_OPCODE(cmp, ZS_INSTRUCTION_CMP)
 
-/// op_ne.
-#define ZS_INSTRUCTION_NOT_EQUALS(X) \
-  X(u8, target_idx)                  \
-  X(u8, lhs_idx)                     \
-  X(u32, rhs_idx)                    \
-  X(bool, is_literal)
-ZS_DECL_OPCODE(ne, ZS_INSTRUCTION_NOT_EQUALS)
+/// op_strict_eq.
+#define ZS_INSTRUCTION_STRICT_EQ(X) \
+  X(u8, target_idx)                 \
+  X(u8, lhs_idx)                    \
+  X(u8, rhs_idx)
+ZS_DECL_OPCODE(strict_eq, ZS_INSTRUCTION_STRICT_EQ)
 
 /// op_arith.
 /// Get the stack value at `lhs_idx`.
@@ -205,9 +209,9 @@ ZS_DECL_OPCODE(ne, ZS_INSTRUCTION_NOT_EQUALS)
 /// Set the result value in the stack at `target_idx`.
 #define ZS_INSTRUCTION_ARITH(X) \
   X(u8, target_idx)             \
+  X(arithmetic_op, aop)         \
   X(u8, lhs_idx)                \
-  X(u8, rhs_idx)                \
-  X(arithmetic_op, aop)
+  X(u8, rhs_idx)
 ZS_DECL_OPCODE(arith, ZS_INSTRUCTION_ARITH)
 
 /// Get the stack value at `target_idx`.
@@ -216,49 +220,40 @@ ZS_DECL_OPCODE(arith, ZS_INSTRUCTION_ARITH)
 /// Set the result value in the stack at `target_idx`.
 #define ZS_INSTRUCTION_ARITH_EQ(X) \
   X(u8, target_idx)                \
-  X(u8, rhs_idx)                   \
-  X(arithmetic_op, aop)
+  X(arithmetic_op, aop)            \
+  X(u8, rhs_idx)
 ZS_DECL_OPCODE(arith_eq, ZS_INSTRUCTION_ARITH_EQ)
 
 /// op_obj_arith_eq.
 #define ZS_INSTRUCTION_OBJ_ARITH_EQ(X) \
   X(u8, target_idx)                    \
+  X(arithmetic_op, aop)                \
   X(u8, obj_idx)                       \
   X(u8, key_idx)                       \
-  X(u8, rhs_idx)                       \
-  X(arithmetic_op, aop)
+  X(u8, rhs_idx)
 ZS_DECL_OPCODE(obj_arith_eq, ZS_INSTRUCTION_OBJ_ARITH_EQ)
 
 /// op_uarith.
 #define ZS_INSTRUCTION_UARITH(X) \
   X(u8, target_idx)              \
-  X(u8, idx)                     \
-  X(arithmetic_uop, uop)
+  X(arithmetic_uop, uop)         \
+  X(u8, value_idx)
 ZS_DECL_OPCODE(uarith, ZS_INSTRUCTION_UARITH)
 
 /// op_obj_uarith.
 #define ZS_INSTRUCTION_OBJ_UARITH(X) \
   X(u8, target_idx)                  \
+  X(arithmetic_uop, uop)             \
   X(u8, table_ix)                    \
-  X(u8, key_ix)                      \
-  X(arithmetic_uop, uop)
+  X(u8, key_ix)
+
 ZS_DECL_OPCODE(obj_uarith, ZS_INSTRUCTION_OBJ_UARITH)
 
 /// op_return.
 #define ZS_INSTRUCTION_RETURN(X) \
-  X(u8, idx)                     \
+  X(u8, value_idx)               \
   X(bool, has_value)
 ZS_DECL_OPCODE(return, ZS_INSTRUCTION_RETURN)
-
-/// op_return_export.
-// #define ZS_INSTRUCTION_RETURN_EXPORT(X) X(u8, idx)
-// ZS_DECL_OPCODE(return_export, ZS_INSTRUCTION_RETURN_EXPORT)
-
-/// op_use.
-#define ZS_INSTRUCTION_USE(X) \
-  X(u8, target_idx)           \
-  X(u8, src_idx)
-ZS_DECL_OPCODE(use, ZS_INSTRUCTION_USE)
 
 /// op_jmp.
 #define ZS_INSTRUCTION_JMP(X) X(i32, offset)
@@ -267,16 +262,16 @@ ZS_DECL_OPCODE(jmp, ZS_INSTRUCTION_JMP)
 /// op_jz.
 #define ZS_INSTRUCTION_JZ(X) \
   X(i32, offset)             \
-  X(u8, idx)
+  X(u8, value_idx)
 ZS_DECL_OPCODE(jz, ZS_INSTRUCTION_JZ)
 
-/// op_if_null.
-#define ZS_INSTRUCTION_IF_NULL(X) \
-  X(u8, target_idx)               \
-  X(u8, value_idx)                \
-  X(i32, offset)                  \
+/// op_if_not.
+#define ZS_INSTRUCTION_IF_NOT(X) \
+  X(u8, target_idx)              \
+  X(u8, value_idx)               \
+  X(i32, offset)                 \
   X(bool, null_only)
-ZS_DECL_OPCODE(if_null, ZS_INSTRUCTION_IF_NULL)
+ZS_DECL_OPCODE(if_not, ZS_INSTRUCTION_IF_NOT)
 
 /// op_get_capture.
 #define ZS_INSTRUCTION_GET_CAPTURE(X) \
@@ -289,6 +284,25 @@ ZS_DECL_OPCODE(get_capture, ZS_INSTRUCTION_GET_CAPTURE)
   X(u8, target_idx)               \
   X(object_type, type)
 ZS_DECL_OPCODE(new_obj, ZS_INSTRUCTION_NEW_OBJ)
+
+/// op_new_array.
+#define ZS_INSTRUCTION_NEW_ARRAY(X) \
+  X(u8, target_idx)                 \
+  X(u16, sz)
+ZS_DECL_OPCODE(new_array, ZS_INSTRUCTION_NEW_ARRAY)
+
+/// op_array_append.
+#define ZS_INSTRUCTION_ARRAY_APPEND(X) \
+  X(u8, array_idx)                     \
+  X(u8, value_idx)
+ZS_DECL_OPCODE(array_append, ZS_INSTRUCTION_ARRAY_APPEND)
+
+/// op_array_set.
+#define ZS_INSTRUCTION_ARRAY_SET(X) \
+  X(u8, array_idx)                  \
+  X(u8, value_idx)                  \
+  X(u16, index)
+ZS_DECL_OPCODE(array_set, ZS_INSTRUCTION_ARRAY_SET)
 
 /// op_load_lib_ss.
 #define ZS_INSTRUCTION_LOAD_LIB_SS(X) \
@@ -379,33 +393,6 @@ ZS_DECL_OPCODE(new_struct_method, ZS_INSTRUCTION_NEW_STRUCT_METHOD)
   X(u8, name_idx)
 ZS_DECL_OPCODE(set_struct_name, ZS_INSTRUCTION_SET_STRUCT_NAME)
 
-/// op_set_struct_doc.
-#define ZS_INSTRUCTION_SET_STRUCT_DOC(X) \
-  X(u8, struct_idx)                      \
-  X(u8, doc_idx)
-ZS_DECL_OPCODE(set_struct_doc, ZS_INSTRUCTION_SET_STRUCT_DOC)
-
-/// op_set_struct_member_doc.
-#define ZS_INSTRUCTION_SET_STRUCT_MEMBER_DOC(X) \
-  X(u8, struct_idx)                             \
-  X(u8, name_idx)                               \
-  X(u8, doc_idx)
-ZS_DECL_OPCODE(set_struct_member_doc, ZS_INSTRUCTION_SET_STRUCT_MEMBER_DOC)
-
-/// op_array_append.
-#define ZS_INSTRUCTION_ARRAY_APPEND(X) \
-  X(u8, array_idx)                     \
-  X(u8, idx)
-ZS_DECL_OPCODE(array_append, ZS_INSTRUCTION_ARRAY_APPEND)
-
-/// op_cmp.
-#define ZS_INSTRUCTION_CMP(X) \
-  X(u8, target_idx)           \
-  X(compare_op, cmp_op)       \
-  X(u8, lhs_idx)              \
-  X(u8, rhs_idx)
-ZS_DECL_OPCODE(cmp, ZS_INSTRUCTION_CMP)
-
 /// op_exists.
 #define ZS_INSTRUCTION_EXISTS(X) \
   X(u8, target_idx)              \
@@ -413,23 +400,10 @@ ZS_DECL_OPCODE(cmp, ZS_INSTRUCTION_CMP)
   X(u8, key_idx)
 ZS_DECL_OPCODE(exists, ZS_INSTRUCTION_EXISTS)
 
-/// op_umin.
-#define ZS_INSTRUCTION_UMIN(X) \
-  X(u8, target_idx)            \
-  X(u8, idx)
-ZS_DECL_OPCODE(umin, ZS_INSTRUCTION_UMIN)
-
-/// op_obj_umin.
-#define ZS_INSTRUCTION_OBJ_UMIN(X) \
-  X(u8, target_idx)                \
-  X(u8, table_idx)                 \
-  X(u8, key_idx)
-ZS_DECL_OPCODE(obj_umin, ZS_INSTRUCTION_OBJ_UMIN)
-
 /// op_not.
 #define ZS_INSTRUCTION_NOT(X) \
   X(u8, target_idx)           \
-  X(u8, idx)
+  X(u8, value_idx)
 ZS_DECL_OPCODE(not, ZS_INSTRUCTION_NOT)
 
 /// op_obj_not.
@@ -470,24 +444,20 @@ ZS_DECL_OPCODE(new_closure, ZS_INSTRUCTION_NEW_CLOSURE)
 /// op_clone.
 #define ZS_INSTRUCTION_CLONE(X) \
   X(u8, target_idx)             \
-  X(u8, idx)
+  X(u8, value_idx)
 ZS_DECL_OPCODE(clone, ZS_INSTRUCTION_CLONE)
 
 /// op_typeof.
 #define ZS_INSTRUCTION_TYPEOF(X) \
   X(u8, target_idx)              \
-  X(u8, idx)
+  X(u8, value_idx)
 ZS_DECL_OPCODE(typeof, ZS_INSTRUCTION_TYPEOF)
 
 /// op_typeid.
 #define ZS_INSTRUCTION_TYPEID(X) \
   X(u8, target_idx)              \
-  X(u8, idx)
+  X(u8, value_idx)
 ZS_DECL_OPCODE(typeid, ZS_INSTRUCTION_TYPEID)
-
-/// op_get_base.
-#define ZS_INSTRUCTION_GET_BASE(X) X(u8, target_idx)
-ZS_DECL_OPCODE(get_base, ZS_INSTRUCTION_GET_BASE)
 
 /// op_close.
 #define ZS_INSTRUCTION_CLOSE(X) X(u32, stack_size)
@@ -496,7 +466,7 @@ ZS_DECL_OPCODE(close, ZS_INSTRUCTION_CLOSE)
 /// op_check_type.
 /// Makes sure that the object at stack index `idx` is of `obj_type` type.
 #define ZS_INSTRUCTION_CHECK_TYPE(X) \
-  X(u8, idx)                         \
+  X(u8, value_idx)                   \
   X(object_type, obj_type)
 ZS_DECL_OPCODE(check_type, ZS_INSTRUCTION_CHECK_TYPE)
 
@@ -504,7 +474,7 @@ ZS_DECL_OPCODE(check_type, ZS_INSTRUCTION_CHECK_TYPE)
 /// Makes sure that the object at stack index `idx` has a type (type mask) in
 /// the ones given in `mask`.
 #define ZS_INSTRUCTION_CHECK_TYPE_MASK(X) \
-  X(u8, idx)                              \
+  X(u8, value_idx)                        \
   X(u32, mask)
 ZS_DECL_OPCODE(check_type_mask, ZS_INSTRUCTION_CHECK_TYPE_MASK)
 
@@ -550,18 +520,7 @@ ZS_DECL_OPCODE(check_type_mask, ZS_INSTRUCTION_CHECK_TYPE_MASK)
 /// Having a custom type in a variable declaration will automatically add the
 /// table, instance and user_data types to the (builtin) mask value.
 #define ZS_INSTRUCTION_CHECK_CUSTOM_TYPE_MASK(X) \
-  X(u8, idx)                                     \
+  X(u8, value_idx)                               \
   X(u32, mask)                                   \
   X(u64, custom_mask)
 ZS_DECL_OPCODE(check_custom_type_mask, ZS_INSTRUCTION_CHECK_CUSTOM_TYPE_MASK)
-
-/// op_new_enum_slot.
-#define ZS_INSTRUCTION_NEW_ENUM_SLOT(X) \
-  X(u8, table_idx)                      \
-  X(u8, key_idx)                        \
-  X(u8, value_idx)
-ZS_DECL_OPCODE(new_enum_slot, ZS_INSTRUCTION_NEW_ENUM_SLOT)
-
-/// op_close_enum.
-#define ZS_INSTRUCTION_CLOSE_ENUM(X) X(u8, idx)
-ZS_DECL_OPCODE(close_enum, ZS_INSTRUCTION_CLOSE_ENUM)

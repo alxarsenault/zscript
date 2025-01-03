@@ -29,99 +29,119 @@
 namespace zs {
 
 struct parameter_stream {
-  inline parameter_stream(vm_ref vm)
+  ZS_INLINE parameter_stream(vm_ref vm) noexcept
       : _vm(vm)
       , _it(vm->stack().stack_base_pointer())
       , _end(vm->stack().stack_end_pointer()) {}
 
-  inline parameter_stream(vm_ref vm, bool skip_base)
+  ZS_INLINE parameter_stream(vm_ref vm, bool skip_base) noexcept
       : _vm(vm)
       , _it(vm->stack().stack_base_pointer() + (int)skip_base)
       , _end(vm->stack().stack_end_pointer()) {}
 
   template <class ObjectParameterStreamer, class... Args>
-  inline zs::error_result check(bool output_error, Args&... args) {
-
-    if (!is_valid()) {
-      if (output_error) {
-        _vm.set_error("Invalid parameter count");
-      }
-      return zs::errc::invalid_parameter_count;
-    }
-
-    return ObjectParameterStreamer::parse(*this, output_error, args...);
-  }
-
-  template <class ObjectParameterStreamer, class... Args>
-  inline zs::error_result require(Args&... args) {
-
+  ZS_CK_INLINE zs::error_result require(Args&... args) noexcept {
     if (!is_valid()) {
       _vm.set_error("Invalid parameter count");
-      return zs::errc::invalid_parameter_count;
+      return errc::invalid_parameter_count;
     }
 
     return ObjectParameterStreamer::parse(*this, true, args...);
   }
 
   template <class ObjectParameterStreamer, class... Args>
-  inline zs::error_result optional(Args&... args) {
+  ZS_CK_INLINE zs::error_result require_if_valid(Args&... args) noexcept {
     if (!is_valid()) {
-      return zs::errc::invalid_parameter_count;
+      return {};
+    }
+
+    return ObjectParameterStreamer::parse(*this, true, args...);
+  }
+
+  template <class ObjectParameterStreamer, class... Args>
+  ZS_CK_INLINE zs::error_result optional(Args&... args) noexcept {
+    if (!is_valid()) {
+      return errc::invalid_parameter_count;
     }
 
     return ObjectParameterStreamer::parse(*this, false, args...);
   }
 
-  inline const object& operator*() const noexcept { return *_it; }
-  inline const object* operator->() const noexcept { return _it; }
+  template <class ObjectParameterStreamer, class... Args>
+  ZS_CK_INLINE zs::error_result check(bool output_error, Args&... args) noexcept {
+    if (!is_valid()) {
+      set_opt_error(output_error, "Invalid parameter count");
+      return errc::invalid_parameter_count;
+    }
 
-  inline parameter_stream& operator++() noexcept {
+    return ObjectParameterStreamer::parse(*this, output_error, args...);
+  }
+
+  ZS_CK_INLINE const object& operator*() const noexcept {
+    ZS_ASSERT(is_valid(), "Trying to get an invalid parameter.");
+    return is_valid() ? *_it : object::invalid_object();
+  }
+
+  ZS_INLINE const object* operator->() const noexcept { return _it; }
+
+  ZS_INLINE parameter_stream& operator++() noexcept {
     ++_it;
     return *this;
   }
 
-  inline const object* operator++(int) noexcept {
+  ZS_INLINE const object* operator++(int) noexcept {
     const object* it = _it;
     ++_it;
     return it;
   }
 
-  inline bool is_valid() const noexcept { return _it < _end; }
+  ZS_CK_INLINE bool is_valid() const noexcept { return _it < _end; }
 
-  inline explicit operator bool() const noexcept { return _it < _end; }
+  ZS_CK_INLINE explicit operator bool() const noexcept { return _it < _end; }
 
-  template <class... Args>
-  inline void set_error(Args&&... args) {
-    _vm->set_error(std::forward<Args>(args)...);
-  }
+  ZS_CK_INLINE size_t size() const noexcept { return _end - _it; }
 
-  template <class... Args>
-  inline void set_opt_error(bool output_error, Args&&... args) {
-    if (output_error) {
-      _vm->set_error(std::forward<Args>(args)...);
+  ZS_CK_INLINE bool has_type(object_type t) const noexcept {
+    for (const object* it = _it; it < _end; ++it) {
+      if (it->is_type(t)) {
+        return true;
+      }
     }
+
+    return false;
   }
 
-  inline bool is_user_data_with_uid(std::string_view uid) const noexcept {
+  ZS_CK_INLINE bool is_user_data_with_uid(std::string_view uid) const noexcept {
     return _it->is_user_data() and _it->as_udata().get_uid() == uid;
   }
 
-  inline bool is_user_data_with_uid(const object& uid) const noexcept {
+  ZS_CK_INLINE bool is_user_data_with_uid(const object& uid) const noexcept {
     return _it->is_user_data() and _it->as_udata().get_uid() == uid;
   }
 
-  inline bool is_struct_instance_with_name(std::string_view name) const noexcept {
+  ZS_CK_INLINE bool is_struct_instance_with_name(std::string_view name) const noexcept {
     return _it->is_struct_instance() and _it->as_struct_instance().get_base().as_struct().get_name() == name;
   }
 
-  inline bool is_array_with_size(int_t sz) const noexcept {
+  ZS_CK_INLINE bool is_array_with_size(int_t sz) const noexcept {
     return _it->is_array() and _it->as_array().size() == sz;
   }
 
-  inline size_t size() const noexcept { return _end - _it; }
+  template <class... Args>
+  inline void set_error(Args&&... args) noexcept {
+    _vm.set_error(std::forward<Args>(args)...);
+  }
 
-  inline vm_ref vm() const noexcept { return _vm; }
+  template <class... Args>
+  inline void set_opt_error(bool output_error, Args&&... args) noexcept {
+    if (output_error) {
+      _vm.set_error(std::forward<Args>(args)...);
+    }
+  }
 
+  ZS_CK_INLINE vm_ref vm() const noexcept { return _vm; }
+
+private:
   vm_ref _vm;
   const object* _it;
   const object* _end;
@@ -151,21 +171,20 @@ struct integer_parameter {
 
 struct string_parameter {
   static zs::error_result parse(parameter_stream& s, bool output_error, std::string_view& value);
-
   static zs::error_result parse(parameter_stream& s, bool output_error, const char*& value);
 };
 
-// struct error_code_parameter {
-//   static zs::error_result parse(parameter_stream& s, bool output_error, zs::error_code& value) {
-//     if (!s->is_error()) {
-//       s.set_opt_error(output_error, "Invalid error type.");
-//       return zs::errc::invalid_type;
-//     }
-//
-//     value = s->_atom.error;
-//     ++s;
-//     return {};
-//   }
-// };
+struct function_parameter {
+  static zs::error_result parse(parameter_stream& s, bool output_error, object& value);
+
+  static zs::error_result parse(parameter_stream& s, bool output_error, zs::closure_object*& value);
+  static zs::error_result parse(parameter_stream& s, bool output_error, const zs::closure_object*& value);
+
+  static zs::error_result parse(parameter_stream& s, bool output_error, zs::native_closure_object*& value);
+  static zs::error_result parse(
+      parameter_stream& s, bool output_error, const zs::native_closure_object*& value);
+
+  static zs::error_result parse(parameter_stream& s, bool output_error, zs::function_t& value);
+};
 
 } // namespace zs.

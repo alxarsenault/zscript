@@ -1,6 +1,5 @@
 #include "unit_tests.h"
-#include <zbase/sys/assert.h>
-#include <uv.h>
+#include <zscript/base/sys/assert.h>
 
 __attribute__((constructor)) static void print_zscript_version() { zb::print(zs::version()); }
 
@@ -19,7 +18,6 @@ struct EventListener : Catch::EventListenerBase {
 CATCH_REGISTER_LISTENER(EventListener)
 
 int main(int argc, char* argv[]) {
-  uv_setup_args(argc, argv);
   zb::assert_handler.set([]() { return true; });
   return Catch::Session().run(argc, argv);
 }

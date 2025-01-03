@@ -10,7 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_XCODE_GENERATE_SCHEME ON)
 
 set(ZSCRIPT_BIN_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
-set(ZSCRIPT_DOC_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/doc")
 set(ZSCRIPT_TOOLS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tools")
 set(ZSCRIPT_CMAKE_TOOLS_DIRECTORY "${ZSCRIPT_TOOLS_DIRECTORY}/cmake")
 set(ZSCRIPT_MODULES_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/modules")
@@ -21,12 +20,12 @@ set(ZSCRIPT_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
 list(APPEND CMAKE_MODULE_PATH "${ZSCRIPT_CMAKE_TOOLS_DIRECTORY}")
 include(zscript-utils)
 
-# # Parse version file.
-# set(WP_VERSION_FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/version.txt")
-# wp_parse_version(${WP_VERSION_FILE_PATH})
-project(zscript VERSION 0.0.1 LANGUAGES C CXX)
+# Parse version file.
+set(ZS_VERSION_FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.version")
+zs_parse_version(${ZS_VERSION_FILE_PATH})
 
-# message(STATUS "wp version: ${WP_VERSION_MAJOR}.${WP_VERSION_MINOR}.${WP_VERSION_PATCH}")
+project(zscript VERSION ${ZS_VERSION} LANGUAGES C CXX)
+
 get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 if(IS_MULTI_CONFIG)
@@ -46,11 +45,6 @@ if(NOT DEFINED ZSCRIPT_MASTER_PROJECT)
     set(ZSCRIPT_MASTER_PROJECT ON)
   endif()
 endif()
-
-
-add_sub_directories(${CMAKE_CURRENT_SOURCE_DIR}/libs/*)
-
-
 
 set(ZSCRIPT_STATIC_LIB_NAME zscript)
 
@@ -79,10 +73,15 @@ set_target_properties(${ZSCRIPT_STATIC_LIB_NAME} PROPERTIES
   FOLDER zs
   XCODE_GENERATE_SCHEME NO)
 
-# wp_set_compile_options(${ZSCRIPT_STATIC_LIB_NAME} PUBLIC)
-target_compile_definitions(${ZSCRIPT_STATIC_LIB_NAME} PUBLIC
-  -DZSCRIPT_STD_LIB_DIRECTORY="${ZSCRIPT_STD_LIB_DIRECTORY}")
+zs_add_version_definitions(${ZSCRIPT_STATIC_LIB_NAME})
 
+zs_set_compile_options(${ZSCRIPT_STATIC_LIB_NAME} PRIVATE)
+target_compile_definitions(${ZSCRIPT_STATIC_LIB_NAME}
+  PUBLIC
+  -DZSCRIPT_STD_LIB_DIRECTORY="${ZSCRIPT_STD_LIB_DIRECTORY}"
+)
+
+# wp_set_compile_options(${ZSCRIPT_STATIC_LIB_NAME} PUBLIC)
 target_include_directories(${ZSCRIPT_STATIC_LIB_NAME}
   PUBLIC
   "${ZSCRIPT_INCLUDE_DIRECTORY}"
@@ -101,12 +100,9 @@ if(APPLE)
 
   target_compile_options(${ZSCRIPT_STATIC_LIB_NAME}
     PUBLIC
-    "-fno-objc-arc")
+    "-fno-objc-arc"
+  )
 endif()
-
-target_link_libraries(${ZSCRIPT_STATIC_LIB_NAME} PRIVATE
-  uv_a
-)
 
 # Output the library in ZSCRIPT_BIN_DIRECTORY.
 set_target_properties(${ZSCRIPT_STATIC_LIB_NAME} PROPERTIES
@@ -117,13 +113,13 @@ set_target_properties(${ZSCRIPT_STATIC_LIB_NAME} PROPERTIES
 )
 
 # Modules.
-add_sub_directories(${CMAKE_CURRENT_SOURCE_DIR}/modules/*)
+zs_add_sub_directories(${CMAKE_CURRENT_SOURCE_DIR}/modules/*)
 
 # Tests.
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
 # Apps.
-add_sub_directories(${CMAKE_CURRENT_SOURCE_DIR}/apps/*)
+zs_add_sub_directories(${CMAKE_CURRENT_SOURCE_DIR}/apps/*)
 
 # Install.
-install(TARGETS zscript-app RUNTIME DESTINATION "/usr/local/bin")
+# install(TARGETS zscript-app RUNTIME DESTINATION "/usr/local/bin")

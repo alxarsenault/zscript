@@ -1,125 +1,54 @@
 #include "zlexer.h"
-#include <zbase/strings/charconv.h>
-#include <zbase/container/constexpr_map.h>
-#include <zbase/strings/parse_utils.h>
+#include <zscript/base/strings/charconv.h>
+#include <zscript/base/container/constexpr_map.h>
+#include <zscript/base/strings/parse_utils.h>
 
-ZBASE_PRAGMA_PUSH()
-ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wswitch")
-ZBASE_PRAGMA_DISABLE_WARNING_CLANG("-Wlanguage-extension-token")
+ZBASE_PRAGMA_PUSH_NO_MISSING_SWITCH_WARNING()
 
 namespace zs {
 
 struct lexer::helper {
 
-  static constexpr const auto k_symbol_map = zb::eternal::hash_map<zb::eternal::string, zs::token_type>({
-      { "__FILE__", zs::token_type::tok_file },
-      { "__LINE__", zs::token_type::tok_line },
-      { "__THIS_LINE__", zs::token_type::tok_line_str },
-      { "null", zs::token_type::tok_null },
-      { "var", zs::token_type::tok_var },
-      { "int", zs::token_type::tok_int },
-      { "float", zs::token_type::tok_float },
-      { "number", zs::token_type::tok_number },
-      { "bool", zs::token_type::tok_bool },
-      { "table", zs::token_type::tok_table },
-      { "array", zs::token_type::tok_array },
-      { "string", zs::token_type::tok_string },
-      { "char", zs::token_type::tok_char },
-      { "auto", zs::token_type::tok_auto },
-      { "true", zs::token_type::tok_true },
-      { "exttype", zs::token_type::tok_exttype },
-      { "false", zs::token_type::tok_false },
-      { "return", zs::token_type::tok_return },
-      { "extend", zs::token_type::tok_extend },
-      { "struct", zs::token_type::tok_struct },
-      { "and", zs::token_type::tok_and },
-      { "or", zs::token_type::tok_or },
-      { "if", zs::token_type::tok_if },
-      { "else", zs::token_type::tok_else },
-      { "for", zs::token_type::tok_for },
-      { "foreach", zs::token_type::tok_foreach },
-      { "do", zs::token_type::tok_do },
-      { "while", zs::token_type::tok_while },
-      { "switch", zs::token_type::tok_switch },
-      { "case", zs::token_type::tok_case },
-      { "break", zs::token_type::tok_break },
-      { "default", zs::token_type::tok_default },
-      { "continue", zs::token_type::tok_continue },
-      { "try", zs::token_type::tok_try },
-      { "catch", zs::token_type::tok_catch },
-      { "throw", zs::token_type::tok_throw },
-      { "this", zs::token_type::tok_this },
-      { "base", zs::token_type::tok_base },
-      { "class", zs::token_type::tok_class },
-      { "namespace", zs::token_type::tok_namespace },
-      { "use", zs::token_type::tok_use },
-      { "global", zs::token_type::tok_global },
-      { "const", zs::token_type::tok_const },
-      { "static", zs::token_type::tok_static },
-      //      { "export", zs::token_type::tok_export },
-      { "function", zs::token_type::tok_function },
-      { "private", zs::token_type::tok_private },
-      { "typeof", zs::token_type::tok_typeof },
-      { "typeid", zs::token_type::tok_typeid },
-      { "constructor", zs::token_type::tok_constructor },
-      { "destructor", zs::token_type::tok_destructor },
-      { "mutable", zs::token_type::tok_mutable },
-      { "in", zs::token_type::tok_in },
-      { "enum", zs::token_type::tok_enum },
-      { "xor", zs::token_type::tok_xor },
-      { "not", zs::token_type::tok_not },
-      { "none", zs::token_type::tok_none },
-      { "define", zs::token_type::tok_define },
-  });
+  static constexpr const auto k_symbol_map = zb::eternal::hash_map<zb::eternal::string, zs::token_type>(
+      { { "__FILE__", zs::token_type::tok_file }, { "__LINE__", zs::token_type::tok_line },
+          { "__THIS_LINE__", zs::token_type::tok_line_str }, { "null", zs::token_type::tok_null },
+          { "var", zs::token_type::tok_var }, { "int", zs::token_type::tok_int },
+          { "atom", zs::token_type::tok_atom }, { "float", zs::token_type::tok_float },
+          { "number", zs::token_type::tok_number }, { "bool", zs::token_type::tok_bool },
+          { "table", zs::token_type::tok_table }, { "array", zs::token_type::tok_array },
+          { "string", zs::token_type::tok_string }, { "char", zs::token_type::tok_char },
+          { "auto", zs::token_type::tok_auto }, { "true", zs::token_type::tok_true },
+          { "false", zs::token_type::tok_false }, { "return", zs::token_type::tok_return },
+          { "struct", zs::token_type::tok_struct }, { "and", zs::token_type::tok_and },
+          { "or", zs::token_type::tok_or }, { "if", zs::token_type::tok_if },
+          { "else", zs::token_type::tok_else }, { "for", zs::token_type::tok_for },
+          { "do", zs::token_type::tok_do }, { "while", zs::token_type::tok_while },
+          { "switch", zs::token_type::tok_switch }, { "case", zs::token_type::tok_case },
+          { "break", zs::token_type::tok_break }, { "default", zs::token_type::tok_default },
+          { "continue", zs::token_type::tok_continue }, { "this", zs::token_type::tok_this },
+          { "global", zs::token_type::tok_global }, { "const", zs::token_type::tok_const },
+          { "static", zs::token_type::tok_static }, { "function", zs::token_type::tok_function },
+          { "private", zs::token_type::tok_private }, { "typeof", zs::token_type::tok_typeof },
+          { "typeid", zs::token_type::tok_typeid }, { "constructor", zs::token_type::tok_constructor },
 
-  //  static inline void create_symbol_map(auto& symbols) {
-  //    using enum token_type;
-  //    for (token_type i = next_token(token_type::tok_first_named_token); i <
-  //    token_type::tok_last_named_token;
-  //         i = (token_type)(((int)i) + 1)) {
-  //      symbols[zs::token_to_string(i)] = i;
-  //    }
-  //    symbols["__FILE__"] = tok_file;
-  //    symbols["__LINE__"] = tok_line;
-  //
-  //    //    zb::print(symbols);
-  //    //    symbols["null"] = tok_null;
-  //    //    symbols["local"] = tok_local;
-  //    //    symbols["true"] = tok_true;
-  //    //    symbols["false"] = tok_false;
-  //    //    symbols["return"] = tok_return;
-  //    //    symbols["extend"] = tok_extend;
-  //    //    symbols["and"] = tok_and;
-  //    //    symbols["or"] = tok_or;
-  //    //    symbols["if"] = tok_if;
-  //    //    symbols["else"] = tok_else;
-  //    //    symbols["for"] = tok_for;
-  //    //    symbols["do"] = tok_do;
-  //    //    symbols["while"] = tok_while;
-  //    //    symbols["switch"] = tok_switch;
-  //    //    symbols["case"] = tok_case;
-  //    //    symbols["break"] = tok_break;
-  //    //    symbols["default"] = tok_default;
-  //    //    symbols["continue"] = tok_continue;
-  //    //    symbols["try"] = tok_try;
-  //    //    symbols["catch"] = tok_catch;
-  //    //    symbols["throw"] = tok_throw;
-  //    //    symbols["this"] = tok_this;
-  //    //    symbols["base"] = tok_base;
-  //    //    symbols["class"] = tok_class;
-  //    //    symbols["namespace"] = tok_namespace;
-  //    //    symbols["global"] = tok_global;
-  //    //    symbols["const"] = tok_const;
-  //    //    symbols["static"] = tok_static;
-  //    //    symbols["typeof"] = tok_typeof;
-  //    //    symbols["constructor"] = tok_constructor;
-  //    //    symbols["destructor"] = tok_destructor;
-  //    //    symbols["in"] = tok_in;
-  //    //    symbols["function"] = tok_function;
-  //    //    symbols["enum"] = tok_enum;
-  //    //    symbols["__FILE__"] = tok_file;
-  //    //    symbols["__LINE__"] = tok_line;
-  //  }
+          { "xor", zs::token_type::tok_bitwise_xor }, { "not", zs::token_type::tok_not },
+          { "none", zs::token_type::tok_none } });
+
+  inline static void skip_white_spaces(lexer* l) noexcept {
+    l->_last_line_info = l->get_line_info();
+
+    while (zb::is_one_of(*l->_stream, ' ', '\t')) {
+      l->_current_column++;
+      l->_stream.incr();
+    }
+  }
+
+  inline static void new_line(lexer* l) noexcept {
+    l->_last_line_info = l->get_line_info();
+    l->_last_endl_ptr = l->_stream.ptr();
+    l->_current_column = 1;
+    l->_current_line++;
+  }
 
   inline static void skip_hashtag_comment(lexer* l) {
     auto& s = l->_stream;
@@ -138,7 +67,7 @@ struct lexer::helper {
 
     if (*s == '\n') {
       s.incr();
-      l->new_line();
+      new_line(l);
     }
 
     if (s.is_end()) {
@@ -164,7 +93,7 @@ struct lexer::helper {
 
     if (*s == '\n') {
       s.incr();
-      l->new_line();
+      new_line(l);
     }
 
     if (s.is_end()) {
@@ -192,7 +121,7 @@ struct lexer::helper {
 
       if (*s == '\n') {
         s.incr();
-        l->new_line();
+        new_line(l);
 
         while (zb::is_one_of(*s, '\t', '\r', ' ')) {
           l->next();
@@ -213,7 +142,7 @@ struct lexer::helper {
 
     if (*s == '\n') {
       s.incr();
-      l->new_line();
+      new_line(l);
     }
   }
 
@@ -274,7 +203,7 @@ struct lexer::helper {
       }
 
       if (*s == '\n') {
-        l->new_line();
+        new_line(l);
         ++s;
       }
       else {
@@ -289,7 +218,7 @@ struct lexer::helper {
   }
 
   inline static void cleanup_block_comment(lexer* l, std::string_view svalue) {
-    auto& s = l->_stream;
+    //    auto& s = l->_stream;
 
     zs::string& estr = l->_escaped_string;
 
@@ -339,7 +268,7 @@ struct lexer::helper {
       }
       else if (*s == '\n') {
         count = 0;
-        l->new_line();
+        new_line(l);
         ++s;
       }
       else {
@@ -751,89 +680,21 @@ struct lexer::helper {
   }
 
   static inline void parse_operator(lexer* l);
-
-  inline static token_type parse_at(lexer* l, uint32_t c1) {
-    auto& s = l->_stream;
-    const size_t sz = s.rsize();
-
-    static constexpr std::string_view author = "@author";
-    static constexpr std::string_view brief = "@brief";
-    static constexpr std::string_view version = "@version";
-    static constexpr std::string_view date = "@date";
-    static constexpr std::string_view copyright = "@copyright";
-    static constexpr std::string_view counter = "@counter";
-    static constexpr std::string_view uuid = "@uuid";
-    static constexpr std::string_view keyword = "@keyword";
-    static constexpr std::string_view macro = "@macro";
-    static constexpr std::string_view expr = "@expr";
-
-#define KKKKK(sname)                                                            \
-  else if (std::string_view(s.ptr(), zb::minimum(sname.size(), sz)) == sname) { \
-    l->set_token(tok_##sname);                                                  \
-    l->next(sname.size());                                                      \
-    return l->_current_token;                                                   \
-  }
-
-    // @module
-    if (sz >= 7 and std::string_view(s.ptr(), 7) == "@module") {
-      l->set_token(tok_module);
-      l->next(7);
-      return l->_current_token;
-    }
-    // @str
-    else if (sz >= 4 and std::string_view(s.ptr(), 4) == "@str") {
-      l->set_token(tok_stringify);
-      l->next(4);
-      return l->_current_token;
-    }
-    // @include
-    else if (sz >= 8 and std::string_view(s.ptr(), 8) == "@include") {
-      l->set_token(tok_include);
-      l->next(8);
-      return l->_current_token;
-    }
-    // @import
-    else if (sz >= 7 and std::string_view(s.ptr(), 7) == "@import") {
-      l->set_token(tok_import);
-      l->next(7);
-      return l->_current_token;
-    }
-    KKKKK(author)
-    KKKKK(brief)
-    KKKKK(copyright)
-    KKKKK(version)
-    KKKKK(date)
-    KKKKK(counter)
-    KKKKK(uuid)
-    KKKKK(keyword)
-    KKKKK(macro)
-    KKKKK(expr)
-
-    if (c1 == '@') {
-      l->set_token(tok_double_at);
-      l->next(2);
-      return l->_current_token;
-    }
-
-    l->set_token(tok_at);
-    l->next();
-    return l->_current_token;
-  }
 };
 
-lexer::lexer(zs::engine* eng)
+lexer::lexer(zs::engine* eng) noexcept
     : engine_holder(eng)
     , _escaped_string(zs::allocator<char>(eng)) {}
 
-lexer::lexer(zs::engine* eng, std::string_view code)
+lexer::lexer(zs::engine* eng, std::string_view code) noexcept
     : lexer(eng) {
 
   init(code);
 }
 
-lexer::~lexer() {}
+lexer::~lexer() noexcept {}
 
-void lexer::init(std::string_view code) {
+void lexer::init(std::string_view code) noexcept {
   _stream = zb::utf8_span_stream(code);
   _current_token = _last_token = tok_none;
   _current_line = _current_column = _last_token_line = 1;
@@ -841,13 +702,13 @@ void lexer::init(std::string_view code) {
   _identifier = _string = {};
   _escaped_string.clear();
   _int_value = _float_value = 0;
-  _is_string_view_identifier = _export_block_comments = false;
+  _is_string_view_identifier = false;
 }
 
-zs::object lexer::get_value() const {
+zs::object lexer::get_value() const noexcept {
   switch (_current_token) {
   case tok_none:
-    return zs::object::create_none();
+    return object(zs::none{});
   case tok_null:
     return nullptr;
   case tok_char_value:
@@ -870,10 +731,10 @@ zs::object lexer::get_value() const {
   return {};
 }
 
-zs::object lexer::get_debug_value() const {
+zs::object lexer::get_debug_value() const noexcept {
   switch (_current_token) {
   case tok_none:
-    return zs::object::create_none();
+    return object(zs::none{});
   case tok_null:
     return nullptr;
   case tok_integer_value:
@@ -897,47 +758,48 @@ zs::object lexer::get_debug_value() const {
 
 namespace lex_detail {
 
-  inline constexpr std::array k_meta_hashs = { zb::eternal::impl::str_hash("call"), //
+  inline constexpr std::array k_meta_hashs = { //
+    zb::eternal::impl::str_hash("typeof"), //
+    zb::eternal::impl::str_hash("call"), //
     zb::eternal::impl::str_hash("tostring"), //
     zb::eternal::impl::str_hash("get"), //
     zb::eternal::impl::str_hash("set"), //
-    zb::eternal::impl::str_hash("next"), //
     zb::eternal::impl::str_hash("minus"), //
-    zb::eternal::impl::str_hash("delete_slot"), //
-    zb::eternal::impl::str_hash("copy") };
+    zb::eternal::impl::str_hash("copy")
+  };
 
-  inline constexpr std::array k_meta_strings = { "call", //
+  inline constexpr std::array k_meta_strings = { //
+    "typeof", //
+    "call", //
     "tostring", //
     "get", //
     "set", //
-    "next", //
     "minus", //
-    "delete_slot", //
-    "copy" };
+    "copy"
+  };
 
-  inline constexpr std::array k_metas = { zs::constants::k_mt_call_string, //
+  inline constexpr std::array k_metas = { //
+    zs::constants::k_mt_call_string, //
+    zs::constants::k_mt_typeof_string, //
     zs::constants::k_mt_tostring_string, //
     zs::constants::k_mt_get_string, //
     zs::constants::k_mt_set_string, //
-    zs::constants::k_mt_next_string, //
     zs::constants::k_mt_unary_minus_string, //
-    zs::constants::k_mt_delete_slot_string, //
-    zs::constants::k_mt_copy_string };
+    zs::constants::k_mt_copy_string
+  };
 } // namespace lex_detail.
 
 void lexer::helper::parse_operator(lexer* l) {
   zb::utf8_span_stream& s = l->_stream;
 
-  l->skip_white_spaces();
+  skip_white_spaces(l);
 
-  if (*s != '(') {
-    l->set_token(tok_lex_error);
+  bool start_with_parent = *s == '(';
 
-    return;
+  if (start_with_parent) {
+    // Skip `(`.
+    l->next();
   }
-
-  // Skip `(`.
-  l->next();
 
   token_type t = l->lex();
 
@@ -952,7 +814,7 @@ void lexer::helper::parse_operator(lexer* l) {
   case tok_add:
     operator_value = zs::constants::k_mt_add_string;
     break;
-  case tok_minus:
+  case tok_sub:
     operator_value = zs::constants::k_mt_sub_string;
     break;
   case tok_mul:
@@ -969,6 +831,7 @@ void lexer::helper::parse_operator(lexer* l) {
     break;
   case tok_lshift:
     operator_value = zs::constants::k_mt_lshift_string;
+    break;
   case tok_rshift:
     operator_value = zs::constants::k_mt_rshift_string;
     break;
@@ -978,13 +841,13 @@ void lexer::helper::parse_operator(lexer* l) {
   case tok_bitwise_and:
     operator_value = zs::constants::k_mt_bw_and_string;
     break;
-  case tok_xor:
+  case tok_bitwise_xor:
     operator_value = zs::constants::k_mt_bw_xor_string;
     break;
   case tok_add_eq:
     operator_value = zs::constants::k_mt_add_eq_string;
     break;
-  case tok_minus_eq:
+  case tok_sub_eq:
     operator_value = zs::constants::k_mt_sub_eq_string;
     break;
   case tok_mul_eq:
@@ -1011,7 +874,7 @@ void lexer::helper::parse_operator(lexer* l) {
   case tok_bitwise_and_eq:
     operator_value = zs::constants::k_mt_bw_and_eq_string;
     break;
-  case tok_xor_eq:
+  case tok_bitwise_xor_eq:
     operator_value = zs::constants::k_mt_bw_xor_eq_string;
     break;
 
@@ -1055,15 +918,17 @@ void lexer::helper::parse_operator(lexer* l) {
     return;
   }
 
-  l->skip_white_spaces();
+  skip_white_spaces(l);
 
-  if (*s != ')') {
+  if (start_with_parent and *s != ')') {
     l->set_token(tok_lex_error);
     return;
   }
 
   // Skip `)`.
-  l->next();
+  if (start_with_parent) {
+    l->next();
+  }
   l->set_identifier(operator_value, true);
 
   // Can't use `set_token()` here, we don't want `_last_token` to change.
@@ -1071,7 +936,7 @@ void lexer::helper::parse_operator(lexer* l) {
   return;
 }
 
-token_type lexer::lex(bool keep_endl) {
+token_type lexer::lex(bool keep_endl) noexcept {
 
   if (!_stream.is_valid()) {
     return tok_eof;
@@ -1091,7 +956,7 @@ token_type lexer::lex(bool keep_endl) {
       continue;
 
     case '\n':
-      new_line();
+      helper::new_line(this);
       set_token(tok_endl);
       ++_stream;
 
@@ -1101,22 +966,9 @@ token_type lexer::lex(bool keep_endl) {
       continue;
 
     case '`': {
-      const size_t sz = _stream.rsize();
+      //      const size_t sz = _stream.rsize();
       if (c1 == '`' && c2 == '`') {
-
-        const char* beg = _stream.ptr() + 3;
         helper::skip_block_comment(this);
-
-        if (_export_block_comments) {
-          const size_t sz = std::distance(beg, _stream.ptr() - 3);
-          std::string_view svalue(beg, sz);
-
-          set_token(tok_doc_block);
-          helper::cleanup_block_comment(this, zb::strip_all(svalue));
-          next();
-          return _current_token;
-        }
-
         continue;
       }
 
@@ -1132,13 +984,8 @@ token_type lexer::lex(bool keep_endl) {
 
       return set_token_and_next(tok_hastag);
 
-    case '{': {
-      if (c1 == '/') {
-        return set_token_and_next(tok_block_begin, 2);
-      }
-
+    case '{':
       return set_token_and_next(tok_lcrlbracket);
-    }
 
     case '}':
       return set_token_and_next(tok_rcrlbracket);
@@ -1159,13 +1006,6 @@ token_type lexer::lex(bool keep_endl) {
       return set_token_and_next(tok_semi_colon);
 
     case '?': {
-      if (c1 == '?' and c2 == '?') {
-        return set_token_and_next(tok_triple_question_mark, 3);
-      }
-
-      if (c1 == ':') {
-        return set_token_and_next(tok_double_question_mark, 2);
-      }
 
       return set_token_and_next(tok_question_mark);
     }
@@ -1174,26 +1014,12 @@ token_type lexer::lex(bool keep_endl) {
       return set_token_and_next(tok_comma);
 
     case '$':
-      if (c1 == '$') {
-        return set_token_and_next(tok_double_dollar, 2);
-      }
-
       return set_token_and_next(tok_dollar);
-
-    case '@':
-      return helper::parse_at(this, c1);
 
     case '/': {
       if (_stream.is_next_valid()) {
-        if (_export_block_comments and _stream.rsize() >= 5 && c1 == '/' && c2 == '/' and _stream[3] == ' '
-            and _stream[4] == '@') {
-          const char* beg = _stream.ptr() + 5;
-          helper::skip_triple_dash_doc_block_comment(this);
 
-          set_token(tok_doc_block);
-          return _current_token;
-        }
-        else if (c1 == '/') {
+        if (c1 == '/') {
           helper::skip_single_line_comment(this);
           continue;
         }
@@ -1204,22 +1030,16 @@ token_type lexer::lex(bool keep_endl) {
         else if (c1 == '=') {
           return set_token_and_next(tok_div_eq, 2);
         }
-        else if (c1 == '>') {
-          return set_token_and_next(tok_attribute_end, 2);
-        }
-        else if (c1 == '}') {
-          return set_token_and_next(tok_block_end, 2);
-        }
       }
 
       return set_token_and_next(tok_div);
     }
 
     case '=': {
-      const size_t sz = _stream.rsize();
+      //      const size_t sz = _stream.rsize();
 
       if (c1 == '=' && c2 == '=') {
-        return set_token_and_next(tok_three_way_compare, 3);
+        return set_token_and_next(tok_strict_eq, 3);
       }
 
       if (c1 == '=') {
@@ -1248,7 +1068,7 @@ token_type lexer::lex(bool keep_endl) {
         return set_token_and_next(tok_not_eq, 2);
 
       case '>':
-        return set_token_and_next(tok_double_question_mark, 2);
+        return set_token_and_next(tok_if_not, 2);
       }
 
       return set_token_and_next(tok_not);
@@ -1274,11 +1094,11 @@ token_type lexer::lex(bool keep_endl) {
       }
 
       if (c1 == '^' and c2 == '=') {
-        return set_token_and_next(tok_xor_eq, 3);
+        return set_token_and_next(tok_bitwise_xor_eq, 3);
       }
 
       if (c1 == '^') {
-        return set_token_and_next(tok_xor, 2);
+        return set_token_and_next(tok_bitwise_xor, 2);
       }
 
       return set_token_and_next(tok_exp);
@@ -1350,13 +1170,13 @@ token_type lexer::lex(bool keep_endl) {
 
       switch (c1) {
       case '=':
-        return set_token_and_next(tok_minus_eq, 2);
+        return set_token_and_next(tok_sub_eq, 2);
 
       case '-':
         return set_token_and_next(tok_decr, 2);
       }
 
-      return set_token_and_next(tok_minus);
+      return set_token_and_next(tok_sub);
     }
 
     // *
@@ -1371,17 +1191,6 @@ token_type lexer::lex(bool keep_endl) {
 
     case '<': {
       const size_t sz = _stream.rsize();
-
-      if (sz >= 4) {
-        // <-->
-        if (c1 == '-' && c2 == '-' && _stream[3] == '>') {
-          return set_token_and_next(tok_double_arrow, 4);
-        }
-        // <==>
-        else if (c1 == '=' && c2 == '=' && _stream[3] == '>') {
-          return set_token_and_next(tok_double_arrow_eq, 4);
-        }
-      }
 
       // <<=
       if (sz >= 3) {
@@ -1398,18 +1207,9 @@ token_type lexer::lex(bool keep_endl) {
         if (c1 == '=') {
           return set_token_and_next(tok_lt_eq, 2);
         }
-        // <-
-        else if (c1 == '-') {
-          return set_token_and_next(tok_left_arrow, 2);
-        }
         // <<
         else if (c1 == '<') {
           return set_token_and_next(tok_lshift, 2);
-        }
-
-        // </
-        else if (c1 == '/') {
-          return set_token_and_next(tok_attribute_begin, 2);
         }
       }
 
@@ -1417,7 +1217,7 @@ token_type lexer::lex(bool keep_endl) {
     }
 
     case '>': {
-      const size_t sz = _stream.rsize();
+      //      const size_t sz = _stream.rsize();
 
       // >>=
       if (c1 == '>' && c2 == '=') {
@@ -1576,8 +1376,7 @@ token_type lexer::lex(bool keep_endl) {
         case tok_string:
           switch (c) {
           case '(':
-            set_identifier("__tostring");
-            ZBASE_NO_BREAK;
+            set_identifier("__to_string");
           case '.':
             // Can't use `set_token()` here, we don't want `_last_token` to change.
             return _current_token = tok_identifier;
@@ -1587,8 +1386,7 @@ token_type lexer::lex(bool keep_endl) {
         case tok_int:
           switch (c) {
           case '(':
-            set_identifier("__toint");
-            ZBASE_NO_BREAK;
+            set_identifier("__to_int");
           case '.':
             // Can't use `set_token()` here, we don't want `_last_token` to change.
             return _current_token = tok_identifier;
@@ -1598,38 +1396,22 @@ token_type lexer::lex(bool keep_endl) {
         case tok_float:
           switch (c) {
           case '(':
-            set_identifier("__tofloat");
-            ZBASE_NO_BREAK;
+            set_identifier("__to_float");
           case '.':
             // Can't use `set_token()` here, we don't want `_last_token` to change.
             return _current_token = tok_identifier;
           }
           break;
 
-        case tok_array: // set_identifier("array");
+        case tok_array:
 
-          // Can't use `set_token()` here, we don't want `_last_token` to change.
-          //            return _current_token = tok_identifier;
           switch (c) {
           case '<':
-            ZBASE_NO_BREAK;
           case '(':
-            //            set_identifier("__create_array");
-            ZBASE_NO_BREAK;
           case '.':
             // Can't use `set_token()` here, we don't want `_last_token` to change.
             return _current_token = tok_identifier;
           }
-
-          //        case tok_struct:
-          //          switch (c) {
-          //          case '(':
-          //            set_identifier("create_struct");
-          //            ZBASE_NO_BREAK;
-          //          case '.':
-          //            // Can't use `set_token()` here, we don't want `_last_token` to change.
-          //            return _current_token = tok_identifier;
-          //          }
           break;
         }
 
@@ -1647,7 +1429,7 @@ token_type lexer::lex(bool keep_endl) {
   return tok_eof;
 }
 
-bool lexer::lex_compare(std::span<const token_type> buffer) {
+bool lexer::lex_compare(std::span<const token_type> buffer) noexcept {
 
   for (token_type t : buffer) {
     if (lex() != t or zb::is_one_of(_current_token, tok_eof, tok_lex_error)) {
@@ -1657,12 +1439,12 @@ bool lexer::lex_compare(std::span<const token_type> buffer) {
   return true;
 }
 
-token_type lexer::peek(bool keep_endl) const {
+token_type lexer::peek(bool keep_endl) const noexcept {
   lexer l(*this);
   return l.lex(keep_endl);
 }
 
-zs::error_result lexer::peek(std::span<token_type>& buffer) const {
+zs::error_result lexer::peek(std::span<token_type>& buffer) const noexcept {
   lexer l(*this);
 
   auto it = buffer.begin();
@@ -1675,12 +1457,12 @@ zs::error_result lexer::peek(std::span<token_type>& buffer) const {
   return {};
 }
 
-bool lexer::peek_compare(std::span<const token_type> buffer) {
+bool lexer::peek_compare(std::span<const token_type> buffer) const noexcept {
   lexer l(*this);
   return l.lex_compare(buffer);
 }
 
-bool lexer::is_right_arrow_function_call() const {
+bool lexer::is_right_arrow_function() const noexcept {
   ZS_ASSERT(_current_token == tok_lbracket);
 
   lexer l(*this);
@@ -1701,86 +1483,8 @@ bool lexer::is_right_arrow_function_call() const {
 
   return false;
 }
-bool lexer::is_template_function_call() const {
-  ZS_ASSERT(_current_token == tok_lt);
 
-  if (!zb::is_one_of(_last_token, ZS_TOK(identifier, rsqrbracket, rbracket))) {
-    return false;
-  }
-
-  lexer l(*this);
-
-  zb_loop() {
-    switch (l.lex()) {
-    case tok_none:
-    case tok_null:
-    case tok_var:
-    case tok_int:
-    case tok_float:
-    case tok_number:
-    case tok_bool:
-    case tok_table:
-    case tok_array:
-    case tok_string:
-    case tok_char:
-    case tok_true:
-    case tok_false:
-    case tok_and:
-    case tok_or:
-    case tok_global:
-    case tok_function:
-    case tok_typeof:
-    case tok_typeid:
-    case tok_not:
-    case tok_xor:
-    case tok_integer_value:
-    case tok_float_value:
-    case tok_string_value:
-    case tok_escaped_string_value:
-    case tok_identifier:
-    case tok_file:
-    case tok_line:
-    case tok_comma:
-    case tok_dot:
-    case tok_triple_dots:
-    case tok_colon:
-    case tok_double_colon:
-    case tok_lbracket:
-    case tok_rbracket:
-    case tok_lsqrbracket:
-    case tok_rsqrbracket:
-    case tok_lcrlbracket:
-    case tok_rcrlbracket:
-    case tok_mod:
-    case tok_add:
-    case tok_minus:
-    case tok_mul:
-    case tok_div:
-    case tok_exp:
-    case tok_bitwise_or:
-    case tok_bitwise_and:
-    case tok_inv:
-    case tok_incr:
-    case tok_decr:
-    case tok_at:
-    case tok_double_at:
-    case tok_dollar:
-    case tok_double_dollar:
-    case tok_endl:
-      break;
-
-    case tok_gt:
-      return l.lex() == tok_lbracket;
-
-    default:
-      return false;
-    }
-  }
-
-  return false;
-}
-
-zs::error_result lexer::lex(std::span<token_type>& buffer) {
+zs::error_result lexer::lex(std::span<token_type>& buffer) noexcept {
   auto it = buffer.begin();
   const auto end = buffer.end();
 
@@ -1791,7 +1495,7 @@ zs::error_result lexer::lex(std::span<token_type>& buffer) {
   return {};
 }
 
-zs::error_result lexer::lex(std::span<token_type>& buffer, token_type tok) {
+zs::error_result lexer::lex(std::span<token_type>& buffer, token_type tok) noexcept {
   auto it = buffer.begin();
   const auto end = buffer.end();
 
@@ -1802,7 +1506,7 @@ zs::error_result lexer::lex(std::span<token_type>& buffer, token_type tok) {
   return {};
 }
 
-zs::error_result lexer::lex_rbracket(std::span<token_type>& buffer) {
+zs::error_result lexer::lex_rbracket(std::span<token_type>& buffer) noexcept {
   auto it = buffer.begin();
   const auto end = buffer.end();
 
@@ -1824,9 +1528,9 @@ zs::error_result lexer::lex_rbracket(std::span<token_type>& buffer) {
   return {};
 }
 
-zs::error_result lexer::lex_to_rctrlbracket() {
+zs::error_result lexer::lex_to_rctrlbracket() noexcept {
   int_t count = 1;
-  const char* beg = _stream.ptr();
+  //  const char* beg = _stream.ptr();
   token_type tok = tok_none;
   while (!zb::is_one_of(tok = lex(), tok_eof, tok_lex_error)) {
 
@@ -1847,7 +1551,7 @@ zs::error_result lexer::lex_to_rctrlbracket() {
   return {};
 }
 
-zs::error_result lexer::lex_for_auto(std::span<token_type>& buffer) {
+zs::error_result lexer::lex_for_auto(std::span<token_type>& buffer) noexcept {
   auto it = buffer.begin();
   const auto end = buffer.end();
 
@@ -1885,7 +1589,7 @@ zs::error_result lexer::lex_for_auto(std::span<token_type>& buffer) {
   return zs::error_code::not_a_for_colon;
 }
 
-zs::error_result lexer::lex_to(token_type tok) {
+zs::error_result lexer::lex_to(token_type tok) noexcept {
 
   while (!zb::is_one_of(_current_token, tok_eof, tok_lex_error)) {
     lex();
@@ -1897,7 +1601,7 @@ zs::error_result lexer::lex_to(token_type tok) {
   return zs::error_code::not_found;
 }
 
-zs::error_result lexer::lex_to(token_type tok, size_t nmax) {
+zs::error_result lexer::lex_to(token_type tok, size_t nmax) noexcept {
   size_t count = 0;
   while (!zb::is_one_of(_current_token, tok_eof, tok_lex_error)) {
 

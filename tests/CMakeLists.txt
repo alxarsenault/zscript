@@ -1,5 +1,5 @@
 
-set(TEST_NAME zscript-unit-tests)
+set(TEST_NAME zscript-tests)
 set(ZSCRIPT_UNIT_TESTS_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libs/catch2)
@@ -15,7 +15,8 @@ file(GLOB_RECURSE ZSCRIPT_UNIT_TESTS_SPEC_SOURCE_FILES
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}"
   FILES
-  ${ZSCRIPT_UNIT_TESTS_SOURCE_FILES})
+  ${ZSCRIPT_UNIT_TESTS_SOURCE_FILES}
+)
 
 add_executable(${TEST_NAME} ${ZSCRIPT_UNIT_TESTS_SOURCE_FILES})
 
@@ -23,18 +24,19 @@ target_link_libraries(${TEST_NAME} PUBLIC catch2)
 
 set_target_properties(${TEST_NAME} PROPERTIES
   FOLDER tests
-  XCODE_GENERATE_SCHEME YES)
+  XCODE_GENERATE_SCHEME YES
+)
 
 target_include_directories(${TEST_NAME}
   PUBLIC
   ${ZSCRIPT_UNIT_TESTS_SOURCE_DIRECTORY}
-  ${ZSCRIPT_SOURCE_DIRECTORY})
+  ${ZSCRIPT_SOURCE_DIRECTORY}
+)
 
 target_link_libraries(${TEST_NAME}
   PUBLIC
   zscript
-  PRIVATE
-  uv_a)
+)
 
 target_compile_definitions(${TEST_NAME}
   PUBLIC

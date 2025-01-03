@@ -1,6 +1,1 @@
-
-var t = {
-  a = 678
-};
-
-return t;
+return { a = 678 };

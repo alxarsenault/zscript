@@ -1,5 +1,5 @@
 #include <catch2.h>
-#include <zbase/sys/error_code.h>
+#include <zscript/base/sys/error_code.h>
 
 TEST_CASE("optopotr") {
   zb::optional_result<int> v(zb::errc::invalid, 324);

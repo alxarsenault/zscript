@@ -1,5 +1,5 @@
 #include <catch2.h>
-#include <zbase/utility/scoped.h>
+#include <zscript/base/utility/scoped.h>
 
 TEST_CASE("scoped") {
   int count = 0;

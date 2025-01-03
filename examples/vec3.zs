@@ -1,4 +1,4 @@
-@module vector
+/// @module vector
 
 const math = import("math");
 

@@ -39,6 +39,7 @@ enum class arithmetic_op : uint8_t {
 /// Uniary arithmetic operations.
 enum class arithmetic_uop : uint8_t { //
   uop_minus, // -A
+  uop_bitwise_not, // ~A
   uop_incr, // A++
   uop_decr, // A--
   uop_pre_incr, // ++A
@@ -46,14 +47,13 @@ enum class arithmetic_uop : uint8_t { //
 };
 
 enum class compare_op : uint8_t { //
+  eq, // ==
+  ne, // !=
   lt, // <
   le, // <=
   gt, // >
   ge, // >=
   compare, // <=>
-  tw, // ===
-  double_arrow, // <-->
-  double_arrow_eq // <==>
 };
 
 enum class get_op_flags_t : uint8_t {
@@ -177,6 +177,8 @@ ZS_CK_INLINE_CXPR meta_method arithmetic_uop_to_meta_method(arithmetic_uop uop) 
   // clang-format off
   switch (uop) {
   case uop_minus:    return mt_unary_minus;
+  case uop_bitwise_not:    return mt_unary_bw_not;
+      
   case uop_incr:     return mt_incr;
   case uop_decr:     return mt_decr;
   case uop_pre_incr: return mt_pre_incr;
@@ -200,6 +202,50 @@ ZS_CK_INLINE_CXPR const char* opcode_to_string(opcode op) noexcept {
   }
 
   return "unknown";
+}
+
+ZS_INLINE_CXPR object_type opcode_to_object_type(opcode op) noexcept {
+  using enum opcode;
+  using enum object_type;
+
+  switch (op) {
+  case op_load_int:
+    return k_integer;
+  case op_load_float:
+    return k_float;
+  case op_load_bool:
+    return k_bool;
+  case op_load_small_string:
+    return k_small_string;
+  case op_load_string:
+    return k_long_string;
+  default:
+    break;
+  }
+  return k_null;
+}
+
+ZS_INLINE_CXPR uint32_t opcode_to_type_mask(opcode op) noexcept {
+  using enum opcode;
+  using enum object_type_mask;
+
+  switch (op) {
+  case op_load_char:
+    return (uint32_t)otm_integer;
+  case op_load_int:
+    return (uint32_t)otm_integer;
+  case op_load_float:
+    return (uint32_t)otm_float;
+  case op_load_bool:
+    return (uint32_t)otm_bool;
+  case op_load_small_string:
+    return (uint32_t)otm_small_string;
+  case op_load_string:
+    return zs::object_base::k_string_mask;
+  default:
+    break;
+  }
+  return 0;
 }
 
 struct small_string_instruction_data {

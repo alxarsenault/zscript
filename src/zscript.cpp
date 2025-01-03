@@ -2,16 +2,20 @@
 
 #define ZS_SCRIPT_CPP 1
 
-#include <zbase/crypto/base64.h>
-#include <zbase/strings/charconv.h>
-#include <zbase/container/constexpr_map.h>
-#include <zbase/container/enum_array.h>
-#include <zbase/utility/math.h>
-#include <zbase/strings/parse_utils.h>
-#include <zbase/utility/print.h>
-#include <zbase/utility/scoped.h>
-#include <zbase/strings/stack_string.h>
-#include <zbase/memory/ref_wrapper.h>
+#include <zscript/base/crypto/base64.h>
+#include <zscript/base/strings/charconv.h>
+#include <zscript/base/container/constexpr_map.h>
+#include <zscript/base/container/enum_array.h>
+#include <zscript/base/utility/math.h>
+#include <zscript/base/strings/parse_utils.h>
+#include <zscript/base/utility/print.h>
+#include <zscript/base/utility/scoped.h>
+#include <zscript/base/strings/stack_string.h>
+#include <zscript/base/memory/ref_wrapper.h>
+
+#include <zscript/base/strings/charconv.h>
+#include <zscript/base/strings/unicode.h>
+
 #include <ranges>
 #include <stdlib.h>
 #include <fstream>
@@ -65,42 +69,8 @@
 
 #include "zvirtual_machine.h"
 
-// Objects.
-#include "object/zfunction_prototype.h"
-
-// Lang.
-#include "jit/zclosure_compile_state.h"
-// #include "zcompiler.h"
-#include "jit/zjit_compiler.h"
-#include "lex/zlexer.h"
-#include "bytecode/zopcode.h"
-#include "lex/ztoken.h"
-
-// Json.
-#include "utility/json/zjson_lexer.h"
-#include "utility/json/zjson_parser.h"
-
-// Lib.
-#include "std/zfs/zpath.h"
-#include "std/zfs/zfile.h"
-
-#include <zscript/std/zslib.h>
-#include <zscript/std/zsys.h>
-#include <zscript/std/zfs.h>
-#include <zscript/std/zmath.h>
-#include <zscript/std/zbase64.h>
-
-#include "object/delegate/zarray_delegate.h"
-#include "object/delegate/ztable_delegate.h"
-#include "object/delegate/zstring_delegate.h"
-#include "object/delegate/zstruct_delegate.h"
-
-#include "utility/zvm_module.h"
-
-#include "utility/zparameter_stream.h"
-
 #define XXH_INLINE_ALL
-#include <zbase/crypto/xxhash.h>
+#include <zscript/base/crypto/xxhash.h>
 
 namespace zs {
 static_assert(sizeof(object_base) == constants::k_object_size, "sizeof(object) != k_object_size");
@@ -145,9 +115,9 @@ size_t object_table_hash::operator()(const object_base& obj) const noexcept {
     //    return zb::rapid_hash(obj._bool);
 
   default:
-    return XXH3_64bits(&obj._value, sizeof(obj._value));
+    return XXH3_64bits(&obj._lvalue, sizeof(obj._lvalue));
 
-    //    return zb::rapid_hash(obj._value);
+    //    return zb::rapid_hash(obj._lvalue);
   }
 }
 
@@ -178,7 +148,7 @@ size_t object_base::hash() const noexcept {
     //    return zb::rapid_hash(_bool);
 
   default:
-    return zb::rapid_hash(_value);
+    return zb::rapid_hash(_lvalue);
   }
 }
 
@@ -412,12 +382,14 @@ std::ostream& operator<<(std::ostream& stream, const object_stream_proxy::table_
   const table_object& tbl = streamer.obj;
   int indent = streamer.indent;
 
-  bool is_small_table = true;
+  bool is_small_table = tbl.size() < 4;
 
-  for (auto it : tbl) {
-    if (it.second.is_ref_counted()) {
-      is_small_table = false;
-      break;
+  if (is_small_table) {
+    for (auto it : tbl) {
+      if (it.second.is_ref_counted()) {
+        is_small_table = false;
+        break;
+      }
     }
   }
 
@@ -468,7 +440,53 @@ std::ostream& operator<<(std::ostream& stream, const object_stream_proxy::table_
 
   const size_t sz = tbl.size();
   size_t count = 0;
-  for (auto it : tbl) {
+
+  zs::vector<const table_object::value_type*> its(
+      zs::allocator<const table_object::value_type*>(tbl.get_engine()));
+  its.resize(tbl.size());
+
+  size_t i = 0;
+  for (const auto& it : tbl) {
+    its[i++] = &it;
+  }
+
+  std::stable_sort(
+      its.begin(), its.end(), [](const table_object::value_type* a, const table_object::value_type* b) {
+        if (a->first == "name") {
+          return b->first != "name";
+        }
+
+        else if (a->first == "size") {
+          return !(b->first == "name" or b->first == "size");
+        }
+        else if (a->first == "offset") {
+          return !(b->first == "name" or b->first == "size" or b->first == "offset");
+        }
+        else if (a->first == "target_idx") {
+          return !(
+              b->first == "name" or b->first == "size" or b->first == "offset" or b->first == "target_idx");
+        }
+
+        if (b->first == "name" or b->first == "size" or b->first == "offset" or b->first == "target_idx") {
+
+          return false;
+        }
+
+        //    if(a->first == "size") {
+        //      return b->first == "name" or b->first == "size" ? false : true;
+        //
+        //    }
+        //
+        //    else if(b->first == "size") {
+        //      return a->first == "name" or a->first == "size" ? false : true;
+        //
+        //    }
+        return a->first < b->first;
+      });
+
+  //  for (auto it : tbl) {
+  for (auto vv : its) {
+    const auto& it = *vv;
 
     if constexpr (SType == stype::plain_compact or SType == stype::json_compact) {
     }
@@ -746,6 +764,9 @@ std::ostream& operator<<(std::ostream& stream, const object_stream_proxy::array_
       }
     }
 
+    if (!is_small_array) {
+      stream << "\n" << zb::indent_t(indent);
+    }
     for (size_t i = 0; i < sz - 1; i++) {
       stream << sproxy::object_streamer<SType>(arr[i], indent);
 
@@ -753,8 +774,8 @@ std::ostream& operator<<(std::ostream& stream, const object_stream_proxy::array_
         stream << ",";
       }
       else {
-        stream << ",";
-        //          stream << ",\n" << zb::indent_t(indent);
+        //        stream << ",\n";
+        stream << ",\n" << zb::indent_t(indent);
       }
       streamer_common::last_char = last_char_t::comma;
     }
@@ -798,7 +819,7 @@ namespace {
 
       //      return stream << get_object_type_name(obj.get_type()) << " "
       //                    << zs::get_exposed_object_type_name(obj.get_type()) << " " <<
-      //                    int_to_hex(obj._value);
+      //                    int_to_hex(obj._lvalue);
 
     case object_type::k_bool:
       return stream << ((bool)obj._int ? "true" : "false");
@@ -843,7 +864,7 @@ namespace {
 
     default:
       return stream << get_object_type_name(obj.get_type()) << " "
-                    << zs::get_exposed_object_type_name(obj.get_type()) << " " << int_to_hex(obj._value);
+                    << zs::get_exposed_object_type_name(obj.get_type()) << " " << int_to_hex(obj._lvalue);
     }
     return stream;
   }
@@ -903,6 +924,7 @@ zs::error_result object_base::to_json(zs::string& output) const {
   output = ss.str();
   return {};
 }
+
 std::ostream& object_base::stream_to_json(std::ostream& ss) const {
   streamer_common::last_char = last_char_t::first;
   return ss << object_stream_proxy::object_streamer<object_base::serializer_type::json>(*this);
@@ -978,13 +1000,13 @@ zs::error_result object_base::convert_to_string(zs::string& s) const {
     return {};
 
   case object_type::k_string_view: {
-    s = zs::string(this->_sview, this->_ex1_sview_size, s.get_allocator());
+    s = zs::string(this->_sview, this->_ex1_u32, s.get_allocator());
     return {};
   }
 
   default: {
     zs::ostringstream stream(zs::create_string_stream(s.get_allocator().get_engine()));
-    int_to_hex(stream, _value);
+    int_to_hex(stream, _lvalue);
     s = stream.str();
   }
   }
@@ -1027,13 +1049,13 @@ zs::error_result object_base::convert_to_string(std::string& s) const {
     return {};
 
   case object_type::k_string_view: {
-    s = std::string(this->_sview, this->_ex1_sview_size);
+    s = std::string(this->_sview, this->_ex1_u32);
     return {};
   }
 
   default: {
     std::ostringstream stream;
-    int_to_hex(stream, _value);
+    int_to_hex(stream, _lvalue);
     s = stream.str();
   }
   }
@@ -1116,7 +1138,7 @@ zs::error_result object_base::convert_to_string_object(zs::engine* eng, zs::obje
 
   default: {
     zs::ostringstream stream(zs::create_string_stream(eng));
-    int_to_hex(stream, _value);
+    int_to_hex(stream, _lvalue);
     s = zs::_s(eng, stream.str());
   }
   }
@@ -1160,12 +1182,12 @@ std::string object_base::to_debug_string() const {
     break;
 
   case object_type::k_string_view: {
-    stream << std::string_view(this->_sview, this->_ex1_sview_size);
+    stream << std::string_view(this->_sview, this->_ex1_u32);
     break;
   }
 
   default: {
-    stream << "0x" << std::setfill('0') << std::setw(sizeof(_value) * 2) << std::hex << _value;
+    stream << "0x" << std::setfill('0') << std::setw(sizeof(_lvalue) * 2) << std::hex << _lvalue;
   }
   }
 
@@ -1206,12 +1228,12 @@ zs::error_result object_base::to_debug_string(zs::string& s) const {
     break;
 
   case object_type::k_string_view: {
-    stream << std::string_view(this->_sview, this->_ex1_sview_size);
+    stream << std::string_view(this->_sview, this->_ex1_u32);
     break;
   }
 
   default: {
-    stream << "0x" << std::setfill('0') << std::setw(sizeof(_value) * 2) << std::hex << _value;
+    stream << "0x" << std::setfill('0') << std::setw(sizeof(_lvalue) * 2) << std::hex << _lvalue;
   }
   }
 
@@ -1219,7 +1241,7 @@ zs::error_result object_base::to_debug_string(zs::string& s) const {
   return {};
 }
 
-ZB_CHECK zs::object_unordered_map<object>* object_base::get_table_internal_map() const noexcept {
+ZB_CHECK zs::object_map* object_base::get_table_internal_map() const noexcept {
   if (!is_table()) {
     return nullptr;
   }
@@ -1232,7 +1254,7 @@ zs::vector<object>* object_base::get_array_internal_vector() const noexcept {
     return nullptr;
   }
 
-  return &(as_array());
+  return &(as_array().to_vec());
 }
 
 namespace {
@@ -1271,7 +1293,7 @@ namespace {
       return ::memcmp(&lhs, &rhs, sizeof(object_base)) == 0;
 
     default:
-      return lhs._value == rhs._value;
+      return lhs._lvalue == rhs._lvalue;
     }
   }
 
@@ -1337,7 +1359,7 @@ namespace {
       return op(lhs.as_array(), rhs.as_array());
 
     default:
-      return op(lhs._value, rhs._value);
+      return op(lhs._lvalue, rhs._lvalue);
     }
   }
 } // namespace.

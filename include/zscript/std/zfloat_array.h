@@ -29,6 +29,8 @@ namespace zs {
 struct float_array : zs::vector<float> {
   using vtype = zs::vector<float>;
   using vtype::vtype;
+
+  static float_array& as_float_array(const object& obj) noexcept;
 };
 
 object create_float_array(zs::vm_ref vm) noexcept;

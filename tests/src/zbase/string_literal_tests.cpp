@@ -1,5 +1,5 @@
 #include <catch2.h>
-#include <zbase/strings/string_literal.h>
+#include <zscript/base/strings/string_literal.h>
 
 TEST_CASE("zb::string_literal") {
 

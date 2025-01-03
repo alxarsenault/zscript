@@ -23,8 +23,8 @@
 //
 // -DRYU_AVOID_UINT128 Avoid using uint128_t. Slower, depending on your compiler.
 
-#include <zbase/detail/ryu/ryu.h>
-#include <zbase/strings/parse_utils.h>
+#include <zscript/base/detail/ryu/ryu.h>
+#include <zscript/base/strings/parse_utils.h>
 
 #include <assert.h>
 #include <stdbool.h>

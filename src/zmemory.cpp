@@ -63,7 +63,7 @@ bool reference_counted::release() noexcept {
   ZS_IF_USE_ENGINE_GLOBAL_REF_COUNT(engine_rc_proxy::decr_global_ref_count(_engine));
 
   if (--_ref_count == 0) {
-    internal::zs_delete(_engine, this);
+    zs_delete(_engine, this);
     return true;
   }
 
@@ -73,34 +73,83 @@ bool reference_counted::release() noexcept {
 //
 // MARK: reference_counted_object
 //
-reference_counted_object::reference_counted_object(zs::engine* eng, zs::object_type objtype) noexcept
-    : reference_counted(eng)
-    , _obj_type(objtype) {
+
+namespace {
+
+  struct reference_counted_object_proxy {};
+
+} // namespace.
+
+template <>
+struct internal::proxy<reference_counted_object_proxy> {
+  static constexpr const std::array<void (*)(zs::engine*, reference_counted_object*) noexcept,
+      1 + (int)object_type::k_user_data - (int)object_type::k_long_string>
+      s_reference_counted_object_destroy_array = { zs::string_object::destroy_callback,
+        zs::closure_object::destroy_callback, zs::native_closure_object::destroy_callback,
+        zs::weak_ref_object::destroy_callback, zs::struct_object::destroy_callback,
+        zs::struct_instance_object::destroy_callback, zs::table_object::destroy_callback,
+        zs::array_object::destroy_callback, zs::user_data_object::destroy_callback };
+
+  static constexpr const std::array<object (*)(zs::engine*, const reference_counted_object*) noexcept,
+      1 + (int)object_type::k_user_data - (int)object_type::k_long_string>
+      s_reference_counted_object_clone_array = { zs::string_object::clone_callback,
+        zs::closure_object::clone_callback, zs::native_closure_object::clone_callback,
+        zs::weak_ref_object::clone_callback, zs::struct_object::clone_callback,
+        zs::struct_instance_object::clone_callback, zs::table_object::clone_callback,
+        zs::array_object::clone_callback, zs::user_data_object::clone_callback };
+
+  static void destroy(zs::engine* eng, reference_counted_object* obj, object_type otype) {
+    auto cb = s_reference_counted_object_destroy_array[(int)otype - (int)object_type::k_long_string];
+    cb(eng, obj);
+  }
+
+  static object clone(zs::engine* eng, const reference_counted_object* obj, object_type otype) {
+    auto cb = s_reference_counted_object_clone_array[(int)otype - (int)object_type::k_long_string];
+    return cb(eng, obj);
+  }
+};
+
+namespace {
+
+  using ref_proxy = internal::proxy<reference_counted_object_proxy>;
+
+} // namespace.
+
+reference_counted_object::reference_counted_object(zs::engine* eng, object_type obj_type) noexcept
+    : engine_holder(eng)
+    , _ref_count(1)
+    , _obj_type(obj_type) {
+
+  ZS_IF_USE_ENGINE_GLOBAL_REF_COUNT(engine_rc_proxy::incr_global_ref_count(eng));
+
   ZS_IF_GARBAGE_COLLECTOR(zs::garbage_collector_rc_proxy::add(eng, this));
 }
 
-reference_counted_object::~reference_counted_object() {
-
-  if (_weak_ref_object) {
-    //    zbase_assert(_weak_ref_object->_obj._ref_counted != this,
-    //    "reference_counted_object referencing itself.");
-
-    // Reset weak reference.
-    ::memset(&_weak_ref_object->_obj, 0, sizeof(object));
-    _weak_ref_object->_obj._type = object_type::k_null;
-
-    _weak_ref_object->release();
-  }
+void reference_counted_object::retain() noexcept {
+  _ref_count++;
+  ZS_IF_USE_ENGINE_GLOBAL_REF_COUNT(engine_rc_proxy::incr_global_ref_count(get_engine()));
 }
 
 bool reference_counted_object::release() noexcept {
-  zbase_assert(_ref_count > 0, "invalid ref count");
 
-  ZS_IF_USE_ENGINE_GLOBAL_REF_COUNT(engine_rc_proxy::decr_global_ref_count(_engine));
+  ZS_ASSERT(_ref_count > 0, "invalid ref count");
+
+  zs::engine* eng = get_engine();
+  ZS_ASSERT(eng);
+
+  ZS_IF_USE_ENGINE_GLOBAL_REF_COUNT(engine_rc_proxy::decr_global_ref_count(eng));
 
   if (--_ref_count == 0) {
-    ZS_IF_GARBAGE_COLLECTOR(zs::garbage_collector_rc_proxy::remove(_engine, this));
-    internal::zs_delete(_engine, this);
+    ZS_IF_GARBAGE_COLLECTOR(zs::garbage_collector_rc_proxy::remove(eng, this));
+
+    if (_weak_ref_object) {
+      // Reset weak reference.
+      _weak_ref_object->_obj = object();
+      _weak_ref_object->release();
+      _weak_ref_object = nullptr;
+    }
+
+    ref_proxy::destroy(eng, this, _obj_type);
 
     return true;
   }
@@ -108,10 +157,14 @@ bool reference_counted_object::release() noexcept {
   return false;
 }
 
-object reference_counted_object::get_weak_ref(const object_base& obj) {
+object reference_counted_object::clone() const noexcept {
+  return ref_proxy::clone(get_engine(), this, _obj_type);
+}
+
+object reference_counted_object::get_weak_ref(const object_base& obj) noexcept {
   if (!_weak_ref_object) {
     // Create the weak_ref object if it doesn't exists.
-    _weak_ref_object = weak_ref_object::create(_engine, obj);
+    _weak_ref_object = weak_ref_object::create(get_engine(), obj);
   }
 
   zbase_assert(_weak_ref_object, "Invalid weak_ref_object");

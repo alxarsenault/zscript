@@ -1,6 +1,6 @@
 #include "zstring_delegate.h"
 #include "zvirtual_machine.h"
-#include <zbase/strings/unicode.h>
+#include <zscript/base/strings/unicode.h>
 
 namespace zs {
 
@@ -559,7 +559,7 @@ namespace {
       return -1;
     }
 
-    return vm.push(object::create_none());
+    return vm.push(zs::none{});
   }
 
 } // namespace
@@ -588,9 +588,7 @@ zs::object create_string_default_delegate(zs::engine* eng) {
   tbl["add_line_prefix"] = _nf(string_add_line_prefix_impl);
   tbl[zs::_sv(constants::k_mt_get_string)] = _nf(string_delegate_get_impl);
 
-  tbl.set_delegate(object::create_none());
-  tbl.set_use_default_delegate(false);
-
+  tbl.set_no_default_none();
   return obj;
 }
 } // namespace zs.

@@ -121,65 +121,18 @@ auto jit_compiler::create_local_lambda<parse_function_parameters>() {
 
 zs::error_result jit_compiler::parse_function_statement() {
   lex();
+  zs::object fct_name;
+  ZS_COMPILER_EXPECT_GET(tok_identifier, fct_name);
+  ZS_RETURN_IF_ERROR(parse_function(fct_name, false));
 
-  zs::object var_name;
-
-  //  bool is_global = is(tok_global);
-  //
-  //  if (is_global) {
-  //    lex();
-  //    ZS_COMPILER_EXPECT(tok_dot);
-  //    ZS_COMPILER_EXPECT_GET(tok_identifier, var_name);
-  //
-  //    add_new_target_instruction<op_load_global>();
-  //    add_string_instruction(var_name);
-  //
-  //    if (is(tok_dot)) {
-  //      int_t key_idx = _ccs->pop_target();
-  //      int_t table_idx = _ccs->pop_target();
-  //      add_new_target_instruction<op_get>(
-  //          (uint8_t)table_idx, (uint8_t)key_idx, get_op_flags_t::gf_look_in_root);
-  //    }
-  //
-  //    while (lex_if(tok_dot)) {
-  //      ZS_COMPILER_EXPECT_GET(tok_identifier, var_name);
-  //      add_string_instruction(var_name);
-  //
-  //      if (is(tok_dot)) {
-  //        int_t key_idx = _ccs->pop_target();
-  //        int_t table_idx = _ccs->pop_target();
-  //        add_new_target_instruction<op_get>(
-  //            (uint8_t)table_idx, (uint8_t)key_idx, get_op_flags_t::gf_look_in_root);
-  //      }
-  //    }
-  //  }
-  //  else {
-  ZS_COMPILER_EXPECT_GET(tok_identifier, var_name);
-  //  }
-
-  ZS_RETURN_IF_ERROR(parse_function(var_name, false));
-
-  //  if (is_global) {
-  //    int_t value_idx = _ccs->pop_target();
-  //    int_t key_idx = _ccs->pop_target();
-  //    int_t table_idx = _ccs->top_target();
-  //
-  //    add_instruction<op_set>((uint8_t)-1, (uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx, true);
-  //
-  //    _estate.type = expr_type::e_object;
-  //    _estate.pos = table_idx;
-  //  }
-  //  else {
-
-  _ccs->pop_target();
-  ZS_COMPILER_RETURN_IF_ERROR(
-      add_stack_variable(var_name), "Duplicated local variable name ", var_name, ".\n");
-  //  }
+  pop_target();
+  ZS_COMPILER_RETURN_IF_ERROR(add_stack_variable(fct_name), "Duplicated local variable name '",
+      fct_name.get_string_unchecked(), "'.\n");
 
   return {};
 }
 
-ZS_JIT_COMPILER_PARSE_OP(p_arrow_lamda) {
+zs::error_result jit_compiler::parse_arrow_lamda() {
 
   ZS_COMPILER_EXPECT(tok_lbracket);
 
@@ -212,11 +165,12 @@ ZS_JIT_COMPILER_PARSE_OP(p_arrow_lamda) {
   return {};
 }
 
-ZS_JIT_COMPILER_PARSE_OP(p_function_call_args, bool rawcall, bool table_call) {
+zs::error_result jit_compiler::parse_function_call_args(bool is_table_call) {
 
-  int_t nargs = 1; // this.
+  // this as first arg.
+  uint8_t nargs = 1;
 
-  if (table_call) {
+  if (is_table_call) {
     if (auto err = parse_expression()) {
       return err;
     }
@@ -226,11 +180,6 @@ ZS_JIT_COMPILER_PARSE_OP(p_function_call_args, bool rawcall, bool table_call) {
   }
   else {
     while (is_not(tok_rbracket)) {
-
-      if (is(tok_identifier) and _lexer->peek() == tok_left_arrow) {
-        zs::print("DSLKDJSKDJSKJDKLSJDLS");
-        lex_n(2);
-      }
 
       if (auto err = parse_expression()) {
         return err;
@@ -251,161 +200,21 @@ ZS_JIT_COMPILER_PARSE_OP(p_function_call_args, bool rawcall, bool table_call) {
 
   lex();
 
-  // Rawcall.
-  if (rawcall) {
-    ZS_TODO("Implement");
-    if (nargs < 3) {
-      return ZS_COMPILER_ERROR(invalid_argument, "rawcall requires at least 2 parameters (callee and this)");
-    }
-
-    nargs -= 2; // removes callee and this from count
-  }
-
-  //  zb::print("NARGS", nargs, _ccs->top_target());
-
   for (int_t i = 0; i < (nargs - 1); i++) {
     pop_target();
   }
 
-  int_t stack_base = pop_target();
-  int_t closure = pop_target();
+  target_t stack_base = pop_target();
+  target_t closure = pop_target();
 
-  add_new_target_instruction<op_call>((uint8_t)closure, // closure_idx.
-      (uint8_t)stack_base, // this_idx.
-      (uint8_t)nargs, // n_params.
-      (uint64_t)stack_base // stack_base.
-  );
-
-  return {};
-}
-
-ZS_JIT_COMPILER_PARSE_OP(p_member_function_call_args) {
-
-  int_t nargs = 1; // this.
-
-  while (is_not(tok_rbracket)) {
-    if (auto err = parse_expression()) {
-      return err;
-    }
-
-    move_if_current_target_is_local();
-    nargs++;
-
-    if (is(tok_comma)) {
-      lex();
-
-      if (is(tok_rbracket)) {
-        return ZS_COMPILER_ERROR(invalid_token, "expression expected, found ')'");
-      }
-    }
-  }
-
-  lex();
-
-  for (int_t i = 0; i < (nargs - 1); i++) {
-    pop_target();
-  }
-
-  int_t stack_base = pop_target();
-  int_t closure = pop_target();
-
-  add_new_target_instruction<op_call>((uint8_t)closure, // closure_idx.
-      (uint8_t)stack_base, // this_idx.
-      (uint8_t)nargs, // n_params.
-      (uint64_t)stack_base // stack_base.
-  );
-
-  return {};
-}
-
-ZS_JIT_COMPILER_PARSE_OP(p_function_call_args_template, std::string_view meta_code) {
-
-  int_t nargs = 1; // this.
-
-  {
-    zs::lexer* last_lexer = _lexer;
-
-    zs::lexer lexer(_engine, meta_code);
-    _lexer = &lexer;
-    _in_template = true;
-
-    {
-      uint8_t array_target = _ccs->new_target();
-      add_instruction<op_new_obj>(array_target, object_type::k_array);
-      add_instruction<op_set_meta_argument>(array_target);
-      lex();
-
-      while (is_not(tok_rsqrbracket)) {
-        if (auto err = parse_expression()) {
-          zb::print("ERRRO");
-          return err;
-        }
-
-        if (_token == tok_comma) {
-          lex();
-        }
-
-        int_t val = _ccs->pop_target();
-        add_instruction<op_array_append>(array_target, (uint8_t)val);
-      }
-
-      lex();
-    }
-
-    _in_template = false;
-
-    if (_token == tok_lex_error) {
-      last_lexer->_current_token = _lexer->_current_token;
-      last_lexer->_last_token = _lexer->_last_token;
-      _lexer = last_lexer;
-      return invalid;
-    }
-
-    _lexer = last_lexer;
-    _token = _lexer->_current_token;
-    nargs++;
-
-    move_if_current_target_is_local();
-  }
-
-  while (is_not(tok_rbracket)) {
-    if (auto err = parse_expression()) {
-      return err;
-    }
-
-    move_if_current_target_is_local();
-    nargs++;
-
-    if (is(tok_comma)) {
-      lex();
-
-      if (is(tok_rbracket)) {
-        return ZS_COMPILER_ERROR(invalid_token, "expression expected, found ')'");
-      }
-    }
-  }
-
-  lex();
-
-  for (int_t i = 0; i < (nargs - 1); i++) {
-    _ccs->pop_target();
-  }
-
-  int_t stack_base = _ccs->pop_target();
-
-  int_t closure = _ccs->pop_target();
-
-  add_new_target_instruction<op_call>((uint8_t)closure, // closure_idx.
-      (uint8_t)stack_base, // this_idx.
-      (uint8_t)nargs, // n_params.
-      (uint64_t)stack_base // stack_base.
-  );
+  add_new_target_instruction<op_call>(closure, stack_base, (uint8_t)nargs);
 
   return {};
 }
 
 zs::error_result jit_compiler::parse_function(
     const object& name, bool is_lamda, bool parse_bound_target_and_add_op_new_closure_instruction) {
+
   int_t bound_target = k_invalid_target;
 
   if (parse_bound_target_and_add_op_new_closure_instruction) {
@@ -423,7 +232,6 @@ zs::error_result jit_compiler::parse_function(
   ZS_RETURN_IF_ERROR(call_local_lambda<parse_function_parameters>(&cc_state, def_params));
 
   pop_target_if(bound_target != k_invalid_target);
-
   pop_n_target(def_params);
 
   if (zb::scoped auto_scoped_ccs = new_auto_scoped_closure_compile_state_with_set_stack_zero(&cc_state)) {
@@ -447,47 +255,4 @@ zs::error_result jit_compiler::parse_function(
   return {};
 }
 
-// ZS_JIT_COMPILER_PARSE_OP(p_export_function_statement) {
-//   _ccs->push_export_target();
-//
-//   zs::object var_name;
-//   ZS_COMPILER_EXPECT_GET(tok_identifier, var_name);
-//   ZS_RETURN_IF_ERROR(add_export_string_instruction(var_name));
-//
-//   ZS_RETURN_IF_ERROR(parse_function(var_name, false));
-//
-//   int_t value_idx = _ccs->pop_target();
-//   int_t key_idx = _ccs->pop_target();
-//   int_t table_idx = _ccs->pop_target();
-//   add_instruction<op_set>(k_invalid_target, (uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx,
-//   true);
-//
-//   _estate.type = expr_type::e_object;
-//   _estate.pos = table_idx;
-//   return {};
-// }
-
-// ZS_JIT_COMPILER_PARSE_OP(p_global_function_statement) {
-//
-//   lex();
-//
-//   add_new_target_instruction<op_load_global>();
-//
-//   zs::object var_name;
-//   ZS_COMPILER_EXPECT_GET(tok_identifier, var_name);
-//   add_string_instruction(var_name);
-//
-//   ZS_RETURN_IF_ERROR(parse_function(var_name, false));
-//
-//   int_t value_idx = _ccs->pop_target();
-//   int_t key_idx = _ccs->pop_target();
-//   int_t table_idx = _ccs->top_target();
-//
-//   add_instruction<op_set>((uint8_t)-1, (uint8_t)table_idx, (uint8_t)key_idx, (uint8_t)value_idx, true);
-//
-//   _estate.type = expr_type::e_object;
-//   _estate.pos = table_idx;
-//
-//   return {};
-// }
 } // namespace zs.

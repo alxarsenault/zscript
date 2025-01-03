@@ -2,8 +2,8 @@
 #include <zscript/std/zslib.h>
 #include "zvirtual_machine.h"
 #include "utility/zvm_module.h"
-#include <zbase/strings/charconv.h>
-#include <zbase/strings/unicode.h>
+#include <zscript/base/strings/charconv.h>
+#include <zscript/base/strings/unicode.h>
 #include "utility/zparameter_stream.h"
 
 namespace zs {
@@ -29,7 +29,7 @@ namespace {
   static std::string_view s_write_to_string_name = "write_to_string";
   static std::string_view s_is_number_or_bool_name = "is_number_or_bool";
 
-  static std::string_view s_is_mutable_string_name = "is_mutable_string";
+  //  static std::string_view s_is_mutable_string_name = "is_mutable_string";
 
   static std::string_view s_is_null_or_none_name = "is_null_or_none";
   static std::string_view s_is_struct_instance_name = "is_struct_instance";
@@ -50,68 +50,19 @@ namespace {
     zs::string separator(sep, zs::string_allocator(vm.get_engine()));
     zs::string end_line(endl, zs::string_allocator(vm.get_engine()));
 
-    if (objs->is_meta_argument()) {
-
-      zs::array_object& arr = objs++->as_array();
-      const int_t n_template = arr.size();
-
-      if (n_template <= 0 or n_template > 2) {
-        vm.set_error("Invalid meta arguments count in zs.print.\n");
-        return -1;
-      }
-
-      const object& sep_obj = arr[0];
-
-      if (sep_obj.is_string()) {
-        separator = sep_obj.get_string_unchecked();
-      }
-      else if (sep_obj.is_integer()) {
-        separator.clear();
-        zb::unicode::append_to(sv_from_char<char32_t>((char32_t)sep_obj._int), separator);
-      }
-      else {
-        vm.set_error("Invalid end-line meta argument in zs.print.\n");
-        return -1;
-      }
-
-      if (n_template == 2) {
-
-        const object& endl_obj = arr[1];
-
-        if (endl_obj.is_string()) {
-          end_line = endl_obj.get_string_unchecked();
-        }
-        else if (endl_obj.is_integer()) {
-          end_line.clear();
-          zb::unicode::append_to(sv_from_char<char32_t>((char32_t)endl_obj._int), end_line);
-        }
-        else {
-          vm.set_error("Invalid end-line meta argument in zs.print.\n");
-          return -1;
-        }
-      }
-
-      nargs--;
-    }
-
     for (int_t i = 1; i < nargs - 1; i++) {
       (objs++)->stream(stream);
-
       stream << separator;
     }
+
     (objs++)->stream(stream);
 
     if (!end_line.empty()) {
       stream << end_line;
     }
+
     return 0;
   }
-
-  int_t zslib_print_impl(zs::vm_ref vm) {
-    return zslib_print_internal(vm, vm.get_engine()->get_stream(), " ", "\n");
-  }
-
-  int_t zslib_write_impl(zs::vm_ref vm) { return zslib_print_internal(vm, vm.get_engine()->get_stream()); }
 
   int_t zslib_print_to_string_impl(zs::vm_ref vm) {
     zs::ostringstream stream(zs::create_string_stream(vm.get_engine()));
@@ -145,7 +96,9 @@ namespace {
 
     case k_array:
       return vm.push(obj.as_array().empty());
+
     case k_table:
+
       return vm.push(obj.as_table().empty());
     default:
       return vm.push(true);
@@ -162,18 +115,21 @@ namespace {
 
     object res;
     if (auto err = vm->to_string(val, res)) {
-      vm.set_error("Invalid string convertion");
-      return -1;
+      return vm.set_error("Invalid string convertion");
     }
-    return vm.push(res);
-    //    zs::string s((zs::allocator<char>(vm.get_engine())));
-    //
-    //    if (auto err = val.convert_to_string(s)) {
-    //      vm.set_error("Invalid string convertion");
-    //      return -1;
-    //    }
 
-    //    return vm.push(zs::_s(vm.get_engine(), s));
+    return vm.push(res);
+  }
+
+  int_t zslib_to_json_impl(zs::vm_ref vm) {
+    const object& val = vm[1];
+    zs::string s(vm.get_engine());
+
+    if (auto err = val.to_json(s)) {
+      return vm.set_error("Could not convert to json.");
+    }
+
+    return vm.push_string(s);
   }
 
   int_t zslib_toint_impl(zs::vm_ref vm) {
@@ -184,8 +140,7 @@ namespace {
 
     int_t v = 0;
     if (auto err = val.convert_to_integer(v)) {
-      vm.set_error("Invalid integer convertion");
-      return -1;
+      return vm.set_error("Invalid integer convertion");
     }
 
     return vm.push(v);
@@ -199,19 +154,18 @@ namespace {
 
     float_t v = 0;
     if (auto err = val.convert_to_float(v)) {
-      vm.set_error("Invalid float convertion");
-      return -1;
+      return vm.set_error("Invalid float convertion");
     }
 
     return vm.push(v);
   }
+
   int_t zslib_copy_impl(zs::vm_ref vm) {
     const object& val = vm[1];
 
     object res;
     if (auto err = vm->copy(val, res)) {
-      vm.set_error("Invalid copy");
-      return -1;
+      return vm.set_error("Invalid copy");
     }
     return vm.push(res);
   }
@@ -230,8 +184,7 @@ namespace {
     const int_t nargs = vm.stack_size();
 
     if (nargs != 2) {
-      vm.set_error("Invalid number of parameters in zs::get_table_keys.\n");
-      return -1;
+      return vm.set_error("Invalid number of parameters in zs::get_table_keys.\n");
     }
 
     const zs::object& obj = vm[1];
@@ -257,8 +210,7 @@ namespace {
     const int_t nargs = vm.stack_size();
 
     if (nargs != 3) {
-      vm.set_error("Invalid number of parameters in zs::raw_get.\n");
-      return -1;
+      return vm.set_error("Invalid number of parameters in zs::raw_get.\n");
     }
 
     const zs::object& obj = vm[1];
@@ -267,8 +219,7 @@ namespace {
     zs::object ret;
 
     if (auto err = vm->raw_get(obj, key, ret)) {
-      vm.set_error("Could not find value in zs::raw_get.\n");
-      return -1;
+      return vm.set_error("Could not find value in zs::raw_get.\n");
     }
 
     return vm.push(ret);
@@ -290,14 +241,12 @@ namespace {
     const int_t nargs = vm.stack_size();
 
     if (nargs < 2) {
-      vm.set_error("Invalid number of parameters in zs::apply.\n");
-      return -1;
+      return vm.set_error("Invalid number of parameters in zs::apply.\n");
     }
 
     const object& fct = vm[1];
     if (!fct.is_function()) {
-      vm.set_error("Invalid function parameter in zs::apply.\n");
-      return -1;
+      return vm.set_error("Invalid function parameter in zs::apply.\n");
     }
 
     if (nargs == 2) {
@@ -340,8 +289,7 @@ namespace {
     int_t nargs = vm.stack_size();
 
     if (nargs < 3) {
-      vm.set_error("Invalid number of parameters in zs::rawcall.\n");
-      return -1;
+      return vm.set_error("Invalid number of parameters in zs::rawcall.\n");
     }
 
     zs::object ret_value;
@@ -358,8 +306,7 @@ namespace {
     int_t nargs = vm.stack_size();
 
     if (nargs < 3) {
-      vm.set_error("Invalid number of parameters in zs::bind.\n");
-      return -1;
+      return vm.set_error("Invalid number of parameters in zs::bind.\n");
     }
 
     auto arr = zs::_a(vm.get_engine(), vm->stack().get_stack_view().subspan(2));
@@ -415,11 +362,8 @@ namespace {
     const object& key = vm[2];
     object dest;
 
-    if (auto err = vm->contains(obj, key, dest)) {
-      //      vm->set_error("Contains failed", err.message());
-
+    if (auto err = vm->has(obj, key, dest)) {
       zslib_proxy::clear_errors(vm.get_virtual_machine());
-      //      vm->_errors.clear();
       return vm.push_bool(false);
     }
 
@@ -462,7 +406,7 @@ namespace {
 
     if (nargs == 4) {
       if (const object& use_default_delegate = vm[3]; use_default_delegate.is_bool()) {
-        obj.as_delegable().set_use_default_delegate((bool)use_default_delegate._int);
+        obj.as_delegable().set_use_default((bool)use_default_delegate._int);
       }
       else {
         vm->ZS_VM_ERROR(errc::not_a_bool,
@@ -512,18 +456,18 @@ namespace {
 
     if (!obj.is_delegable()) {
       vm->handle_error(errc::not_delegable, { -1, -1 },
-          "Not a delegable type in zs::set_use_default_delegate().", ZS_DEVELOPER_SOURCE_LOCATION());
+          "Not a delegable type in zs::set_use_default_delegate().", zb::source_location::current());
       return -1;
     }
 
     const object& use_delegate = vm[2];
     if (!use_delegate.is_bool()) {
       vm->handle_error(errc::not_delegable, { -1, -1 },
-          "Invalid bool parameter in zs::set_use_default_delegate().", ZS_DEVELOPER_SOURCE_LOCATION());
+          "Invalid bool parameter in zs::set_use_default_delegate().", zb::source_location::current());
       return -1;
     }
 
-    obj.as_delegable().set_use_default_delegate((bool)use_delegate._int);
+    obj.as_delegable().set_use_default((bool)use_delegate._int);
     return vm.push(obj);
   }
 
@@ -533,7 +477,7 @@ namespace {
     }
 
     const object& obj = vm[1];
-    return vm.push_bool(obj.is_delegable() and obj.as_delegable().get_use_default_delegate());
+    return vm.push_bool(obj.is_delegable() and obj.as_delegable().is_use_default());
   }
 
   int_t zslib_get_addr_impl(zs::vm_ref vm) {
@@ -562,8 +506,7 @@ namespace {
       if (nargs >= 3) {
         const object& should_append = vm[2];
         if (!should_append.is_bool()) {
-          vm->set_error("Invalid parameter in zs::create_object()");
-          return -1;
+          return vm.set_error("Invalid parameter in zs::create_object()");
         }
 
         if ((bool)should_append._int) {
@@ -579,6 +522,14 @@ namespace {
 
       obj.as_table().set_delegate(delegate);
     }
+
+    return vm.push(std::move(obj));
+  }
+
+  int_t zslib_create_atom_impl(zs::vm_ref vm) {
+    object obj;
+    obj._type = object_type::k_atom;
+    obj._atom_type = atom_type::atom_user;
 
     return vm.push(std::move(obj));
   }
@@ -624,8 +575,7 @@ namespace {
       object tbl = vm[1];
 
       if (!tbl.is_table()) {
-        vm.set_error("Invalid table parameter in stable().\n");
-        return -1;
+        return vm.set_error("Invalid table parameter in stable().\n");
       }
 
       tbl.as_table().set_delegate(zslib_stable_get_delegate_table(vm));
@@ -633,8 +583,7 @@ namespace {
     }
 
     else {
-      vm.set_error("To many parameters in stable().\n");
-      return -1;
+      return vm.set_error("To many parameters in stable().\n");
     }
   }
 
@@ -645,13 +594,13 @@ namespace {
     int_t nargs = vm.stack_size();
     if (nargs <= 1) {
       vm->handle_error(zs::errc::invalid_parameter_count, { -1, -1 },
-          "Missing directory parameter in sys::add_import_directory().", ZS_DEVELOPER_SOURCE_LOCATION());
+          "Missing directory parameter in sys::add_import_directory().", zb::source_location::current());
       return -1;
     }
 
     if (auto err = vm->get_engine()->add_import_directory(vm[1].get_string_unchecked())) {
       vm->handle_error(
-          err, { -1, -1 }, "Invalid sys::add_import_directory().", ZS_DEVELOPER_SOURCE_LOCATION());
+          err, { -1, -1 }, "Invalid sys::add_import_directory().", zb::source_location::current());
       return -1;
     }
 
@@ -770,7 +719,7 @@ namespace {
     //    bool has_ec_code = false;
     bool has_msg = false;
 
-    zs::error_code ec_code = zs::errc::success;
+    //    zs::error_code ec_code = zs::errc::success;
     std::string_view message;
 
     //    if (auto err = ps.check<error_code_parameter>(nargs == 3, ec_code)) {
@@ -831,11 +780,11 @@ zs::object create_zs_lib(zs::vm_ref vm) {
   zs_tbl.reserve(16);
 
   zs_tbl.emplace("to_string"_ss, zslib_tostring_impl);
+  zs_tbl.emplace("to_json"_ss, zslib_to_json_impl);
   zs_tbl.emplace("to_int"_ss, zslib_toint_impl);
   zs_tbl.emplace("to_float"_ss, zslib_tofloat_impl);
   zs_tbl.emplace("to_weak"_ss, zslib_to_weak_impl);
   zs_tbl.emplace("copy"_ss, zslib_copy_impl);
-  //  zs_tbl.emplace("create_mutable_string"_ss, zslib_tostring_impl);
 
   zs_tbl.emplace("is_empty"_ss, zslib_is_empty_impl);
   zs_tbl.emplace("is_array"_ss, +[](zs::vm_ref vm) -> int_t { return vm.push_bool(vm[1].is_array()); });
@@ -851,8 +800,8 @@ zs::object create_zs_lib(zs::vm_ref vm) {
   zs_tbl.emplace("is_table"_ss, +[](zs::vm_ref vm) -> int_t { return vm.push_bool(vm[1].is_table()); });
   zs_tbl.emplace("is_weak"_ss, +[](zs::vm_ref vm) -> int_t { return vm.push_bool(vm[1].is_weak_ref()); });
   zs_tbl.emplace(
-      "is_delegable"_ss, +[](zs::vm_ref vm) -> int_t { return vm.push_bool(vm[1].is_delegable()); });
-  zs_tbl.emplace("is_enum"_ss, +[](zs::vm_ref vm) -> int_t { return vm.push_bool(vm[1].is_enum()); });
+      "is_delegable"_ss, [](zs::vm_ref vm) -> int_t { return vm.push_bool(vm[1].is_delegable()); });
+
   zs_tbl.emplace(
       "is_user_data"_ss, +[](zs::vm_ref vm) -> int_t { return vm.push_bool(vm[1].is_user_data()); });
 
@@ -900,11 +849,10 @@ zs::object create_zs_lib(zs::vm_ref vm) {
 
   zs_tbl.emplace("contains"_ss, zslib_contains_impl);
   zs_tbl.emplace("create_object", zslib_create_object_impl);
+  zs_tbl.emplace("create_atom", zslib_create_atom_impl);
 
   zs_tbl.emplace("stable"_ss, zslib_create_stable_impl);
 
-  zs_tbl.emplace("print"_ss, zslib_print_impl);
-  zs_tbl.emplace("write"_ss, zslib_write_impl);
   zs_tbl.emplace(zs::_sv(s_print_to_string_name), zslib_print_to_string_impl);
   zs_tbl.emplace(zs::_sv(s_write_to_string_name), zslib_write_to_string_impl);
 
@@ -917,17 +865,6 @@ zs::object create_zs_lib(zs::vm_ref vm) {
 
   zs_tbl.emplace("error"_ss, zslib_error_impl);
 
-  //  {
-  //    zs::object error_code_table = zs::_t(eng);
-  //    zs::table_object& error_code_table_obj = error_code_table.as_table();
-  //    error_code_table_obj.reserve(40);
-  //
-  // #define ZS_DECL_ERROR_CODE(name, str) error_code_table_obj.emplace(str, errc::name);
-  // #include <zscript/error_codes_def.h>
-  // #undef ZS_DECL_ERROR_CODE
-  //
-  //    zs_tbl.emplace("error_code"_ss, std::move(error_code_table));
-  //  }
   return zs_module;
 }
 } // namespace zs.

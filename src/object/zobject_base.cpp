@@ -1,5 +1,5 @@
 #include <zscript/zscript.h>
-#include <zbase/strings/charconv.h>
+#include <zscript/base/strings/charconv.h>
 #include <zscript/std/zmutable_string.h>
 
 namespace zs {
@@ -117,13 +117,13 @@ zs::error_result object_base::get_string(std::string_view& res) const noexcept {
   }
 
   case object_type::k_small_string: {
-    const char* s = (const char*)&_value;
+    const char* s = (const char*)&_lvalue;
     res = std::string_view(s);
     return {};
   }
 
   case object_type::k_string_view: {
-    res = std::string_view(this->_sview, this->_ex1_sview_size);
+    res = std::string_view(this->_sview, this->_ex1_u32);
     return {};
   }
 
@@ -143,7 +143,7 @@ zs::error_result object_base::get_string(std::string_view& res) const noexcept {
 zb::string_view object_base::get_long_string_unchecked() const noexcept { return _lstring->get_string(); }
 
 zb::string_view object_base::get_string_view_unchecked() const noexcept {
-  return zb::string_view(this->_sview, this->_ex1_sview_size);
+  return zb::string_view(this->_sview, this->_ex1_u32);
 }
 
 zb::string_view object_base::get_string_unchecked() const noexcept {

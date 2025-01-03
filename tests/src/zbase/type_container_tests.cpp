@@ -1,5 +1,5 @@
 #include <catch2.h>
-#include <zbase/utility/traits.h>
+#include <zscript/base/utility/traits.h>
 
 TEST_CASE("zb::dsadasdasd") {
 
@@ -16,7 +16,7 @@ TEST_CASE("zb::dsadasdasd") {
     using types = tmape::types_part;
     using Type = types::type_at_index<Index>;
 
-    ZBASE_MAYBE_UNUSED Type v = 32;
+    ZB_MAYBE_UNUSED Type v = 32;
     //    zb::print("TYPE", typeid(Type).name());
   }
 
@@ -28,7 +28,7 @@ TEST_CASE("zb::dsadasdasd") {
     using types = tmape::types_part;
     using Type = types::type_at_index<Index>;
 
-    ZBASE_MAYBE_UNUSED Type v = 2.2;
+    ZB_MAYBE_UNUSED Type v = 2.2;
     //    zb::print("TYPE", typeid(Type).name());
   }
 

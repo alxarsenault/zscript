@@ -58,79 +58,6 @@ struct virtual_machine::runtime_table_proxy {
     return {};
   }
 };
-
-// zs::error_result virtual_machine::delegate_table_get(
-//     const object& obj, const object& key, const object& delegate, object& dest, bool use_meta_get) {
-//
-//   if (delegate.is_null()) {
-//     object def_del = get_default_delegate_for_type(obj.get_type());
-//
-//     if (def_del.is_null()) {
-//       return errc::inaccessible;
-//     }
-//
-//     return delegate_table_get(obj, key, def_del, dest);
-//   }
-//
-//   // Start by looking directly in the object.
-//   if (!raw_get(delegate, key, dest)) {
-//     return {};
-//   }
-//
-//   bool keep_looking = false;
-//
-//   if (use_meta_get) {
-//     if (auto err
-//         = runtime_table_proxy::find_and_call_meta_get_func(this, obj, key, delegate, dest, keep_looking)) {
-//       return err;
-//     }
-//   }
-//   else {
-//     keep_looking = true;
-//   }
-//
-//   if (!keep_looking) {
-//     return {};
-//   }
-//
-//   if (!delegate.is_delegable()) {
-//     if (object def_del = get_default_delegate_for_type(obj.get_type()); !def_del.is_null()) {
-//       return delegate_table_get(obj, key, def_del, dest, use_meta_get);
-//     }
-//     return errc::inaccessible;
-//   }
-//
-//   ZS_ASSERT(delegate.is_delegable(), zs::get_object_type_name(delegate.get_type()));
-//
-//   zs::object& dobj = delegate.as_delegate().get_delegate();
-//
-//   if (dobj.is_type(object_type::k_table, object_type::k_array, object_type::k_user_data,
-//   object_type::k_struct, object_type::k_struct_instance, object_type::k_mutable_string)) {
-//     if (auto err = delegate_table_get(obj, key, dobj, dest, use_meta_get)) {
-//       if (err != errc::not_found) {
-//         return ZS_VM_ERROR(err, "Could not find key: ", key, " in object.\n");
-//       }
-//       return err;
-//     }
-//
-//     // If dest is none we need to keep looking.
-//     if (!dest.is_none()) {
-//       // A value was returned. All good.
-//       return {};
-//     }
-//
-//     return errc::not_found;
-//   }
-//
-//   if (dobj.is_null()) {
-//     if (object def_del = get_default_delegate_for_type(obj.get_type()); !def_del.is_null()) {
-//       return delegate_table_get(obj, key, def_del, dest, use_meta_get);
-//     }
-//   }
-//
-//   return errc::not_found;
-// }
-
 zs::error_result virtual_machine::delegate_table_contains(
     const object& obj, const object& key, const object& delegate, object& dest, bool use_meta_get) {
 
@@ -173,7 +100,7 @@ zs::error_result virtual_machine::delegate_table_contains(
 
   ZS_ASSERT(delegate.is_delegable(), zs::get_object_type_name(delegate.get_type()));
 
-  zs::object& dobj = delegate.as_delegable().get_delegate();
+  zs::object dobj = delegate.as_delegable().get_delegate();
 
   if (dobj.is_table()) {
     if (auto err = proxy::get(this, obj, key, dobj, dest, use_meta_get)) {
@@ -239,7 +166,8 @@ ZS_DECL_RT_ACTION(table_set, objref_t obj, cobjref_t key, cobjref_t value) {
   }
 
   if (tbl.has_delegate()) {
-    auto err = runtime_action<delegate_set>(obj, REF(tbl.get_delegate()), key, value);
+    object delegate = tbl.get_delegate();
+    auto err = runtime_action<delegate_set>(obj, REF(delegate), key, value);
     if (!err) {
       return {};
     }
@@ -285,7 +213,8 @@ ZS_DECL_RT_ACTION(table_set_if_exists, objref_t obj, cobjref_t key, cobjref_t va
   }
 
   if (tbl.has_delegate()) {
-    auto err = runtime_action<delegate_set>(obj, REF(tbl.get_delegate()), key, value);
+    object delegate = tbl.get_delegate();
+    auto err = runtime_action<delegate_set>(obj, REF(delegate), key, value);
     if (!err) {
       return {};
     }

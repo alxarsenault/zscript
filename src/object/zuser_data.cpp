@@ -20,28 +20,29 @@ user_data_object* user_data_object::create(zs::engine* eng, size_t size, const u
   return uobj;
 }
 
-user_data_object::~user_data_object() {
-  const bool owns = owns_content();
-  user_data_content content = *_content;
-  uint8_t* d = data();
+void user_data_object::destroy_callback(zs::engine* eng, reference_counted_object* obj) noexcept {
+  user_data_object* uobj = (user_data_object*)obj;
+
+  const bool owns = uobj->owns_content();
+  user_data_content content = *uobj->_content;
+  uint8_t* d = uobj->data();
 
   if (owns) {
-    user_data_content* ct = _content;
+    user_data_content* ct = uobj->_content;
     ct->~user_data_content();
   }
 
   if (content.release_hook) {
-    content.release_hook(_engine, d);
+    content.release_hook(eng, d);
   }
+
+  zs_delete(eng, uobj);
 }
 
-object user_data_object::clone() const noexcept { return object((user_data_object*)this, true); }
+object user_data_object::clone_callback(zs::engine* eng, const reference_counted_object* obj) noexcept {
+  user_data_object* uobj = (user_data_object*)obj;
 
-zs::error_result user_data_object::copy_to_type(void* obj, size_t data_size, std::string_view tid) {
-  if (_content->copy_fct) {
-    return (*_content->copy_fct)(obj, data_size, tid, (void*)data());
-  }
-  return zs::error_code::invalid_type;
+  return object(uobj, true);
 }
 
 zs::error_result user_data_object::convert_to_string(std::ostream& stream) {

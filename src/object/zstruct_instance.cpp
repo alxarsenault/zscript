@@ -2,16 +2,7 @@
 
 namespace zs {
 struct_instance_object::struct_instance_object(zs::engine* eng) noexcept
-    : zs::reference_counted_object(eng, zs::object_type::k_struct_instance) {}
-
-struct_instance_object::~struct_instance_object() {
-  zb::span<object> sp = get_span();
-
-  const size_t sz = sp.size();
-  for (size_t i = 0; i < sz; i++) {
-    sp[i].~object();
-  }
-}
+    : zs::reference_counted_object(eng, object_type::k_struct_instance) {}
 
 struct_instance_object* struct_instance_object::create(zs::engine* eng, int_t sz) noexcept {
   struct_instance_object* sobj = (struct_instance_object*)eng->allocate(
@@ -27,6 +18,25 @@ struct_instance_object* struct_instance_object::create(zs::engine* eng, int_t sz
   return sobj;
 }
 
+void struct_instance_object::destroy_callback(zs::engine* eng, reference_counted_object* obj) noexcept {
+  struct_instance_object* sobj = (struct_instance_object*)obj;
+
+  zb::span<object> sp = sobj->get_span();
+
+  const size_t sz = sp.size();
+  for (size_t i = 0; i < sz; i++) {
+    sp[i].~object();
+  }
+
+  zs_delete(eng, sobj);
+}
+
+object struct_instance_object::clone_callback(zs::engine* eng, const reference_counted_object* obj) noexcept {
+  struct_instance_object* sobj = (struct_instance_object*)obj;
+
+  return object(sobj, false);
+}
+
 zs::error_result struct_instance_object::get(
     const object& name, object& dst, bool can_access_private) const noexcept {
   ZS_ASSERT(_base.is_struct(), "Invalid struct instance base type.");
@@ -38,7 +48,7 @@ zs::error_result struct_instance_object::get(
     return {};
   }
 
-  const size_t sz = b.size();
+  const int_t sz = b.size();
 
   if (name.is_integer()) {
 
@@ -56,7 +66,7 @@ zs::error_result struct_instance_object::get(
     return zs::errc::inaccessible_private;
   }
 
-  for (size_t i = 0; i < sz; i++) {
+  for (int_t i = 0; i < sz; i++) {
     if (b[i].key == name) {
       if (!b[i].is_private or can_access_private) {
         dst = data()[i];
@@ -165,7 +175,7 @@ zs::error_result struct_instance_object::contains(
     return {};
   }
 
-  const size_t sz = s.size();
+  const int_t sz = s.size();
 
   if (name.is_integer()) {
 
@@ -185,7 +195,7 @@ zs::error_result struct_instance_object::contains(
     return {};
   }
 
-  for (size_t i = 0; i < sz; i++) {
+  for (int_t i = 0; i < sz; i++) {
     if (s[i].key == name) {
       if (!s[i].is_private or can_access_private) {
         dst = true;
@@ -279,12 +289,16 @@ const object& struct_instance_object::key(size_t index) const noexcept {
   return _base.as_struct()[index].key;
 }
 
+int_t struct_instance_object::key_index(const object& name) const noexcept {
+  for (int_t i = 0; i < _base.as_struct().size(); i++) {
+    if (_base.as_struct()[i].key == name) {
+      return (int_t)i;
+    }
+  }
+
+  return -1;
+}
+
 object& struct_instance_object::key(size_t index) noexcept { return _base.as_struct()[index].key; }
 
-object struct_instance_object::clone() const noexcept {
-  using enum object_type;
-  struct_instance_object* sobj = (struct_instance_object*)this;
-  sobj->retain();
-  return object(sobj, false);
-}
 } // namespace zs.

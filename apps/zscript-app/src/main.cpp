@@ -52,7 +52,7 @@ zs::error_result run_file(zs::vm_ref vm, const zs::object& closure, zs::object& 
 
   //  zs::object args_array = zs::_a(eng, args.args);
 
-  zs::object env = vm->create_this_table_from_root();
+  zs::object env = zs::object::create_table_with_delegate(eng, vm->global());
 
   // Call the compiled file.
   if (auto err = vm->call(closure, env, result_value)) {
@@ -60,7 +60,7 @@ zs::error_result run_file(zs::vm_ref vm, const zs::object& closure, zs::object& 
     return err;
   }
 
-  closure.as_closure().set_env(std::move(env));
+  closure.as_closure().set_bounded_this(std::move(env));
 
   return {};
 }
@@ -86,7 +86,7 @@ zs::error_result call_main(
   size_t n_min_args = nargs - ndefaults;
 
   if (nargs == 1 and ndefaults == 0) {
-    if (auto err = vm->call(main_closure, vm->get_root(), result_value)) {
+    if (auto err = vm->call(main_closure, vm->global(), result_value)) {
       zb::stream_print(std::cerr, "Virtual machine error: ", vm.get_error(), ".\n");
       return err;
     }
@@ -94,7 +94,7 @@ zs::error_result call_main(
   else if (nargs > 1 and n_min_args <= 2) {
     zs::object args_array = zs::_a(eng, std::span<const char*>((const char**)argv, argc));
 
-    if (auto err = vm->call(main_closure, { vm->get_root(), args_array }, result_value)) {
+    if (auto err = vm->call(main_closure, { vm->global(), args_array }, result_value)) {
       zb::stream_print(std::cerr, "Virtual machine error: ", vm.get_error(), ".\n");
       return err;
     }

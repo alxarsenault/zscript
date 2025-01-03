@@ -1,5 +1,5 @@
 #include <zscript/zscript.h>
-#include <zbase/sys/path.h>
+#include <zscript/base/sys/path.h>
 
 namespace zs {
 namespace {
@@ -33,7 +33,12 @@ struct internal::proxy<engine_pimpl_proxy_tag> {
 
 namespace {
   using engine_proxy = internal::proxy<engine_pimpl_proxy_tag>;
+
+  std::array<zs::engine*, 32> s_engines = {};
+
 } // namespace.
+
+zs::engine* get_engine_from_index(uint8_t idx) noexcept { return s_engines[idx]; }
 
 engine::engine(allocate_t alloc_cb, raw_pointer_t user_pointer, raw_pointer_release_hook_t user_release,
     stream_getter_t stream_getter, engine_initializer_t initializer)
@@ -44,6 +49,15 @@ engine::engine(allocate_t alloc_cb, raw_pointer_t user_pointer, raw_pointer_rele
     , _initializer(initializer) //
     ZS_IF_GARBAGE_COLLECTOR(, _gc(this)) {
 
+  _engine_idx = (uint8_t)-1;
+  for (size_t i = 0; i < s_engines.size(); i++) {
+    if (!s_engines[i]) {
+      s_engines[i] = this;
+      _engine_idx = i;
+      break;
+    }
+  }
+
   engine_proxy::init_objects(this);
 
   if (_initializer) {
@@ -52,7 +66,6 @@ engine::engine(allocate_t alloc_cb, raw_pointer_t user_pointer, raw_pointer_rele
 }
 
 engine::~engine() {
-
   engine_proxy::destroy_objects(this);
 
   ZS_IF_GARBAGE_COLLECTOR(_gc.finalize());
@@ -63,6 +76,8 @@ engine::~engine() {
 
   _user_pointer = nullptr;
   _user_pointer_release = nullptr;
+
+  s_engines[_engine_idx] = nullptr;
 
   ZS_IF_USE_ENGINE_GLOBAL_REF_COUNT(zbase_warning(
       _global_ref_count == 0, "Invalid reference count (", _global_ref_count, ") should be zero"));
@@ -209,7 +224,7 @@ zs::error_result engine::resolve_file_path(std::string_view import_value, object
 
   const int_t dirs_count = dirs.size();
 
-  for (size_t i = 0; i < dirs_count; i++) {
+  for (int_t i = 0; i < dirs_count; i++) {
     const path_type dirpath(dirs[i].get_string_unchecked(), this);
     for (const auto& p : paths) {
       if (path_type abs_path = dirpath.join(p)) {

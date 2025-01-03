@@ -3,6 +3,7 @@
 #include "zfile.h"
 #include "zvirtual_machine.h"
 #include "utility/zparameter_stream.h"
+#include "utility/zvm_load.h"
 
 #if !defined(ZS_UNIX) \
     && (defined(unix) || defined(__unix__) || defined(__unix) || defined(__APPLE__) || defined(BSD))
@@ -237,7 +238,7 @@ namespace {
     if (nargs == 2) {
       object output;
 
-      if (auto err = vm->load_json_file(path_str, output)) {
+      if (auto err = zs::load_json_file(vm, path_str, output)) {
         vm->set_error("Could not load json file.\n");
         return -1;
       }
@@ -247,7 +248,7 @@ namespace {
     else if (nargs == 3) {
       object output;
       const object& table = vm[2];
-      if (auto err = vm->load_json_file(path_str, table, output)) {
+      if (auto err = zs::load_json_file(vm, path_str, table, output)) {
         vm->set_error("Could not load json file.\n");
         return -1;
       }
@@ -300,7 +301,7 @@ namespace {
       const char* cstr_path = path.get_cstring_unchecked();
 
       object output;
-      if (auto err = vm->load_file_as_value(cstr_path, "none", output)) {
+      if (auto err = zs::load_file_as_value(vm, cstr_path, "none", output)) {
         return -1;
       }
       return vm.push(output);
@@ -309,7 +310,7 @@ namespace {
     if (path.is_string()) {
       std::filesystem::path path_str(std::string_view(path.get_string_unchecked()));
       object output;
-      if (auto err = vm->load_file_as_value(path_str, "none", output)) {
+      if (auto err = zs::load_file_as_value(vm, path_str, "none", output)) {
         return -1;
       }
       return vm.push(output);
@@ -430,7 +431,7 @@ zs::object create_fs_lib(zs::vm_ref vm) {
   zs::engine* eng = vm->get_engine();
 
   zs::object fs_module = zs::object::create_table(eng);
-  zs::object_unordered_map<object>& fs_map = fs_module._table->get_map();
+  zs::object_map& fs_map = fs_module._table->get_map();
   fs_map.reserve(20);
 
   // fs::openmode.
@@ -458,9 +459,9 @@ zs::object create_fs_lib(zs::vm_ref vm) {
   fs_map.emplace("join"_ss, zfs_join_impl);
   fs_map.emplace("ls"_ss, zfs_ls_impl);
 
-  fs_map["json_file"] = zs::_nf(zfs_load_json_file);
-  fs_map["string_file"] = zs::_nf(zfs_load_string_file);
-  fs_map["value_file"] = zs::_nf(zfs_load_value_file);
+  fs_map["json_file"_ss] = zs::_nf(zfs_load_json_file);
+  fs_map["string_file"_ss] = zs::_nf(zfs_load_string_file);
+  fs_map["value_file"_ss] = zs::_nf(zfs_load_value_file);
   return fs_module;
 }
 } // namespace zs.

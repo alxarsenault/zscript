@@ -3,18 +3,98 @@
 
 namespace zs {
 struct_object::struct_object(zs::engine* eng) noexcept
-    : zs::reference_counted_object(eng, zs::object_type::k_struct)
+    : zs::reference_counted_object(eng, object_type::k_struct)
     , vector_type(zs::allocator<struct_item>(eng))
-    , _methods(zs::allocator<struct_method>(eng))
-    , _statics(zs::allocator<struct_item>(eng)) {}
+    , _statics(zs::allocator<struct_item>(eng))
+    , _methods(zs::allocator<struct_method>(eng)) {}
 
 struct_object* struct_object::create(zs::engine* eng, int_t sz) noexcept {
-  struct_object* arr = internal::zs_new<memory_tag::nt_array, struct_object>(eng, eng);
+  struct_object* arr = internal::zs_new<memory_tag::nt_struct, struct_object>(eng, eng);
   if (sz) {
     arr->resize(sz);
   }
 
   return arr;
+}
+
+void struct_object::destroy_callback(zs::engine* eng, reference_counted_object* obj) noexcept {
+  struct_object* sobj = (struct_object*)obj;
+
+  zs_delete(eng, sobj);
+}
+
+object struct_object::clone_callback(zs::engine* eng, const reference_counted_object* obj) noexcept {
+  struct_object* sobj = (struct_object*)obj;
+
+  using enum object_type;
+
+  struct_object* out_sobj = struct_object::create(eng, 0);
+  out_sobj->_constructors = sobj->_constructors;
+  out_sobj->_statics = sobj->_statics;
+
+  const zs::vector<struct_item>& this_vec = *sobj;
+  zs::vector<struct_item>& arr_vec = *out_sobj;
+
+  const size_t sz = this_vec.size();
+
+  arr_vec.resize(sz);
+
+  for (size_t i = 0; i < sz; i++) {
+    const struct_item& sitem = this_vec[i];
+    struct_item& aitem = arr_vec[i];
+    aitem.key = sitem.key;
+    aitem.is_const = sitem.is_const;
+    aitem.mask = sitem.mask;
+
+    switch (sitem.value.get_type()) {
+    case k_long_string:
+      aitem.value = sitem.value.as_string().clone();
+      break;
+
+    case k_closure:
+      // No clone for now.
+      aitem.value = sitem.value;
+      break;
+
+    case k_native_closure:
+      aitem.value = sitem.value.as_native_closure().clone();
+      break;
+
+    case k_weak_ref:
+      aitem.value = sitem.value;
+      break;
+
+    case k_table:
+      aitem.value = sitem.value.as_table().clone();
+      break;
+
+    case k_array:
+      aitem.value = sitem.value.as_array().clone();
+      break;
+
+    case k_struct:
+      aitem.value = sitem.value.as_struct().clone();
+      break;
+
+    case k_struct_instance:
+      aitem.value = sitem.value.as_struct_instance().clone();
+      break;
+
+    case k_user_data:
+      // No clone for now.
+      aitem.value = sitem.value;
+      break;
+
+    default:
+      aitem.value = sitem.value;
+    }
+  }
+
+  return object(out_sobj, false);
+}
+
+object struct_object::create_object(zs::engine* eng, int_t sz) noexcept {
+  return object(struct_object::create(eng, sz), false);
 }
 
 zs::error_result struct_object::get(const object& name, object& dst) const noexcept {
@@ -213,6 +293,7 @@ zs::error_result struct_object::new_method(
   _methods.emplace_back(name, closure, is_private, is_const);
   return {};
 }
+
 zs::error_result struct_object::new_static_method(
     const object& name, const object& closure, bool is_private, bool is_const) noexcept {
   if (contains(name)) {
@@ -254,7 +335,7 @@ struct_instance_object* struct_object::create_instance() const noexcept {
   const zs::vector<struct_item>& this_vec = (*this);
   const size_t sz = this_vec.size();
 
-  struct_instance_object* sobj = struct_instance_object::create(_engine, sz);
+  struct_instance_object* sobj = struct_instance_object::create(get_engine(), sz);
   sobj->_base = zs::object((reference_counted_object*)this, true);
 
   zb::span<object> ivec = sobj->get_span();
@@ -309,149 +390,90 @@ struct_instance_object* struct_object::create_instance() const noexcept {
   return sobj;
 }
 
-object struct_object::clone() const noexcept {
-  using enum object_type;
+struct constructor_info {
+  const object* obj;
+  int_t n_type_match;
 
-  struct_object* sobj = struct_object::create(_engine, 0);
-  sobj->_constructors = _constructors;
-  sobj->_statics = _statics;
+  inline const zs::closure_object& get_closure() const noexcept { return obj->as_closure(); }
 
-  const zs::vector<struct_item>& this_vec = (*this);
-  zs::vector<struct_item>& arr_vec = *sobj;
+  inline const object& get_object() const noexcept { return *obj; }
+};
 
-  const size_t sz = this_vec.size();
-
-  arr_vec.resize(sz);
-
-  for (size_t i = 0; i < sz; i++) {
-    const struct_item& sitem = this_vec[i];
-    struct_item& aitem = arr_vec[i];
-    aitem.key = sitem.key;
-    aitem.is_const = sitem.is_const;
-    aitem.mask = sitem.mask;
-
-    switch (sitem.value.get_type()) {
-    case k_long_string:
-      aitem.value = sitem.value.as_string().clone();
-      break;
-
-    case k_closure:
-      // No clone for now.
-      aitem.value = sitem.value;
-      break;
-
-    case k_native_closure:
-      aitem.value = sitem.value.as_native_closure().clone();
-      break;
-
-    case k_weak_ref:
-      aitem.value = sitem.value;
-      break;
-
-    case k_table:
-      aitem.value = sitem.value.as_table().clone();
-      break;
-
-    case k_array:
-      aitem.value = sitem.value.as_array().clone();
-      break;
-
-    case k_struct:
-      aitem.value = sitem.value.as_struct().clone();
-      break;
-
-    case k_struct_instance:
-      aitem.value = sitem.value.as_struct_instance().clone();
-      break;
-
-    case k_user_data:
-      // No clone for now.
-      aitem.value = sitem.value;
-      break;
-
-    default:
-      aitem.value = sitem.value;
-    }
-  }
-
-  return object(sobj, false);
+inline static bool is_closure_with_invalid_param_count(const object& obj, int_t n_params) {
+  return obj.is_closure() and !obj.as_closure().is_possible_parameter_count(n_params);
 }
 
-void struct_object::set_doc(const object& doc) {
+zs::error_result struct_object::resolve_constructor(
+    zs::vm_ref vm, zs::parameter_list params, zs::object& constructor) {
+  const int_t n_params = params.size();
 
-  if (!_doc.is_table()) {
-    _doc = zs::_t(_engine);
+  // Call default constructor.
+  if (n_params == 1 and has_default_constructor()) {
+    return {};
   }
 
-  _doc.as_table()["description"] = doc;
-
-  if (_name.is_string()) {
-    _doc.as_table()["name"] = _name;
-  }
-}
-
-void struct_object::set_member_doc(const object& name, const object& doc) {
-
-  if (!_doc.is_table()) {
-    _doc = zs::_t(_engine);
+  // If the struct has no constructor, we could still call the default constructor,
+  // only if there is no parameters other than 'this'.
+  if (!has_constructors()) {
+    return n_params == 1 ? errc::success : errc::invalid_parameter_count;
   }
 
-  if (auto it = this->find_if([&](const auto& n) { return n.key == name; }); it != this->end()) {
-    auto key = zs::_ss("members");
-    if (!_doc.as_table().contains(key)) {
-      _doc.as_table()[key] = zs::_a(_engine, 0);
-    }
+  // The struct has only one constructor, strct_obj._constructors is a function.
+  if (has_single_constructor()) {
+    const zs::object& constructor_obj = _constructors;
 
-    _doc.as_table()[key].as_array().push_back(
-        zs::_t(_engine, { { zs::_ss("name"), name }, { zs::_ss("description"), doc } }));
-  }
+    if (constructor_obj.is_closure()) {
 
-  else if (auto it = _statics.find_if([&](const auto& n) { return n.key == name; }); it != _statics.end()) {
-    auto key = zs::_ss("static-members");
-    if (!_doc.as_table().contains(key)) {
-      _doc.as_table()[key] = zs::_a(_engine, 0);
-    }
-
-    _doc.as_table()[key].as_array().push_back(
-        zs::_t(_engine, { { zs::_ss("name"), name }, { zs::_ss("description"), doc } }));
-  }
-  else if (auto it = _methods.find_if([&](const auto& n) { return n.name == name; }); it != _methods.end()) {
-
-    auto key = it->is_static ? zs::_ss("static-methods") : zs::_ss("methods");
-
-    if (!_doc.as_table().contains(key)) {
-      _doc.as_table()[key] = zs::_a(_engine, 0);
-    }
-
-    _doc.as_table()[key].as_array().push_back(
-        zs::_t(_engine, { { zs::_ss("name"), name }, { zs::_ss("description"), doc } }));
-
-    if (it->closure.is_closure()) {
-      const auto& param_names = it->closure.as_closure().get_proto()._parameter_names;
-
-      object params = zs::_a(_engine, 0);
-
-      for (const auto& n : param_names) {
-        params.as_array().push_back(zs::_t(_engine, { { zs::_ss("name"), n } }));
-
-        if (const zs::local_var_info_t* loc = it->closure.as_closure().get_proto().find_local(n)) {
-
-          if (loc->is_const()) {
-            params.as_array().back().as_table()["is_const"] = loc->is_const();
-          }
-
-          if (loc->mask) {
-            zs::ostringstream ss = zs::create_string_stream(_engine);
-            ss << zs::object_type_mask_printer{ loc->mask };
-
-            params.as_array().back().as_table()["mask"] = zs::_s(_engine, ss.str());
-          }
-        }
+      int_t n_type_match = -1;
+      if (!constructor_obj.as_closure().is_valid_parameters(vm, params, n_type_match)) {
+        return zs::errc::invalid_parameters;
       }
-      auto& ff = _doc.as_table()[key].as_array().back();
-      ff.as_table()["parameters"] = std::move(params);
+    }
+
+    constructor = constructor_obj;
+    return {};
+  }
+
+  // If 'has_multi_constructors' returns false, there's no constructor.
+  ZS_ASSERT(has_multi_constructors());
+
+  // An array of constructors.
+  const zs::array_object& strc_ctors = _constructors.as_array();
+
+  zs::small_vector<constructor_info, 8> potential_constructors(
+      (zs::allocator<constructor_info>(vm.get_engine())));
+
+  for (const object& obj : strc_ctors) {
+    if (!is_closure_with_invalid_param_count(obj, n_params) and obj.is_function()) {
+      potential_constructors.push_back({ &obj, -1 });
     }
   }
-}
 
+  for (auto it = potential_constructors.begin(); it != potential_constructors.end();) {
+    if (!it->obj->is_closure()) {
+      ++it;
+      continue;
+    }
+
+    int_t n_type_match = -1;
+    if (!it->get_closure().is_valid_parameters(vm, params, n_type_match)) {
+      it = potential_constructors.erase(it);
+      continue;
+    }
+
+    it->n_type_match = n_type_match;
+    ++it;
+  }
+
+  if (potential_constructors.size() == 1) {
+    constructor = potential_constructors.back().get_object();
+    return {};
+  }
+
+  if (potential_constructors.empty()) {
+    return zs::errc::invalid_operation;
+  }
+
+  return zs::errc::invalid;
+}
 } // namespace zs.

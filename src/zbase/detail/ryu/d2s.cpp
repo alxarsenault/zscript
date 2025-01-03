@@ -27,8 +27,8 @@
 //     size by about 10x (only one case, and only double) at the cost of some
 //     performance. Currently requires MSVC intrinsics.
 
-#include <zbase/detail/ryu/ryu.h>
-#include <zbase/strings/parse_utils.h>
+#include <zscript/base/detail/ryu/ryu.h>
+#include <zscript/base/strings/parse_utils.h>
 
 #include <assert.h>
 #include <stdbool.h>

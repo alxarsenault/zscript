@@ -25,5 +25,5 @@
 #include <zscript/zscript.h>
 
 namespace zs {
-zs::object create_array_default_delegate(zs::engine* eng);
+zs::object create_array_delegate(zs::engine* eng);
 } // namespace zs.

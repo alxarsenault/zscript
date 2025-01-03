@@ -2,9 +2,9 @@
 #include <zscript/std/zmutable_string.h>
 #include "zvirtual_machine.h"
 #include "utility/zparameter_stream.h"
-#include <zbase/strings/charconv.h>
-#include <zbase/strings/unicode.h>
-#include <zbase/strings/stack_string.h>
+#include <zscript/base/strings/charconv.h>
+#include <zscript/base/strings/unicode.h>
+#include <zscript/base/strings/stack_string.h>
 
 namespace zs {
 namespace {
@@ -21,7 +21,7 @@ namespace {
         index += u32_length;
       }
 
-      if (index < 0 or index >= u32_length) {
+      if (index < 0 or index >= (int_t)u32_length) {
         return errc::out_of_bounds;
       }
 
@@ -51,7 +51,7 @@ namespace {
   struct mutable_string_iterator_ref {
 
     inline mutable_string_iterator_ref(object& obj) noexcept
-        : index(obj._ex1_atom_it_index)
+        : index(obj._ex1_u32)
         , pointer(obj._pointer) {}
 
     uint32_t& index;
@@ -225,10 +225,10 @@ namespace {
 
     object it;
     it._type = object_type::k_atom;
-    it._atom_type = atom_type::atom_custom;
+    it._atom_type = atom_type::atom_mutable_string_iterator;
     it._pointer = (void*)ptr;
-    it._ex1_atom_it_index = (uint32_t)index;
-    it._ex2_delegated_atom_delegate_id = constants::k_atom_mutable_string_iterator_delegate_id;
+    it._ex1_u32 = (uint32_t)index;
+    it._ex2_delegate_id = constants::k_atom_mutable_string_iterator_delegate_id;
     return it;
   }
 
@@ -251,6 +251,13 @@ namespace {
     mutable_string* mstr = nullptr;
     ZS_RETURN_IF_ERROR(ps.require<mutable_string_parameter>(mstr), -1);
     return vm.push(zb::unicode::length(*mstr));
+  }
+
+  int_t mutable_string_is_empty_impl(zs::vm_ref vm) noexcept {
+    zs::parameter_stream ps(vm);
+    mutable_string* mstr = nullptr;
+    ZS_RETURN_IF_ERROR(ps.require<mutable_string_parameter>(mstr), -1);
+    return vm.push_bool(mstr->empty());
   }
 
   int_t mutable_string_ascii_size_impl(zs::vm_ref vm) noexcept {
@@ -483,7 +490,7 @@ namespace {
 
     object obj = mstr->clone();
 
-    obj.as_udata().set_delegate(mobj.as_udata().get_delegate(), mobj.as_udata().get_use_default_delegate());
+    obj.as_udata().set_delegate(mobj.as_udata().get_delegate(), mobj.as_udata().get_delegate_flags());
     return vm.push(obj);
   }
 
@@ -503,6 +510,7 @@ namespace {
 
     tbl->emplace("to_string"_ss, mutable_string_to_string_impl);
     tbl->emplace("size"_ss, mutable_string_size_impl);
+    tbl->emplace(_ss("is_empty"), mutable_string_is_empty_impl);
     tbl->emplace("ascii_size"_ss, mutable_string_ascii_size_impl);
     tbl->emplace("is_ascii"_ss, mutable_string_is_ascii_impl);
     tbl->emplace("starts_with"_ss, mutable_string_starts_with_impl);
@@ -512,7 +520,7 @@ namespace {
     tbl->emplace("begin"_ss, mutable_string_begin_impl);
     tbl->emplace("end"_ss, mutable_string_end_impl);
 
-    tbl->set_delegate(object::create_none(), false);
+    tbl->set_no_default_none();
 
     return object(tbl, false);
   }
@@ -549,7 +557,7 @@ zs::error_result mutable_string_parameter::parse(
 }
 
 inline constexpr user_data_content k_mutable_string_udata_content
-    = { [](zs::engine* eng, zs::raw_pointer_t ptr) { ((mutable_string*)ptr)->~mutable_string(); }, nullptr,
+    = { [](zs::engine* eng, zs::raw_pointer_t ptr) { ((mutable_string*)ptr)->~mutable_string(); },
         [](const zs::object_base& obj, std::ostream& stream) -> error_result {
           stream << obj.as_udata().data_ref<mutable_string>();
           return {};
@@ -561,7 +569,7 @@ inline object create_mutable_string_impl(zs::engine* eng, Args&&... args) {
   user_data_object* uobj
       = user_data_object::create(eng, sizeof(mutable_string), &k_mutable_string_udata_content);
   uobj->construct<mutable_string>(std::forward<Args>(args)..., eng);
-  uobj->set_delegate(get_mutable_string_delegate(eng), false);
+  uobj->set_delegate(get_mutable_string_delegate(eng), delegate_flags_t::df_none);
   return zs::object(uobj, false);
 }
 

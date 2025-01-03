@@ -2,9 +2,9 @@
 #include <zscript/std/zfloat_array.h>
 #include "zvirtual_machine.h"
 #include "utility/zparameter_stream.h"
-#include <zbase/strings/charconv.h>
-#include <zbase/strings/unicode.h>
-#include <zbase/strings/stack_string.h>
+#include <zscript/base/strings/charconv.h>
+#include <zscript/base/strings/unicode.h>
+#include <zscript/base/strings/stack_string.h>
 #include <algorithm>
 #include <numeric>
 
@@ -23,7 +23,7 @@ namespace {
         index += length;
       }
 
-      if (index < 0 or index >= length) {
+      if (index < 0 or index >= (int_t)length) {
         return errc::out_of_bounds;
       }
 
@@ -49,7 +49,7 @@ namespace {
     ZS_RETURN_IF_ERROR(ps.require<float_array_parameter>(arr), -1);
 
     int_t index = 0;
-    ZS_RETURN_IF_ERROR(ps.optional<integer_parameter>(index), vm.push(object::create_none()));
+    ZS_RETURN_IF_ERROR(ps.optional<integer_parameter>(index), vm.push(zs::none()));
 
     // Length of the mutable string in u32.
     const size_t length = arr->size();
@@ -173,9 +173,17 @@ namespace {
     }
 
     float_t val = 0;
-    ps.optional<number_parameter>(val);
     float_t delta = 1;
-    ps.optional<number_parameter>(delta);
+
+    if (auto err = ps.require_if_valid<number_parameter>(val)) {
+      vm->ZS_VM_ERROR(err, "Invalid number parameter.");
+      return -1;
+    }
+
+    if (auto err = ps.require_if_valid<number_parameter>(delta)) {
+      vm->ZS_VM_ERROR(err, "Invalid number parameter.");
+      return -1;
+    }
 
     for (size_t i = 0; i < arr->size(); i++) {
       (*arr)[i] = val;
@@ -212,7 +220,7 @@ namespace {
     tbl->emplace("ramp"_ss, float_array_ramp_impl);
     //    tbl->emplace("contains"_ss, float_array_contains_impl);
 
-    tbl->set_delegate(object::create_none(), false);
+    tbl->set_no_default_none();
     return object(tbl, false);
   }
 
@@ -243,6 +251,10 @@ namespace {
     return vm.push(arr);
   }
 } // namespace
+
+float_array& float_array::as_float_array(const object& obj) noexcept {
+  return obj.as_udata().data_ref<float_array>();
+}
 
 bool is_float_array(const object& obj) noexcept {
   return obj.is_user_data() and obj.as_udata().get_uid() == flt_array::uid;

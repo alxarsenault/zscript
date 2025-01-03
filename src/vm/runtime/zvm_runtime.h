@@ -7,50 +7,13 @@ using cobjref_t = zb::ref_wrapper<const object>;
   template <>                        \
   zs::error_result virtual_machine::runtime_action<runtime_code::name>(__VA_ARGS__)
 
-////////////////////////////////////////////////////////
-ZS_DECL_RT_ACTION(execute, closure_object* closure, zb::ref_wrapper<object> ret_value);
-
 ZS_DECL_RT_ACTION(
     handle_error, zs::function_prototype_object* fct, zs::instruction_iterator it, zs::error_code ec);
-
-// clang-format off
-ZS_DECL_RT_ACTION(enter_function_call, cobjref_t closure_obj, int_t n_params, int_t stack_base);
-ZS_DECL_RT_ACTION(enter_function_call, cobjref_t closure_obj, zs::parameter_list params);
-ZS_DECL_RT_ACTION(leave_function_call);
-ZS_DECL_RT_ACTION(call_closure, cobjref_t obj, int_t n_params, int_t stack_base, objref_t ret_value);
-ZS_DECL_RT_ACTION(call_closure, cobjref_t obj, zs::parameter_list params, objref_t ret_value);
-ZS_DECL_RT_ACTION(call_native_closure, cobjref_t obj, int_t n_params, int_t stack_base, objref_t ret_value);
-ZS_DECL_RT_ACTION(call_native_closure, cobjref_t obj, zs::parameter_list params, objref_t ret_value);
-ZS_DECL_RT_ACTION(call_native_function, cobjref_t obj, int_t n_params, int_t stack_base, objref_t ret_value);
-ZS_DECL_RT_ACTION(call_native_function, cobjref_t obj, zs::parameter_list params, objref_t ret_value);
-
-// clang-format on
-
-ZS_DECL_RT_ACTION(invalid_set, objref_t obj, cobjref_t key, cobjref_t value);
-ZS_DECL_RT_ACTION(array_set, objref_t obj, cobjref_t key, cobjref_t value);
-ZS_DECL_RT_ACTION(weak_set, objref_t obj, cobjref_t key, cobjref_t value);
-
-// Struct.
-ZS_DECL_RT_ACTION(struct_set, objref_t obj, cobjref_t key, cobjref_t value);
-ZS_DECL_RT_ACTION(struct_new_slot, objref_t obj, cobjref_t key, cobjref_t value, uint32_t mask,
-    bool is_static, bool is_private, bool is_const);
-ZS_DECL_RT_ACTION(struct_new_slot, objref_t obj, cobjref_t key, uint32_t mask, bool is_static,
-    bool is_private, bool is_const);
-ZS_DECL_RT_ACTION(struct_new_constructor, objref_t obj, cobjref_t value);
-ZS_DECL_RT_ACTION(struct_new_default_constructor, objref_t obj);
-ZS_DECL_RT_ACTION(struct_new_method, objref_t obj, cobjref_t closure, variable_attribute_t decl_flags);
-ZS_DECL_RT_ACTION(struct_call_create, cobjref_t obj, int_t n_params, int_t stack_base, objref_t ret_value);
-ZS_DECL_RT_ACTION(struct_instance_set, objref_t obj, cobjref_t key, cobjref_t value);
 
 ZS_DECL_RT_ACTION(delegate_set, objref_t obj, objref_t delegate_obj, cobjref_t key, cobjref_t value);
 ZS_DECL_RT_ACTION(table_set, objref_t obj, cobjref_t key, cobjref_t value);
 ZS_DECL_RT_ACTION(table_set_if_exists, objref_t obj, cobjref_t key, cobjref_t value);
 ZS_DECL_RT_ACTION(user_data_set, objref_t user_data_obj, cobjref_t key, cobjref_t value);
-
-ZS_DECL_RT_ACTION(atom_set, objref_t obj, cobjref_t key, cobjref_t value);
-
-ZS_DECL_RT_ACTION(new_closure, uint32_t fct_idx, uint8_t bounded_target, objref_t dest);
-ZS_DECL_RT_ACTION(rt_close_captures, const object* stack_ptr);
 
 //
 //
@@ -78,8 +41,9 @@ ZS_DECL_RT_ACTION(
     }
   }
 
+  zs::string err_msg(_engine);
   constexpr std::string_view pre = "\n      ";
-  _error_message += zs::sstrprint(_engine, "error: opcode:", it.get_opcode(), //
+  err_msg += zs::sstrprint(_engine, "error: opcode:", it.get_opcode(), //
       pre, "error_code:", zs::error_code_to_string(ec), //
       pre, "closure name:", fct->_name, //
       pre, "closure source name:", fct->_source_name, //
@@ -92,51 +56,29 @@ ZS_DECL_RT_ACTION(
       pre, "call stack previous top index:", _call_stack.back().previous_top_index);
 
   if (last_linfo) {
-    _error_message += zs::strprint(_engine, //
+    err_msg += zs::strprint(_engine, //
         pre, " line: [ ", last_linfo->line, " : ", last_linfo->column, " ]");
   }
 
+  zs::line_info iline;
   if (linfo) {
-    _error_message += zs::strprint(_engine, //
+    iline.line = linfo->line;
+    iline.column = linfo->column;
+    err_msg += zs::strprint(_engine, //
         pre, " line end: [ ", linfo->line, " : ", linfo->column, " ]");
   }
 
-  _error_message += "\n";
+  err_msg += "\n";
+
+  _errors.emplace_back(_engine, error_source::virtual_machine, ec, err_msg,
+      fct->_source_name.is_string() ? fct->_source_name.get_string_unchecked() : "", "", iline,
+      zb::source_location::current());
 
   return ec;
 }
 
-ZS_DECL_RT_ACTION(invalid_set, objref_t obj, cobjref_t key, cobjref_t value) {
-  set_error("Can't assign a value to '", zs::get_object_type_name(obj->get_type()), "'.\n");
-  return zs::error_code::inaccessible;
-}
-
-ZS_DECL_RT_ACTION(rt_close_captures, const object* stack_ptr) {
-  ZS_TRACE("VM - rt_close_captures - CLOSE_CAPTURE", stack_ptr - _stack.get_internal_vector().data());
-
-  for (auto it = _open_captures.begin(); it != _open_captures.end();) {
-    if (capture::as_capture(*it).is_baked()) {
-      it = _open_captures.erase(it);
-      continue;
-    }
-    if (capture::as_capture(*it).get_value_ptr() >= stack_ptr) {
-      capture::as_capture(*it).bake();
-      it = _open_captures.erase(it);
-    }
-    else {
-      ++it;
-    }
-  }
-  return {};
-}
 } // namespace zs.
 
-#include "vm/runtime/zvm_runtime_call.h"
 #include "vm/runtime/zvm_runtime_table.h"
 #include "vm/runtime/zvm_runtime_user_data.h"
-#include "vm/runtime/zvm_runtime_weak.h"
-#include "vm/runtime/zvm_runtime_array.h"
 #include "vm/runtime/zvm_runtime_delegate.h"
-#include "vm/runtime/zvm_runtime_atom.h"
-#include "vm/runtime/zvm_runtime_struct.h"
-#include "vm/runtime/zvm_runtime_closure.h"

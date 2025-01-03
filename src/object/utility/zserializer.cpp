@@ -119,7 +119,7 @@ std::ostream& array_stream_internal(std::ostream& stream, const serializer& s) {
 std::ostream& string_stream_internal(std::ostream& stream, const serializer& s) {
 
   std::string_view str = s.obj.get_string_unchecked();
-  int indent = s.indent;
+  //  int indent = s.indent;
 
   if (s.type == serializer_type::quoted) {
     return stream << zb::quoted(str);
@@ -230,7 +230,7 @@ std::ostream& operator<<(std::ostream& stream, const serializer& s) {
 
   default:
     // @Alex
-    //    std::format_to(std::ostream_iterator<char>{ stream }, "{:#016x}", obj._value);
+    //    std::format_to(std::ostream_iterator<char>{ stream }, "{:#016x}", obj._lvalue);
     return stream;
   }
   return stream;
@@ -405,7 +405,7 @@ std::ostream& operator<<(std::ostream& stream, const serializer& s) {
 //
 //  default:
 //    // @Alex
-//    //    std::format_to(std::ostream_iterator<char>{ stream }, "{:#016x}", obj._value);
+//    //    std::format_to(std::ostream_iterator<char>{ stream }, "{:#016x}", obj._lvalue);
 ////      stream;
 //  }
 ////  return stream;

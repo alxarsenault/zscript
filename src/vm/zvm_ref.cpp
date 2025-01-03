@@ -2,18 +2,35 @@
 #include "zvirtual_machine.h"
 
 namespace zs {
-vm_ref::vm_ref(zs::virtual_machine* v)
-    : _vm(v) {}
+vm_ref::vm_ref(zs::virtual_machine* vm) noexcept
+    : _vm(vm) {
+  ZS_ASSERT(vm != nullptr, "Invalid virtual machine pointer.");
+}
 
 int_t vm_ref::stack_size() const noexcept { return _vm->stack_size(); }
 
-int_t vm_ref::push_root() {
-  _vm->push_root();
+int_t vm_ref::push_global() {
+  _vm->push_global();
   return 1;
 }
 
 int_t vm_ref::push_null() {
   _vm->push_null();
+  return 1;
+}
+
+int_t vm_ref::push_none() {
+  _vm->push(zs::none());
+  return 1;
+}
+
+int_t vm_ref::push_true() {
+  _vm->push(true);
+  return 1;
+}
+
+int_t vm_ref::push_false() {
+  _vm->push(false);
   return 1;
 }
 
@@ -52,12 +69,12 @@ int_t vm_ref::push(object&& obj) {
   return 1;
 }
 
-zs::error_result vm_ref::new_closure(zs::native_closure* closure) {
-  object obj = object::create_native_closure(_vm->get_engine(), closure);
-
-  _vm->push(obj);
-  return {};
-}
+// zs::error_result vm_ref::new_closure(zs::native_closure* closure) {
+//   object obj = object::create_native_closure(_vm->get_engine(), closure);
+//
+//   _vm->push(obj);
+//   return {};
+// }
 
 zs::error_result vm_ref::get_integer(int_t idx, int_t& res) {
   zs::object& obj = _vm->stack_get(idx);
@@ -84,12 +101,6 @@ zs::optional_result<float_t> vm_ref::get_float(int_t idx) {
   return res;
 }
 
-zs::object_type vm_ref::get_type(int_t idx) const noexcept { return _vm->stack_get(idx).get_type(); }
-
-zs::error_result vm_ref::call(zs::int_t n_params, bool returns, bool pop_callable) {
-  return zs_call(_vm, n_params, returns, pop_callable);
-}
-
 zs::engine* vm_ref::get_engine() const noexcept { return _vm->get_engine(); }
 std::ostream& vm_ref::get_stream() const noexcept { return _vm->get_engine()->get_stream(); }
 
@@ -97,12 +108,16 @@ table_object& vm_ref::get_registry_table_object() const noexcept {
   return _vm->get_engine()->get_registry_table_object();
 }
 
-void vm_ref::set_error(std::string_view msg) { _vm->set_error(msg); }
+int_t vm_ref::set_error(std::string_view msg) {
+  _vm->set_error(msg);
+  return -1;
+}
+
 zs::string vm_ref::get_error() const noexcept { return _vm->get_error(); }
 
 const object& vm_ref::top() const noexcept { return _vm->top(); }
 
-const object& vm_ref::root() const noexcept { return _vm->get_root(); }
+const object& vm_ref::global() const noexcept { return _vm->global(); }
 
 object& vm_ref::operator[](int_t idx) noexcept { return _vm->stack_get(idx); }
 const object& vm_ref::operator[](int_t idx) const noexcept { return _vm->stack_get(idx); }
@@ -110,8 +125,6 @@ const object& vm_ref::operator[](int_t idx) const noexcept { return _vm->stack_g
 object* vm_ref::stack_base_pointer() noexcept { return _vm->stack().stack_base_pointer(); }
 
 const object* vm_ref::stack_base_pointer() const noexcept { return _vm->stack().stack_base_pointer(); }
-
-struct vm::helper {};
 
 vm::vm(size_t stack_size, allocate_t alloc_cb, raw_pointer_t user_pointer,
     raw_pointer_release_hook_t user_release, stream_getter_t stream_getter,

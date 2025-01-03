@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <zbase/zbase.h>
+#include <zscript/base/zbase.h>
 #include <stdint.h>
 
 namespace zs {
